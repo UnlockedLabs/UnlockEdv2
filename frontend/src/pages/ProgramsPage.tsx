@@ -17,7 +17,9 @@ import {
     Program,
     ProgramCreditType,
     PgmType,
-    Facility
+    Facility,
+    isExternalSource,
+    externalSourceLabel
 } from '@/types';
 import API from '@/api/api';
 import { toast } from 'sonner';
@@ -103,7 +105,7 @@ export default function ProgramsPage() {
 
     const programs = resp?.data ?? [];
     const hasLoadingCanvas = programs.some(
-        (p) => p.source === 'canvas' && p.loading
+        (p) => isExternalSource(p.source) && p.loading
     );
     const { exhausted: canvasPollExhausted } = useCanvasLoadingPoll(
         hasLoadingCanvas,
@@ -1154,7 +1156,13 @@ function StatCard({
     );
 }
 
-function ProgramCardSkeleton({ exhausted }: { exhausted: boolean }) {
+function ProgramCardSkeleton({
+    exhausted,
+    sourceLabel
+}: {
+    exhausted: boolean;
+    sourceLabel: string;
+}) {
     return (
         <Card className="bg-white !p-0">
             <CardContent className="pt-6">
@@ -1189,7 +1197,7 @@ function ProgramCardSkeleton({ exhausted }: { exhausted: boolean }) {
                         <>
                             <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
                             <span className="text-xs text-blue-600">
-                                Syncing from Canvas…
+                                Syncing from {sourceLabel}…
                             </span>
                         </>
                     )}
@@ -1210,8 +1218,13 @@ function ProgramCard({
     onClick: () => void;
     pollExhausted?: boolean;
 }) {
-    if (program.source === 'canvas' && program.loading) {
-        return <ProgramCardSkeleton exhausted={!!pollExhausted} />;
+    if (isExternalSource(program.source) && program.loading) {
+        return (
+            <ProgramCardSkeleton
+                exhausted={!!pollExhausted}
+                sourceLabel={externalSourceLabel(program.source)}
+            />
+        );
     }
     const status = getEffectiveStatus(program);
     const types = parseCommaSeparated(program.program_types);
@@ -1231,12 +1244,13 @@ function ProgramCard({
                         <h3 className="text-brand-dark mb-1 group-hover:text-brand transition-colors">
                             {program.program_name}
                         </h3>
-                        {program.source === 'canvas' && (
+                        {isExternalSource(program.source) && (
                             <Badge
                                 variant="outline"
                                 className="text-xs bg-blue-50 text-blue-700 border-blue-200 mb-1 inline-flex"
                             >
-                                Synced from Canvas
+                                Synced from{' '}
+                                {externalSourceLabel(program.source)}
                             </Badge>
                         )}
                         {program.description && (
@@ -1445,7 +1459,7 @@ function ProgramsTable({
                     <TableBody>
                         {programs.map((program) => {
                             if (
-                                program.source === 'canvas' &&
+                                isExternalSource(program.source) &&
                                 program.loading
                             ) {
                                 return (
@@ -1470,7 +1484,11 @@ function ProgramsTable({
                                                     <div className="flex items-center gap-1.5">
                                                         <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
                                                         <span className="text-xs text-blue-600">
-                                                            Syncing from Canvas…
+                                                            Syncing from{' '}
+                                                            {externalSourceLabel(
+                                                                program.source
+                                                            )}
+                                                            …
                                                         </span>
                                                     </div>
                                                 )}
@@ -1560,12 +1578,17 @@ function ProgramsTable({
                                                     </TooltipContent>
                                                 )}
                                             </Tooltip>
-                                            {program.source === 'canvas' && (
+                                            {isExternalSource(
+                                                program.source
+                                            ) && (
                                                 <Badge
                                                     variant="outline"
                                                     className="text-xs bg-blue-50 text-blue-700 border-blue-200 mb-1"
                                                 >
-                                                    Synced from Canvas
+                                                    Synced from{' '}
+                                                    {externalSourceLabel(
+                                                        program.source
+                                                    )}
                                                 </Badge>
                                             )}
                                         </div>
@@ -1691,7 +1714,7 @@ function ProgramsTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
-                                        {program.source === 'canvas' ? (
+                                        {isExternalSource(program.source) ? (
                                             <div className="text-sm text-gray-400">
                                                 —
                                             </div>

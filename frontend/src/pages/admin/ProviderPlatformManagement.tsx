@@ -28,7 +28,8 @@ import {
 const providerTypeLabels: Partial<Record<ProviderPlatformType, string>> = {
     [ProviderPlatformType.CANVAS_CLOUD]: 'Canvas',
     [ProviderPlatformType.KOLIBRI]: 'Kolibri',
-    [ProviderPlatformType.BRIGHTSPACE]: 'Brightspace'
+    [ProviderPlatformType.BRIGHTSPACE]: 'Brightspace',
+    [ProviderPlatformType.ESSENTIAL_ED]: 'Essential Education'
 };
 
 const providerStateStyles: Record<ProviderPlatformState, string> = {
@@ -255,7 +256,8 @@ function AddProviderModal({
                         Name
                     </label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                        This is the connection name and will be used as the program name
+                        This is the connection name and will be used as the
+                        program name
                     </p>
                     <input
                         type="text"
@@ -285,7 +287,7 @@ function AddProviderModal({
                 </div>
                 <div>
                     <label className="text-sm font-medium text-foreground">
-                        Canvas Instance URL
+                        Provider Instance URL
                     </label>
                     <input
                         type="url"
@@ -309,7 +311,9 @@ function AddProviderModal({
                     />
                     {/[\r\n]/.test(accessKey) && (
                         <p className="mt-1 text-xs text-yellow-600">
-                            Warning: the token contains a newline character, which will cause authentication to fail. Make sure to copy only the token text.
+                            Warning: the token contains a newline character,
+                            which will cause authentication to fail. Make sure
+                            to copy only the token text.
                         </p>
                     )}
                     {isCanvas && (
@@ -332,19 +336,21 @@ function AddProviderModal({
                                         </a>
                                     ) : (
                                         <span className="italic">
-                                            (enter Canvas Instance URL above)
+                                            (enter Provider Instance URL above)
                                             /profile/settings
                                         </span>
                                     )}{' '}
                                     while logged in as an admin.
                                 </li>
                                 <li>
-                                    Scroll to <strong>Approved Integrations</strong>{' '}
-                                    and click <strong>+ New Access Token</strong>.
+                                    Scroll to{' '}
+                                    <strong>Approved Integrations</strong> and
+                                    click <strong>+ New Access Token</strong>.
                                 </li>
                                 <li>
-                                    Give it a purpose (e.g. &quot;UnlockEd&quot;),
-                                    leave the expiry blank, then click{' '}
+                                    Give it a purpose (e.g.
+                                    &quot;UnlockEd&quot;), leave the expiry
+                                    blank, then click{' '}
                                     <strong>Generate Token</strong>.
                                 </li>
                                 <li>

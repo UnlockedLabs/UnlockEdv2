@@ -37,6 +37,8 @@ type ProgramClassCohort struct {
 	Enrolled         int64       `json:"enrolled" gorm:"-"`
 	Completed        int64       `json:"completed" gorm:"-"`
 	IsCanvas         bool        `json:"is_canvas" gorm:"-"`
+	Source           string      `json:"source,omitempty" gorm:"-"`
+	Loading          bool        `json:"loading,omitempty" gorm:"-"`
 	CanvasTimezone   string      `json:"canvas_timezone,omitempty" gorm:"-"`
 
 	Class        *ProgramClass            `json:"program_class" gorm:"foreignKey:ClassID;references:ID"`

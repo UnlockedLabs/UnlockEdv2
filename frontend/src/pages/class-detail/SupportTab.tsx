@@ -8,9 +8,14 @@ import { ServerResponseMany } from '@/types/server';
 interface SupportTabProps {
     classId: number;
     isCanvasClass?: boolean;
+    sourceLabel?: string;
 }
 
-export function SupportTab({ classId, isCanvasClass = false }: SupportTabProps) {
+export function SupportTab({
+    classId,
+    isCanvasClass = false,
+    sourceLabel = 'Canvas'
+}: SupportTabProps) {
     const { data: flagsResp } = useSWR<ServerResponseMany<AttendanceFlag>>(
         `/api/program-classes/${classId}/attendance-flags`
     );
@@ -26,7 +31,7 @@ export function SupportTab({ classId, isCanvasClass = false }: SupportTabProps) 
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                     {isCanvasClass
-                        ? 'Residents with missing assignments or no course engagement in Canvas'
+                        ? `Residents with missing assignments or no course engagement in ${sourceLabel}`
                         : 'Residents with attendance below 75% or multiple consecutive absences'}
                 </p>
             </div>

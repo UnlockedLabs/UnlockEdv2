@@ -16,7 +16,7 @@ import {
     TooltipTrigger
 } from '@/components/ui/tooltip';
 import { formatDate } from '@/lib/formatters';
-import { ResidentProgramOverview } from '@/types';
+import { ResidentProgramOverview, externalSourceLabel } from '@/types';
 import { getEngagementIndicator } from './engagement-utils';
 
 interface ActiveEnrollmentsTableProps {
@@ -125,7 +125,9 @@ export function ActiveEnrollmentsTable({
                                         </span>
                                         {enrollment.is_canvas && (
                                             <Badge className="bg-[#E66000] text-white text-xs">
-                                                Canvas
+                                                {externalSourceLabel(
+                                                    enrollment.source
+                                                )}
                                             </Badge>
                                         )}
                                     </div>

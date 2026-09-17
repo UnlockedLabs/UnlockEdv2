@@ -20,7 +20,8 @@ import {
     ProgramOverview,
     SelectedClassStatus,
     ServerResponseMany,
-    ServerResponseOne
+    ServerResponseOne,
+    externalSourceLabel
 } from '@/types';
 import { programTypeColors } from '@/pages/program-detail/constants';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
@@ -191,6 +192,7 @@ export default function ProgramOverviewStatewide() {
     );
     const classes = useMemo(() => classesResp?.data ?? [], [classesResp?.data]);
     const isCanvasProgram = (program?.id ?? 0) >= 100_000_000;
+    const sourceLabel = externalSourceLabel(program?.source);
 
     async function handleArchiveCheck() {
         if (!program || archiveCheckLoading) return;
@@ -505,8 +507,8 @@ export default function ProgramOverviewStatewide() {
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                                             <span className="text-sm text-blue-600">
-                                                Syncing Canvas data, this may
-                                                take a moment…
+                                                Syncing {sourceLabel} data, this
+                                                may take a moment…
                                             </span>
                                         </>
                                     )}
@@ -542,8 +544,8 @@ export default function ProgramOverviewStatewide() {
                     <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-blue-700">
                         <BookOpen className="size-4 shrink-0" />
                         <span>
-                            This program is managed externally in Canvas. Data
-                            is read-only.
+                            This program is managed externally in {sourceLabel}.
+                            Data is read-only.
                         </span>
                     </div>
                 </div>

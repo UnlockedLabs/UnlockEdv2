@@ -4,7 +4,8 @@ export enum ProviderPlatformType {
     CANVAS_CLOUD = 'canvas_cloud',
     CANVAS_OSS = 'canvas_oss',
     KOLIBRI = 'kolibri',
-    BRIGHTSPACE = 'brightspace'
+    BRIGHTSPACE = 'brightspace',
+    ESSENTIAL_ED = 'essential_ed'
 }
 
 export enum ProviderPlatformState {

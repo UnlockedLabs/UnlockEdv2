@@ -26,13 +26,20 @@ type CachedCanvasProgram struct {
 // liveCourse holds one provider course normalized into the shape the live
 // program path uses, regardless of which provider it came from.
 type liveCourse struct {
-	encodedID   uint
-	rawID       uint
-	name        string
-	description string
-	startDt     time.Time
-	endDt       *time.Time
-	status      models.ClassStatus
+	encodedID      uint
+	rawID          uint
+	name           string
+	description    string
+	startDt        time.Time
+	endDt          *time.Time
+	status         models.ClassStatus
+	enrolleeIDs    []string
+	weeklySchedule map[time.Weekday][]meetingTime
+}
+
+type meetingTime struct {
+	startMin int
+	endMin   int
 }
 
 // isCanvasProvider returns true when the provider is a Canvas (OSS or Cloud) instance.
@@ -55,6 +62,10 @@ func parseCanvasCourse(course map[string]interface{}, providerID uint, now time.
 		return liveCourse{}, false
 	}
 	rawID := uint(idFloat)
+	if !courseIDFitsEncoding(rawID) {
+		log.Warnf("canvas course %d exceeds the synthetic class ID range, skipping", rawID)
+		return liveCourse{}, false
+	}
 	name, _ := course["name"].(string)
 	description, _ := course["course_code"].(string)
 	var startDt time.Time
@@ -273,7 +284,7 @@ func (srv *Server) getCanvasProviderPrograms(facilityID uint, adminRole models.U
 			placeholder := models.ProgramsOverviewTable{
 				ProgramID:   models.CanvasProgramIDOffset + provider.ID,
 				ProgramName: provider.Name,
-				Source:      "canvas",
+				Source:      providerSourceLabel(&provider),
 				Status:      true,
 				Loading:     true,
 			}
@@ -288,7 +299,7 @@ func (srv *Server) getCanvasProviderPrograms(facilityID uint, adminRole models.U
 		result = append(result, models.ProgramsOverviewTable{
 			ProgramID:   models.CanvasProgramIDOffset + provider.ID,
 			ProgramName: provider.Name,
-			Source:      "canvas",
+			Source:      providerSourceLabel(&provider),
 			Status:      true,
 			Loading:     true,
 		})
@@ -309,7 +320,8 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform,
 	if err != nil {
 		return models.ProgramsOverviewTable{}, err
 	}
-	listing, err := reader.ListCourses(context.Background())
+	ctx := context.Background()
+	listing, err := reader.ListCourses(ctx)
 	if err != nil {
 		return models.ProgramsOverviewTable{}, err
 	}
@@ -334,18 +346,18 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform,
 			continue
 		}
 		wg.Add(1)
-		go func(rawID uint) {
+		go func(c liveCourse) {
 			defer wg.Done()
 			var n int64
 			if facilityID != 0 {
-				n = srv.countMappedCanvasEnrolleesForFacility(provider, rawID, facilityID)
+				n = srv.countMappedCanvasEnrolleesForFacility(ctx, reader, provider, c, facilityID)
 			} else {
-				n = srv.countMappedCanvasEnrollees(provider, rawID)
+				n = srv.countMappedCanvasEnrollees(ctx, reader, provider, c)
 			}
 			mu.Lock()
 			activeEnrollments += n
 			mu.Unlock()
-		}(course.rawID)
+		}(course)
 	}
 	wg.Wait()
 
@@ -353,14 +365,14 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform,
 	return models.ProgramsOverviewTable{
 		ProgramID:              programID,
 		ProgramName:            provider.Name,
-		Description:            "Courses pulled live from Canvas connection: " + provider.Name,
+		Description:            "Courses pulled live from " + providerDisplayName(provider) + " connection: " + provider.Name,
 		TotalEnrollments:       &activeEnrollments,
 		TotalActiveEnrollments: &activeEnrollments,
 		TotalClasses:           &totalClasses,
 		TotalActiveClasses:     &activeClasses,
 		Types:                  "College",
 		Status:                 true,
-		Source:                 "canvas",
+		Source:                 providerSourceLabel(provider),
 	}, nil
 }
 
@@ -499,6 +511,7 @@ func linkEntryHasRelNext(params string) bool {
 func (srv *Server) fetchCanvasCalendarEvents(
 	provider *models.ProviderPlatform,
 	start, end time.Time,
+	loc *time.Location,
 ) ([]models.FacilityProgramClassEvent, error) {
 	// Step 1: fetch all courses for this provider (paginated)
 	reader, err := srv.newLiveProgramProvider(provider)
@@ -515,6 +528,13 @@ func (srv *Server) fetchCanvasCalendarEvents(
 	}
 
 	courseTimezones := listing.Timezones
+
+	// Providers that describe a weekly meeting pattern rather than dated calendar
+	// events have no calendar endpoint to call, so their pattern is expanded onto
+	// the same facility calendar.
+	if !isCanvasProvider(provider) {
+		return weeklyScheduleFacilityEvents(provider, listing.Courses, start, end, loc), nil
+	}
 
 	// Step 2: build context_codes[] query params using url.Values so brackets are encoded
 	params := url.Values{}
@@ -564,6 +584,7 @@ func (srv *Server) fetchCanvasCalendarEvents(
 
 		ev := models.FacilityProgramClassEvent{
 			IsCanvasEvent:  true,
+			Source:         providerSourceLabel(provider),
 			IsCancelled:    isCancelled,
 			ProgramID:      models.CanvasProgramIDOffset + provider.ID,
 			ProgramName:    provider.Name,
@@ -578,6 +599,41 @@ func (srv *Server) fetchCanvasCalendarEvents(
 		events = append(events, ev)
 	}
 	return events, nil
+}
+
+// weeklyScheduleFacilityEvents expands every course's weekly meeting pattern into
+// facility calendar events across [start, end]. Occurrences of a class share the
+// class's synthetic ID -- the calendar renders from the event objects themselves
+// and never looks one up by ID.
+func weeklyScheduleFacilityEvents(
+	provider *models.ProviderPlatform,
+	courses []liveCourse,
+	start, end time.Time,
+	loc *time.Location,
+) []models.FacilityProgramClassEvent {
+	var events []models.FacilityProgramClassEvent
+	for _, course := range courses {
+		classID := encodeCanvasClassID(provider.ID, course.rawID)
+		for _, occurrence := range expandWeeklySchedule(course, start, end, loc) {
+			ev := models.FacilityProgramClassEvent{
+				IsCanvasEvent: true,
+				Source:        providerSourceLabel(provider),
+				ProgramID:     models.CanvasProgramIDOffset + provider.ID,
+				ProgramName:   provider.Name,
+				ClassName:     course.name,
+				StartTime:     &occurrence.StartAt,
+				EndTime:       &occurrence.EndAt,
+				ClassStatus:   models.Active,
+				// Without this the calendar would re-interpret the wall-clock time
+				// in the viewer's own zone and shift every meeting.
+				CanvasTimezone: occurrence.Timezone,
+			}
+			ev.ID = classID
+			ev.CohortID = classID
+			events = append(events, ev)
+		}
+	}
+	return events
 }
 
 // fetchCanvasClassesAllProviders returns a ProgramClassCohort for every Canvas course
@@ -607,7 +663,8 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 			log.WithError(err).Warnf("no live reader for provider %d, skipping", provider.ID)
 			continue
 		}
-		listing, err := reader.ListCourses(context.Background())
+		ctx := context.Background()
+		listing, err := reader.ListCourses(ctx)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", provider.ID)
 			continue
@@ -626,7 +683,7 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 			go func(idx int) {
 				defer wg.Done()
 				defer func() { <-sem }()
-				n := srv.countMappedCanvasEnrolleesForFacility(&provider, entries[idx].rawID, *facilityID)
+				n := srv.countMappedCanvasEnrolleesForFacility(ctx, reader, &provider, entries[idx], *facilityID)
 				mu.Lock()
 				counts[idx] = n
 				mu.Unlock()
@@ -649,6 +706,7 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 				Status:      entry.status,
 				Enrolled:    counts[i],
 				IsCanvas:    true,
+				Source:      providerSourceLabel(&provider),
 				Program: &models.Program{
 					DatabaseFields: models.DatabaseFields{ID: programID},
 					Name:           "College - " + provider.Name,
@@ -683,16 +741,16 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 			log.WithError(err).Warnf("no live reader for provider %d, skipping", provider.ID)
 			continue
 		}
-		listing, err := reader.ListCourses(context.Background())
+		ctx := context.Background()
+		listing, err := reader.ListCourses(ctx)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", provider.ID)
 			continue
 		}
 		entries := listing.Courses
 		// Fetch per-facility enrollment counts for each course concurrently.
-		// countMappedCanvasEnrolleesPerFacility makes one Canvas HTTP call and
-		// one DB query per course, returning counts for all facilities at once,
-		// so this is O(courses) HTTP calls rather than O(courses × facilities).
+		// countMappedCanvasEnrolleesPerFacility returns counts for all facilities at
+		// once, so this is O(courses) rather than O(courses × facilities).
 		facilityCounts := make([]map[uint]int64, len(entries))
 		var wg sync.WaitGroup
 		var mu sync.Mutex
@@ -703,7 +761,7 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 			go func(idx int) {
 				defer wg.Done()
 				defer func() { <-sem }()
-				counts := srv.countMappedCanvasEnrolleesPerFacility(&provider, entries[idx].rawID)
+				counts := srv.countMappedCanvasEnrolleesPerFacility(ctx, reader, &provider, entries[idx])
 				mu.Lock()
 				facilityCounts[idx] = counts
 				mu.Unlock()
@@ -729,6 +787,7 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 					Status:         entry.status,
 					Enrolled:       enrolled,
 					IsCanvas:       true,
+					Source:         providerSourceLabel(&provider),
 					Program: &models.Program{
 						DatabaseFields: models.DatabaseFields{ID: programID},
 						Name:           "College - " + provider.Name,
@@ -742,7 +801,8 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 
 // appendCanvasEventsForFacility iterates all active Canvas provider platforms
 // and collects calendar events for the given date range.
-func (srv *Server) appendCanvasEventsForFacility(dtRng *models.DateRange) ([]models.FacilityProgramClassEvent, error) {
+func (srv *Server) appendCanvasEventsForFacility(dtRng *models.DateRange, facilityID uint) ([]models.FacilityProgramClassEvent, error) {
+	loc := srv.facilityLocation(facilityID)
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
 		return nil, err
@@ -752,7 +812,7 @@ func (srv *Server) appendCanvasEventsForFacility(dtRng *models.DateRange) ([]mod
 		if !isLiveProgramProvider(&provider) {
 			continue
 		}
-		evs, err := srv.fetchCanvasCalendarEvents(&provider, dtRng.Start, dtRng.End)
+		evs, err := srv.fetchCanvasCalendarEvents(&provider, dtRng.Start, dtRng.End, loc)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas calendar events for provider %d, skipping", provider.ID)
 			continue
@@ -803,6 +863,7 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 						Facilities:         []models.Facility{},
 					},
 					ActiveClassFacilityIDs: []int{},
+					Source:                 providerSourceLabel(provider),
 					Loading:                true,
 				})
 			}
@@ -831,6 +892,7 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 					TotalEnrollments:       totalEnrollments,
 					CompletionRate:         cached.CompletionRate,
 					ActiveClassFacilityIDs: []int{},
+					Source:                 providerSourceLabel(provider),
 				})
 			}
 			break
@@ -842,7 +904,7 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 		placeholder := models.ProgramsOverviewTable{
 			ProgramID:   programID,
 			ProgramName: "College - " + provider.Name,
-			Source:      "canvas",
+			Source:      providerSourceLabel(provider),
 			Status:      true,
 			Loading:     true,
 		}
@@ -863,6 +925,7 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 			Facilities:         []models.Facility{},
 		},
 		ActiveClassFacilityIDs: []int{},
+		Source:                 providerSourceLabel(provider),
 		Loading:                true,
 	})
 }
@@ -922,12 +985,11 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			_, rawID := decodeCanvasClassID(classes[idx].ID)
 			var n int64
 			if facilityID != 0 {
-				n = srv.countMappedCanvasEnrolleesForFacility(provider, rawID, facilityID)
+				n = srv.countMappedCanvasEnrolleesForFacility(r.Context(), reader, provider, listing.Courses[idx], facilityID)
 			} else {
-				n = srv.countMappedCanvasEnrollees(provider, rawID)
+				n = srv.countMappedCanvasEnrollees(r.Context(), reader, provider, listing.Courses[idx])
 			}
 			mu.Lock()
 			counts[classes[idx].ID] = n
@@ -1013,8 +1075,7 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			rawID := entries[idx].rawID
-			counts := srv.countMappedCanvasEnrolleesPerFacility(provider, rawID)
+			counts := srv.countMappedCanvasEnrolleesPerFacility(r.Context(), reader, provider, entries[idx])
 			mu.Lock()
 			facilityCounts[idx] = counts
 			mu.Unlock()
@@ -1123,7 +1184,9 @@ func (srv *Server) fetchCanvasCoursesScheduleEvents(
 	rawCourseIDs []uint,
 ) map[uint]models.ProgramClassEvent {
 	result := make(map[uint]models.ProgramClassEvent, len(rawCourseIDs))
-	if len(rawCourseIDs) == 0 {
+	// Calendar events are a Canvas concept. Other live providers have no such
+	// endpoint, so calling it would only spend a request to get a 404.
+	if len(rawCourseIDs) == 0 || !isCanvasProvider(provider) {
 		return result
 	}
 
@@ -1205,12 +1268,14 @@ func (srv *Server) invalidateCanvasProgramCache(providerID uint, userID int) {
 	}
 }
 
-// countMappedCanvasEnrolleesPerFacility fetches active enrollments for a Canvas course
-// and returns a map of facility_id → count of mapped users from that facility.
-func (srv *Server) countMappedCanvasEnrolleesPerFacility(provider *models.ProviderPlatform, rawCourseID uint) map[uint]int64 {
-	canvasUserIDs, err := srv.fetchCanvasCourseEnrolleeIDs(provider, rawCourseID)
+// countMappedCanvasEnrolleesPerFacility returns a map of facility_id → count of
+// mapped users from that facility for a course. Enrollees are resolved through
+// courseEnrollees, so a provider that reports them inline with its course listing
+// costs no extra request here.
+func (srv *Server) countMappedCanvasEnrolleesPerFacility(ctx context.Context, reader LiveProgramProvider, provider *models.ProviderPlatform, course liveCourse) map[uint]int64 {
+	canvasUserIDs, err := courseEnrollees(ctx, reader, course)
 	if err != nil {
-		log.WithError(err).Warnf("countMappedCanvasEnrolleesPerFacility: failed to fetch enrollments for course %d", rawCourseID)
+		log.WithError(err).Warnf("countMappedCanvasEnrolleesPerFacility: failed to fetch enrollments for course %d", course.rawID)
 		return nil
 	}
 	if len(canvasUserIDs) == 0 {
@@ -1218,7 +1283,7 @@ func (srv *Server) countMappedCanvasEnrolleesPerFacility(provider *models.Provid
 	}
 	result, err := srv.Db.CountCanvasMappedEnrolleesPerFacility(provider.ID, canvasUserIDs)
 	if err != nil {
-		log.WithError(err).Warnf("countMappedCanvasEnrolleesPerFacility: failed to count enrollees for course %d", rawCourseID)
+		log.WithError(err).Warnf("countMappedCanvasEnrolleesPerFacility: failed to count enrollees for course %d", course.rawID)
 		return nil
 	}
 	return result
@@ -1261,10 +1326,10 @@ func resolveCanvasClassParts(classID uint) (facilityID, providerID, rawCourseID 
 
 // countMappedCanvasEnrolleesForFacility is like countMappedCanvasEnrollees but
 // only counts users belonging to the given facility.
-func (srv *Server) countMappedCanvasEnrolleesForFacility(provider *models.ProviderPlatform, rawCourseID uint, facilityID uint) int64 {
-	canvasUserIDs, err := srv.fetchCanvasCourseEnrolleeIDs(provider, rawCourseID)
+func (srv *Server) countMappedCanvasEnrolleesForFacility(ctx context.Context, reader LiveProgramProvider, provider *models.ProviderPlatform, course liveCourse, facilityID uint) int64 {
+	canvasUserIDs, err := courseEnrollees(ctx, reader, course)
 	if err != nil {
-		log.WithError(err).Warnf("countMappedCanvasEnrolleesForFacility: failed to fetch enrollments for course %d", rawCourseID)
+		log.WithError(err).Warnf("countMappedCanvasEnrolleesForFacility: failed to fetch enrollments for course %d", course.rawID)
 		return 0
 	}
 	if len(canvasUserIDs) == 0 {
@@ -1272,18 +1337,19 @@ func (srv *Server) countMappedCanvasEnrolleesForFacility(provider *models.Provid
 	}
 	count, err := srv.Db.CountCanvasMappedEnrolleesForFacility(provider.ID, canvasUserIDs, facilityID)
 	if err != nil {
-		log.WithError(err).Warnf("countMappedCanvasEnrolleesForFacility: failed to count enrollees for course %d", rawCourseID)
+		log.WithError(err).Warnf("countMappedCanvasEnrolleesForFacility: failed to count enrollees for course %d", course.rawID)
 		return 0
 	}
 	return count
 }
 
-// countMappedCanvasEnrollees fetches active student enrollments for a Canvas
-// course and returns how many of those students have a ProviderUserMapping.
-func (srv *Server) countMappedCanvasEnrollees(provider *models.ProviderPlatform, rawCourseID uint) int64 {
-	canvasUserIDs, err := srv.fetchCanvasCourseEnrolleeIDs(provider, rawCourseID)
+// countMappedCanvasEnrollees returns how many of a course's students have a
+// ProviderUserMapping. See countMappedCanvasEnrolleesPerFacility on how the
+// enrollees are resolved.
+func (srv *Server) countMappedCanvasEnrollees(ctx context.Context, reader LiveProgramProvider, provider *models.ProviderPlatform, course liveCourse) int64 {
+	canvasUserIDs, err := courseEnrollees(ctx, reader, course)
 	if err != nil {
-		log.WithError(err).Warnf("countMappedCanvasEnrollees: failed to fetch enrollments for course %d", rawCourseID)
+		log.WithError(err).Warnf("countMappedCanvasEnrollees: failed to fetch enrollments for course %d", course.rawID)
 		return 0
 	}
 	if len(canvasUserIDs) == 0 {
@@ -1291,7 +1357,7 @@ func (srv *Server) countMappedCanvasEnrollees(provider *models.ProviderPlatform,
 	}
 	count, err := srv.Db.CountCanvasMappedEnrollees(provider.ID, canvasUserIDs)
 	if err != nil {
-		log.WithError(err).Warnf("countMappedCanvasEnrollees: failed to count enrollees for course %d", rawCourseID)
+		log.WithError(err).Warnf("countMappedCanvasEnrollees: failed to count enrollees for course %d", course.rawID)
 		return 0
 	}
 	return count
@@ -1392,17 +1458,14 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for provider %d", providerID), "class ID")
 	}
 
-	transport, err := srv.transportFor(provider)
+	reader, err := srv.newLiveProgramProvider(provider)
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
-	course, err := transport.fetchOne(r.Context(), provider, canvasCourseURL(provider, rawCourseID))
+	entry, canvasTimezone, err := reader.GetCourse(r.Context(), rawCourseID)
 	if err != nil {
-		return newInternalServerServiceError(err, "failed to fetch canvas course")
+		return newInternalServerServiceError(err, "failed to fetch course from "+providerDisplayName(provider))
 	}
-
-	entry, _ := parseCanvasCourse(course, providerID, time.Now())
-	canvasTimezone, _ := course["time_zone"].(string)
 	programID := models.CanvasProgramIDOffset + providerID
 
 	// Use the facility embedded in the ID; fall back to JWT claims for old-style IDs.
@@ -1412,9 +1475,9 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 	}
 	var enrolled int64
 	if facilityID != 0 {
-		enrolled = srv.countMappedCanvasEnrolleesForFacility(provider, rawCourseID, facilityID)
+		enrolled = srv.countMappedCanvasEnrolleesForFacility(r.Context(), reader, provider, entry, facilityID)
 	} else {
-		enrolled = srv.countMappedCanvasEnrollees(provider, rawCourseID)
+		enrolled = srv.countMappedCanvasEnrollees(r.Context(), reader, provider, entry)
 	}
 
 	var facility *models.Facility
@@ -1425,11 +1488,9 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 	}
 
 	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, []uint{rawCourseID})
-	var events []models.ProgramClassEvent
+	events := []models.ProgramClassEvent{}
 	if ev, ok := scheduleEvents[rawCourseID]; ok {
 		events = []models.ProgramClassEvent{ev}
-	} else {
-		events = []models.ProgramClassEvent{}
 	}
 
 	cls := models.ProgramClassCohort{
@@ -1444,6 +1505,7 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		Status:         entry.status,
 		Enrolled:       enrolled,
 		IsCanvas:       true,
+		Source:         providerSourceLabel(provider),
 		CanvasTimezone: canvasTimezone,
 		Program: &models.Program{
 			DatabaseFields: models.DatabaseFields{ID: programID},
@@ -1479,6 +1541,59 @@ type canvasScheduleEvent struct {
 	Timezone    string    `json:"timezone,omitempty"`
 }
 
+// expandWeeklySchedule turns a recurring weekly meeting pattern into concrete
+// events across [start, end]. Providers that describe a weekly pattern rather
+// than dated calendar events (Essential Ed) are rendered on the same calendar
+// this way. Days outside the class's own open/close dates are skipped.
+// The meeting times are wall-clock text with no zone attached -- an instructor
+// typing "9:00 AM" means 9am where the class meets. loc is the facility's
+// timezone, so the instants come out right for the people reading the calendar.
+func expandWeeklySchedule(course liveCourse, start, end time.Time, loc *time.Location) []canvasScheduleEvent {
+	events := []canvasScheduleEvent{}
+	if len(course.weeklySchedule) == 0 {
+		return events
+	}
+	if loc == nil {
+		loc = time.UTC
+	}
+	for day := start; !day.After(end); day = day.AddDate(0, 0, 1) {
+		if !course.startDt.IsZero() && day.Before(course.startDt.Truncate(24*time.Hour)) {
+			continue
+		}
+		if course.endDt != nil && day.After(*course.endDt) {
+			continue
+		}
+		for _, meeting := range course.weeklySchedule[day.Weekday()] {
+			midnight := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, loc)
+			events = append(events, canvasScheduleEvent{
+				ID:       uint(len(events) + 1),
+				Title:    course.name,
+				StartAt:  midnight.Add(time.Duration(meeting.startMin) * time.Minute),
+				EndAt:    midnight.Add(time.Duration(meeting.endMin) * time.Minute),
+				Timezone: loc.String(),
+			})
+		}
+	}
+	return events
+}
+
+// facilityLocation returns a facility's timezone, falling back to UTC when the
+// facility is unknown or its timezone will not load.
+func (srv *Server) facilityLocation(facilityID uint) *time.Location {
+	if facilityID == 0 {
+		return time.UTC
+	}
+	facility, err := srv.Db.GetFacilityByID(int(facilityID))
+	if err != nil {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(facility.Timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
 func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.Request, log sLog) error {
 	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
@@ -1491,7 +1606,7 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 	if !claims.hasFeatureAccess(models.ProviderAccess) {
 		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for class %d", classID), "class_id")
 	}
-	_, providerID, rawCourseID := resolveCanvasClassParts(uint(classID))
+	facilityIDFromID, providerID, rawCourseID := resolveCanvasClassParts(uint(classID))
 	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -1520,6 +1635,28 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 		}
 		start = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 		end = start.AddDate(0, 1, -1)
+	}
+
+	// Providers that report a weekly meeting pattern instead of dated calendar
+	// events have their pattern expanded across the requested range. Canvas has
+	// real events, so it is read straight from the calendar endpoint.
+	if !isCanvasProvider(provider) {
+		reader, err := srv.newLiveProgramProvider(provider)
+		if err != nil {
+			return newInvalidIdServiceError(err, "class_id")
+		}
+		course, _, err := reader.GetCourse(r.Context(), rawCourseID)
+		if err != nil {
+			return newInternalServerServiceError(err, "failed to fetch course from "+providerDisplayName(provider))
+		}
+		args := srv.getQueryContext(r)
+		facilityID := facilityIDFromID
+		if facilityID == 0 {
+			facilityID = args.FacilityID
+		}
+		events := expandWeeklySchedule(course, start, end, srv.facilityLocation(facilityID))
+		args.Total = int64(len(events))
+		return writePaginatedResponse(w, http.StatusOK, events, args.IntoMeta())
 	}
 
 	fetchURL := fmt.Sprintf(
@@ -1596,9 +1733,20 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for provider %d", providerID), "class ID")
 	}
 
-	canvasUserIDs, enrollmentDates, err := srv.fetchCanvasCourseEnrollmentData(provider, rawCourseID)
+	// Canvas reports when each student joined, in the same call that lists them.
+	// Other live providers only report the roster, so EnrolledAt stays nil rather
+	// than being invented.
+	var (
+		canvasUserIDs   []string
+		enrollmentDates map[string]*time.Time
+	)
+	if isCanvasProvider(provider) {
+		canvasUserIDs, enrollmentDates, err = srv.fetchCanvasCourseEnrollmentData(provider, rawCourseID)
+	} else {
+		canvasUserIDs, err = srv.providerCourseEnrolleeIDs(provider, rawCourseID)
+	}
 	if err != nil {
-		return newInternalServerServiceError(err, "failed to fetch canvas enrollments")
+		return newInternalServerServiceError(err, "failed to fetch enrollments from "+providerDisplayName(provider))
 	}
 
 	facilityID := facilityIDFromID
@@ -1653,6 +1801,14 @@ func (srv *Server) handleGetCanvasAtRiskStudents(w http.ResponseWriter, r *http.
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	if !claims.hasFeatureAccess(models.ProviderAccess) {
 		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for provider %d", providerID), "class ID")
+	}
+
+	// Course analytics are Canvas-only; other live providers report no engagement
+	// data, so there is nothing to flag rather than an error to report.
+	if !isCanvasProvider(provider) {
+		args := srv.getQueryContext(r)
+		args.Total = 0
+		return writePaginatedResponse(w, http.StatusOK, []models.AttendanceFlag{}, args.IntoMeta())
 	}
 
 	summaryURL := fmt.Sprintf("%s/api/v1/courses/%d/analytics/student_summaries", provider.BaseUrl, rawCourseID)

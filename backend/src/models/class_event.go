@@ -373,5 +373,6 @@ type FacilityProgramClassEvent struct {
 	OverrideID             uint                       `json:"override_id"`
 	LinkedOverrideEvent    *FacilityProgramClassEvent `json:"linked_override_event" gorm:"-"`
 	IsCanvasEvent          bool                       `json:"is_canvas_event" gorm:"-"`
+	Source                 string                     `json:"source,omitempty" gorm:"-"`
 	CanvasTimezone         string                     `json:"canvas_timezone,omitempty" gorm:"-"`
 }

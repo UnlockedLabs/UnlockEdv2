@@ -140,19 +140,17 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 		return newDatabaseServiceError(err)
 	}
 	if claims.hasFeatureAccess(models.ProviderAccess) {
-		var canvasClasses []models.ProgramClassCohort
-		var canvasErr error
-		if facilityID == nil {
-			canvasClasses, canvasErr = srv.fetchCanvasClassesAllProvidersAllFacilities()
-		} else {
-			canvasClasses, canvasErr = srv.fetchCanvasClassesAllProviders(facilityID)
-		}
-		if canvasErr != nil {
-			logrus.WithError(canvasErr).Warn("failed to fetch canvas classes, returning DB classes only")
-		} else {
-			canvasClasses = srv.filterClassesByProviderAccess(canvasClasses)
-			classes = append(classes, canvasClasses...)
-			args.Total += int64(len(canvasClasses))
+		// Provider classes are read over HTTP, which is far slower than our own
+		// tables, so they are served from cache and refreshed in the background.
+		// Our classes go out now; the provider's arrive on a later poll.
+		canvasClasses, loading := srv.getCanvasProviderClasses(facilityID)
+		canvasClasses = srv.filterClassesByProviderAccess(canvasClasses)
+		classes = append(classes, canvasClasses...)
+		args.Total += int64(len(canvasClasses))
+		if loading {
+			placeholders := srv.loadingClassPlaceholders(facilityID)
+			classes = append(classes, placeholders...)
+			args.Total += int64(len(placeholders))
 		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())

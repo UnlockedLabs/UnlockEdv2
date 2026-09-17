@@ -19,7 +19,7 @@ import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { Cohort } from '@/types/program';
 import { SelectedClassStatus, AttendanceFlag } from '@/types/attendance';
 import { ServerResponseOne, ServerResponseMany } from '@/types/server';
-import { BreadcrumbItem } from '@/types';
+import { BreadcrumbItem, externalSourceLabel } from '@/types';
 import { ClassHeader, StatCards } from './ClassHeader';
 import { RosterTab } from './RosterTab';
 import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
@@ -73,6 +73,7 @@ export default function ClassDetailPage() {
 
     const cls = classResp?.data;
     const isCanvasClass = !!cls?.is_canvas;
+    const sourceLabel = externalSourceLabel(cls?.source);
 
     const { mutate: mutateEvents } = useSWR<ServerResponseMany<{ id: number }>>(
         class_id ? `/api/program-classes/${class_id}/events?all=true` : null
@@ -139,8 +140,8 @@ export default function ClassDetailPage() {
                     <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-blue-700">
                         <BookOpen className="size-4 shrink-0" />
                         <span>
-                            This class is managed externally in Canvas. Data is
-                            read-only.
+                            This class is managed externally in {sourceLabel}.
+                            Data is read-only.
                         </span>
                     </div>
                 </div>
@@ -297,7 +298,7 @@ export default function ClassDetailPage() {
                     >
                         {isCanvasClass ? (
                             <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
-                                Enrollment history is managed in Canvas.
+                                Enrollment history is managed in {sourceLabel}.
                             </div>
                         ) : (
                             <EnrollmentHistoryTab classId={cls.id} />
@@ -330,13 +331,14 @@ export default function ClassDetailPage() {
                         <SupportTab
                             classId={cls.id}
                             isCanvasClass={isCanvasClass}
+                            sourceLabel={sourceLabel}
                         />
                     </TabsContent>
 
                     <TabsContent value="audit" className="space-y-4">
                         {isCanvasClass ? (
                             <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
-                                Audit history is not available for Canvas
+                                Audit history is not available for {sourceLabel}{' '}
                                 classes.
                             </div>
                         ) : (

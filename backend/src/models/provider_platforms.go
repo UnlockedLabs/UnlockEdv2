@@ -25,6 +25,7 @@ const (
 	CanvasCloud ProviderPlatformType = "canvas_cloud"
 	Kolibri     ProviderPlatformType = "kolibri"
 	Brightspace ProviderPlatformType = "brightspace"
+	EssentialEd ProviderPlatformType = "essential_ed"
 )
 
 type ProviderPlatformState string

@@ -6,6 +6,7 @@ import (
 	"UnlockEdv2/src/jasper"
 	"UnlockEdv2/src/models"
 	"UnlockEdv2/src/services"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -17,6 +18,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerUserRoutes() []routeDef {
@@ -572,11 +575,61 @@ func (srv *Server) fetchCanvasUserPrograms(userID int) []models.ResidentProgramC
 	var result []models.ResidentProgramClassInfo
 	for _, mapping := range mappings {
 		provider, ok := providerMap[mapping.ProviderPlatformID]
-		if !ok || (provider.Type != models.CanvasOSS && provider.Type != models.CanvasCloud) {
+		if !ok || !isLiveProgramProvider(&provider) {
 			continue
 		}
-		courses := srv.fetchCanvasCoursesForUser(&provider, mapping.ExternalUserID)
-		result = append(result, courses...)
+		if isCanvasProvider(&provider) {
+			result = append(result, srv.fetchCanvasCoursesForUser(&provider, mapping.ExternalUserID)...)
+			continue
+		}
+		result = append(result, srv.fetchLiveCoursesForUser(&provider, mapping.ExternalUserID)...)
+	}
+	return result
+}
+
+// fetchLiveCoursesForUser builds a resident's program rows for a live provider
+// that reports its own per-user enrollments. Canvas has a dedicated endpoint and
+// is handled by fetchCanvasCoursesForUser instead.
+func (srv *Server) fetchLiveCoursesForUser(provider *models.ProviderPlatform, externalUserID string) []models.ResidentProgramClassInfo {
+	reader, err := srv.newLiveProgramProvider(provider)
+	if err != nil {
+		return nil
+	}
+	lister, ok := reader.(liveUserCourseLister)
+	if !ok {
+		return nil
+	}
+	courses, err := lister.ListUserCourses(context.Background(), externalUserID)
+	if err != nil {
+		log.WithError(err).Warnf("failed to fetch courses for user %s on provider %d", externalUserID, provider.ID)
+		return nil
+	}
+	programID := models.CanvasProgramIDOffset + provider.ID
+	result := make([]models.ResidentProgramClassInfo, 0, len(courses))
+	for _, course := range courses {
+		enrollment := models.Enrolled
+		endDate := ""
+		if course.endDt != nil {
+			endDate = course.endDt.Format(time.RFC3339)
+			if !course.endDt.After(time.Now()) {
+				enrollment = models.EnrollmentCompleted
+			}
+		}
+		startDate := ""
+		if !course.startDt.IsZero() {
+			startDate = course.startDt.Format(time.RFC3339)
+		}
+		result = append(result, models.ResidentProgramClassInfo{
+			ProgramName:          provider.Name,
+			ClassName:            course.name,
+			ProgramID:            programID,
+			EnrollmentStatus:     enrollment,
+			StartDate:            startDate,
+			EndDate:              endDate,
+			AttendancePercentage: "--",
+			IsCanvas:             true,
+			Source:               providerSourceLabel(provider),
+		})
 	}
 	return result
 }
@@ -621,6 +674,7 @@ func (srv *Server) fetchCanvasCoursesForUser(provider *models.ProviderPlatform, 
 				EndDate:              endAt,
 				AttendancePercentage: "--",
 				IsCanvas:             true,
+				Source:               providerSourceLabel(provider),
 			})
 		}
 		apiURL = NextPageURL(resp.Header.Get("Link"))

@@ -2,7 +2,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/formatters';
-import { ResidentProgramOverview } from '@/types';
+import { ResidentProgramOverview, externalSourceLabel } from '@/types';
 
 interface CompletedProgramsProps {
     programs: ResidentProgramOverview[];
@@ -47,7 +47,9 @@ export function CompletedPrograms({
                                         </span>
                                         {program.is_canvas && (
                                             <Badge className="bg-[#E66000] text-white text-xs">
-                                                Canvas
+                                                {externalSourceLabel(
+                                                    program.source
+                                                )}
                                             </Badge>
                                         )}
                                     </div>

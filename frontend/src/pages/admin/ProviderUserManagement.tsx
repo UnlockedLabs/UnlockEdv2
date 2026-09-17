@@ -570,7 +570,7 @@ function ReconciliationProgressBar({
                 aria-valuemin={0}
                 aria-valuemax={total}
                 aria-valuenow={resolved}
-                aria-label={`${resolvedPercent}% of Canvas users resolved`}
+                aria-label={`${resolvedPercent}% of external users resolved`}
             >
                 {fillSegments.map((segment) => (
                     <div
@@ -1453,8 +1453,8 @@ export default function ProviderUserManagement() {
                                 Learning Platform Users
                             </h1>
                             <p className="mt-1 text-gray-600">
-                                Match Canvas users to residents in your system.
-                                Review each group below, then apply your
+                                Match external users to residents in your
+                                system. Review each group below, then apply your
                                 changes.
                             </p>
                             {lastSynced ? (
@@ -1496,8 +1496,8 @@ export default function ProviderUserManagement() {
                                     Reconciliation progress
                                 </h2>
                                 <p className="text-sm text-gray-600">
-                                    {resolvedCount} of {totalCanvasUsers} Canvas
-                                    users resolved
+                                    {resolvedCount} of {totalCanvasUsers}{' '}
+                                    External users resolved
                                     {totalCanvasUsers > 0 ? (
                                         <span className="font-medium text-brand-dark">
                                             {' '}
@@ -1653,7 +1653,7 @@ export default function ProviderUserManagement() {
                             instruction="No match found. Create a new resident or link to an existing one."
                             open={unmatchedOpen}
                             onOpenChange={handleUnmatchedOpenChange}
-                            emptyTitle="All Canvas users have been matched ✓"
+                            emptyTitle="All external users have been matched ✓"
                             isEmpty={(derived?.unmatchedRows.length ?? 0) === 0}
                         >
                             <UnmatchedTable
@@ -1753,8 +1753,8 @@ export default function ProviderUserManagement() {
                     title="Select resident"
                     description={
                         userToMap
-                            ? `Link Canvas user ${formatCanvasUser(userToMap)} to an existing resident.`
-                            : 'Link this Canvas user to an existing resident.'
+                            ? `Link external user ${formatCanvasUser(userToMap)} to an existing resident.`
+                            : 'Link this external user to an existing resident.'
                     }
                     className="max-w-lg"
                 >
@@ -1879,7 +1879,7 @@ export default function ProviderUserManagement() {
                     open={showApplyConfirm}
                     onOpenChange={setShowApplyConfirm}
                     title={`Apply ${pendingApplyCount} match${pendingApplyCount === 1 ? '' : 'es'}?`}
-                    description={`This links ${pendingApplyCount} Canvas user${pendingApplyCount === 1 ? '' : 's'} to their residents.${needsAttentionCount > 0 ? ` ${needsAttentionCount} other user${needsAttentionCount === 1 ? '' : 's'} still need attention and will remain in their sections.` : ''}`}
+                    description={`This links ${pendingApplyCount} external user${pendingApplyCount === 1 ? '' : 's'} to their residents.${needsAttentionCount > 0 ? ` ${needsAttentionCount} other user${needsAttentionCount === 1 ? '' : 's'} still need attention and will remain in their sections.` : ''}`}
                     confirmLabel="Apply matches"
                     onConfirm={() => void handleApplyMatches()}
                 />
@@ -1976,7 +1976,9 @@ function AutoConfirmedTable({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="pl-0">Canvas user</TableHead>
+                            <TableHead className="pl-0">
+                                External user
+                            </TableHead>
                             <TableHead>Resident</TableHead>
                             <TableHead className="text-right">Score</TableHead>
                             <TableHead className="text-right pr-0">
@@ -2061,7 +2063,9 @@ function NeedsReviewTable({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="pl-0">Canvas user</TableHead>
+                            <TableHead className="pl-0">
+                                External user
+                            </TableHead>
                             <TableHead>Suggested resident</TableHead>
                             <TableHead className="text-right">Score</TableHead>
                             <TableHead className="text-right pr-0">
@@ -2228,7 +2232,9 @@ function UnmatchedTable({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="pl-0">Canvas user</TableHead>
+                            <TableHead className="pl-0">
+                                External user
+                            </TableHead>
                             <TableHead>Username</TableHead>
                             <TableHead className="text-right pr-0">
                                 Action
@@ -2343,7 +2349,9 @@ function LinkedResidentsTable({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="pl-0">Canvas user</TableHead>
+                            <TableHead className="pl-0">
+                                External user
+                            </TableHead>
                             <TableHead>Resident</TableHead>
                             <TableHead>Username</TableHead>
                             <TableHead className="text-right pr-0">
@@ -2438,7 +2446,7 @@ function LinkedResidentsTable({
                         )}
                     >
                         <div className="text-xs text-muted-foreground">
-                            Canvas: {entry.canvasLabel}
+                            External: {entry.canvasLabel}
                         </div>
                         <div className="mt-1 font-medium text-brand-dark">
                             {entry.residentName}

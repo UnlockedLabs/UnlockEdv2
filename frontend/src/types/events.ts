@@ -76,6 +76,7 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     credit_types: string;
     class_status: SelectedClassStatus;
     is_canvas_event?: boolean;
+    source?: string;
     canvas_timezone?: string;
 }
 

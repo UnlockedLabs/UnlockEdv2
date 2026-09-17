@@ -1,8 +1,14 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription
+} from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SessionDetailClassDetails } from './SessionDetailClassDetails';
-import { FacilityProgramClassEvent } from '@/types';
+import { FacilityProgramClassEvent, externalSourceLabel } from '@/types';
 
 interface CanvasEventSheetProps {
     event: FacilityProgramClassEvent;
@@ -15,8 +21,13 @@ function toClassTimeString(start: Date, end: Date): string {
     return `${pad(start.getHours())}:${pad(start.getMinutes())}-${pad(end.getHours())}:${pad(end.getMinutes())}`;
 }
 
-export function CanvasEventSheet({ event, onClose, onViewClassDetails }: CanvasEventSheetProps) {
-    const start = event.start instanceof Date ? event.start : new Date(event.start);
+export function CanvasEventSheet({
+    event,
+    onClose,
+    onViewClassDetails
+}: CanvasEventSheetProps) {
+    const start =
+        event.start instanceof Date ? event.start : new Date(event.start);
     const end = event.end instanceof Date ? event.end : new Date(event.end);
 
     const dateLabel = start.toLocaleDateString('en-US', {
@@ -26,27 +37,39 @@ export function CanvasEventSheet({ event, onClose, onViewClassDetails }: CanvasE
         year: 'numeric'
     });
 
-    const isToday =
-        new Date().toDateString() === start.toDateString();
+    const isToday = new Date().toDateString() === start.toDateString();
 
     const classTime = toClassTimeString(start, end);
+    const sourceLabel = externalSourceLabel(event.source);
 
     return (
-        <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+        <Sheet
+            open
+            onOpenChange={(open) => {
+                if (!open) onClose();
+            }}
+        >
             <SheetContent className="w-[400px] sm:w-[500px] p-0">
                 <SheetHeader className="sr-only">
-                    <SheetTitle>Canvas Event Details</SheetTitle>
-                    <SheetDescription>View details for this Canvas event</SheetDescription>
+                    <SheetTitle>{sourceLabel} Event Details</SheetTitle>
+                    <SheetDescription>
+                        View details for this {sourceLabel} event
+                    </SheetDescription>
                 </SheetHeader>
 
                 <div className="border-b border-gray-200 px-6 py-4">
                     <h3 className="text-[#203622] mb-2">{dateLabel}</h3>
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                            Canvas
+                        <Badge
+                            variant="outline"
+                            className="bg-blue-50 text-blue-700 border-blue-300"
+                        >
+                            {sourceLabel}
                         </Badge>
                         {isToday && (
-                            <span className="text-sm text-blue-600">&bull; Today&apos;s class</span>
+                            <span className="text-sm text-blue-600">
+                                &bull; Today&apos;s class
+                            </span>
                         )}
                     </div>
                 </div>

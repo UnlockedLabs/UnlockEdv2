@@ -17,7 +17,8 @@ import {
     ServerResponseMany,
     SelectedClassStatus,
     Room,
-    Facility
+    Facility,
+    externalSourceLabel
 } from '@/types';
 import {
     Select,
@@ -56,7 +57,7 @@ function CalendarEventContent({ event }: { event: CalendarEvent }) {
             </div>
             {event.resource.is_canvas_event && (
                 <span className="text-[9px] bg-white/25 rounded px-1 mt-0.5 inline-block leading-tight">
-                    Canvas
+                    {externalSourceLabel(event.resource.source)}
                 </span>
             )}
         </div>
