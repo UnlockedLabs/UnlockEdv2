@@ -167,3 +167,121 @@ export const initialTourState: TourState = {
     tourActive: false,
     target: ''
 };
+
+/**
+ * The routes this tour's steps live on — every target in `initialTourState` is on
+ * the resident homepage, the Knowledge Center, or a library viewer page.
+ *
+ * Off these routes the tour must not render at all.
+ *
+ * This was originally written as the cause of ID-846 — a running tour dereferencing
+ * a missing target and throwing to the router's `errorElement`. **That was wrong**,
+ * and the claim is retracted rather than deleted so nobody re-derives it: in
+ * react-joyride 2.9.3 `JoyrideStep.render` bails out when the target does not
+ * resolve. It warns; it does not throw. ID-846's crash was an unguarded
+ * `localStorage` write in the Learning Record entry page's bootstrap effect
+ * (transcriptEntrySessionStorage.ts), and the tour was not even running at the
+ * reporting facility, which had Open Content off.
+ *
+ * What remains true is the reason this guard is worth keeping: a tour holding a step
+ * whose target is not on the current page renders an overlay with no tooltip under
+ * it (see `TARGET_ROUTES` below), and mounting Joyride on routes that hold none of
+ * its targets — admin routes included, since `AuthenticatedLayout` wraps them — has
+ * no upside.
+ */
+export const TOUR_ROUTE_PREFIXES = ['/home', '/knowledge-center', '/viewer'];
+
+/**
+ * Matches on path segments, not raw string prefixes. A bare `startsWith` also
+ * matched `/knowledge-center-management` — an AdminRoles route
+ * (routes/knowledge-routes.tsx) — and `UnlockEdTour` is mounted in
+ * `AuthenticatedLayout`, which wraps admin routes too. The visible cost was an
+ * admin's first login consuming `first_login_tour_pending` on a page that has
+ * none of the tour's targets; the latent one was permitting Joyride to mount
+ * there at all, which is the same shape as the bug this file exists to fix.
+ */
+export function isTourRoute(pathname: string): boolean {
+    return TOUR_ROUTE_PREFIXES.some(
+        (prefix) => pathname === prefix || pathname.startsWith(prefix + '/')
+    );
+}
+
+/**
+ * Which of the routes above each step's target actually lives on.
+ *
+ * `isTourRoute` is not enough on its own. In react-joyride 2.9.3 the tooltip and the
+ * overlay are siblings with different conditions: `JoyrideStep.render` bails out when
+ * the target does not resolve, but the overlay is rendered from `steps[stepIndex]`
+ * with no target check at all and is suppressed only on lifecycle (INIT, BEACON,
+ * COMPLETE, ERROR). A route change never touches Joyride's store, so the lifecycle
+ * survives one. A running tour holding a step whose target is not on the current page
+ * therefore paints a full-screen scrim with no tooltip under it, and every step past
+ * the first sets `disableOverlayClose` — nothing to click, and only a refresh clears
+ * it. A stuck page, arrived at by a different route than ID-846's crash and worth
+ * closing on its own merits.
+ *
+ * Defense in depth, not a fixed repro. Today each tour page re-seats the step when it
+ * mounts, which covers the obvious ways in: ResidentHome resets to step 0 for any
+ * step but 1, and LibraryViewer re-seats /viewer. Two attempts to strand an overlay
+ * through history navigation did not manage it. But that cover is incidental and
+ * uneven — ResidentKnowledgeCenter re-seats ONLY when the target is
+ * `#visit-knowledge-center`, so /knowledge-center has none of it for any other step —
+ * and it puts the invariant in three page components that each have to remember it,
+ * rather than in the one component that mounts Joyride.
+ *
+ * The guard can only ever suppress a render that Joyride would have drawn without a
+ * tooltip anyway: if the target is not on this route, there was no tooltip to lose.
+ *
+ * An empty array means the target is in the sidebar
+ * (components/navigation/Sidebar.tsx), which AuthenticatedLayout renders on every
+ * route, so no pathname rules it out.
+ *
+ * Typed against `targetToStepIndexMap` on purpose: adding a step there will not
+ * compile until the new target is given its routes here.
+ */
+const TARGET_ROUTES: Record<
+    keyof typeof targetToStepIndexMap,
+    readonly string[]
+> = {
+    '#resident-home': ['/home'],
+    '#visit-knowledge-center': [],
+    '#knowledge-center-landing': ['/knowledge-center'],
+    '#knowledge-center-tabs': ['/knowledge-center'],
+    '#knowledge-center-search': ['/knowledge-center'],
+    '#knowledge-center-filters': ['/knowledge-center'],
+    // Rendered by components/knowledge-center/LibraryCard, which the resident
+    // only ever sees on the Knowledge Center — ResidentHome has its own
+    // FeaturedLibraryCard and carries neither id.
+    '#knowledge-center-search-lib': ['/knowledge-center'],
+    '#knowledge-center-fav-lib': ['/knowledge-center'],
+    '#knowledge-center-enter-library': ['/knowledge-center'],
+    '#library-viewer-sub-page': ['/viewer'],
+    // No element in the app carries this id, so the step is skipped by
+    // UnlockEdTour's TARGET_NOT_FOUND handling wherever it runs. Listed under the
+    // route it was written for so this map does not become the reason it is
+    // skipped — that is a separate content bug, and it should stay visible as one.
+    '#library-viewer-favorite': ['/viewer'],
+    '#navigate-homepage': [],
+    '#top-content': ['/home'],
+    '#popular-content': ['/home'],
+    '#end-tour': ['/home']
+};
+
+/**
+ * True when `pathname` can host `target`.
+ *
+ * Fails open for anything not in the map: this exists to hide a tour that is
+ * provably on the wrong page, not to become a second registry a step has to appear
+ * in before it will render at all.
+ */
+export function isTargetOnRoute(
+    target: Step['target'] | undefined,
+    pathname: string
+): boolean {
+    if (typeof target !== 'string') return true;
+    const routes = TARGET_ROUTES[target as keyof typeof TARGET_ROUTES];
+    if (!routes || routes.length === 0) return true;
+    return routes.some(
+        (prefix) => pathname === prefix || pathname.startsWith(prefix + '/')
+    );
+}

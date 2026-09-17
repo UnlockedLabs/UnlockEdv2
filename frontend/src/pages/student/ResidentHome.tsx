@@ -453,12 +453,24 @@ export default function ResidentHome() {
     }, []);
 
     useEffect(() => {
-        if (tourState.tourActive && tourState.target === '#navigate-homepage') {
+        // `hydrated` gates this page's entire render below, so before it flips
+        // there is no #resident-home in the DOM. react-joyride 2.9.3 resolves the
+        // current step's target once, when `run` goes true, and never retries — no
+        // retry, no TARGET_NOT_FOUND — so starting the tour early leaves it wedged
+        // at `tour:start` with an empty portal and nothing on screen. A first login
+        // hits that every time: the tour flag is picked up on the first render,
+        // which is always before useTranscriptDraft has hydrated.
+        if (!tourState.tourActive || !user || !hydrated) return;
+        if (!openContentEnabled) {
+            setTourState({ tourActive: false, run: false });
+            return;
+        }
+        if (tourState.target === '#navigate-homepage') {
             setTourState({
                 stepIndex: targetToStepIndexMap['#popular-content'],
                 target: '#popular-content'
             });
-        } else if (tourState.tourActive && tourState.stepIndex !== 1) {
+        } else if (tourState.stepIndex !== 1) {
             setTourState({
                 run: true,
                 stepIndex: 0,
@@ -466,7 +478,7 @@ export default function ResidentHome() {
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tourState.tourActive]);
+    }, [tourState.tourActive, openContentEnabled, user, hydrated]);
 
     const dismissReflectNudge = useCallback(() => {
         setReflectNudgeDismissed(true);
@@ -482,8 +494,8 @@ export default function ResidentHome() {
         : false;
 
     const incompleteEntry = useMemo(() => {
-        // entrySessionTick re-triggers this when session storage changes;
-        // findIncompleteAchievementEntry reads sessionStorage internally.
+        // entrySessionTick re-triggers this when the entry session changes;
+        // findIncompleteAchievementEntry reads localStorage internally.
         void entrySessionTick;
         return findIncompleteAchievementEntry(
             entries,
