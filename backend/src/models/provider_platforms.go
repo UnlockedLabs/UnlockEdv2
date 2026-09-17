@@ -72,6 +72,7 @@ func (provider *ProviderPlatform) BeforeCreate(tx *gorm.DB) (err error) {
 		return err
 	}
 	provider.UpdateUserID = nil
+	provider.BaseUrl = strings.TrimSpace(provider.BaseUrl)
 
 	if provider.Type == Kolibri && !strings.Contains(provider.AccountID, "-") && len(provider.AccountID) == UuidV4Len {
 		// convert the uuid back into hypenated format
@@ -84,6 +85,7 @@ func (provider *ProviderPlatform) BeforeUpdate(tx *gorm.DB) (err error) {
 	if err := provider.DatabaseFields.BeforeUpdate(tx); err != nil {
 		return err
 	}
+	provider.BaseUrl = strings.TrimSpace(provider.BaseUrl)
 	return nil
 }
 
@@ -91,6 +93,9 @@ func (provider *ProviderPlatform) AfterFind(tx *gorm.DB) (err error) {
 	if key, keyErr := DecryptAccessKey(provider.AccessKey); keyErr == nil {
 		provider.AccessKey = strings.TrimSpace(key)
 	}
+	// A pasted base URL often carries surrounding whitespace, which makes
+	// url.Parse read the leading space as a path segment and reject the scheme.
+	provider.BaseUrl = strings.TrimSpace(provider.BaseUrl)
 	return nil
 }
 
