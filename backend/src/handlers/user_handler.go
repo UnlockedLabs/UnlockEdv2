@@ -217,9 +217,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if docExists {
 		return newBadRequestServiceError(err, "Doc ID already exists")
 	}
-	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, func(char rune) bool {
-		return unicode.IsLetter(char) || unicode.IsDigit(char)
-	})
+	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, isUsernameChar)
 	err = srv.WithUserContext(r).CreateUser(&reqForm.User)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -423,11 +421,11 @@ func canDeleteUser(currentUser *Claims, toDelete models.UserRole) bool {
 }
 
 func isUsernameChar(r rune) bool {
-	return unicode.IsLetter(r) || unicode.IsNumber(r)
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '.'
 }
 
 func isNameChar(r rune) bool {
-	return unicode.IsLetter(r) || unicode.IsSpace(r) || r == '-'
+	return unicode.IsLetter(r) || unicode.IsSpace(r) || r == '-' || r == '.'
 }
 
 // validateUser returns a message naming the offending field and the exact
@@ -440,9 +438,9 @@ func validateUser(user *models.User) string {
 		isAllowed func(rune) bool
 		allowed   string
 	}{
-		{"Username", user.Username, isUsernameChar, "letters and numbers"},
-		{"First name", user.NameFirst, isNameChar, "letters, spaces, and hyphens"},
-		{"Last name", user.NameLast, isNameChar, "letters, spaces, and hyphens"},
+		{"Username", user.Username, isUsernameChar, "letters, numbers, and periods"},
+		{"First name", user.NameFirst, isNameChar, "letters, spaces, hyphens, and periods"},
+		{"Last name", user.NameLast, isNameChar, "letters, spaces, hyphens, and periods"},
 	}
 	for _, field := range fields {
 		for _, char := range field.value {
@@ -776,9 +774,7 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 		return srv.Db.UserIdentityExists(username, docID)
 	}
 	normalizeUsername := func(username string) string {
-		return stripNonAlphaChars(username, func(char rune) bool {
-			return unicode.IsLetter(char) || unicode.IsDigit(char)
-		})
+		return stripNonAlphaChars(username, isUsernameChar)
 	}
 
 	for i, record := range records[1:] {
@@ -843,9 +839,7 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 	usersToCreate := make([]models.User, 0, len(validRows))
 	for _, validRow := range validRows {
 		user := models.User{
-			Username: stripNonAlphaChars(validRow.Username, func(char rune) bool {
-				return unicode.IsLetter(char) || unicode.IsDigit(char)
-			}),
+			Username:   stripNonAlphaChars(validRow.Username, isUsernameChar),
 			NameFirst:  validRow.FirstName,
 			NameLast:   validRow.LastName,
 			DocID:      validRow.ResidentID,
