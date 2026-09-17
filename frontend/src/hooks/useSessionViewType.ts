@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ViewType } from '@/types';
+import { getSessionItem, setSessionItem } from '@/lib/safeSessionStorage';
 
 export function useSessionViewType(storageKey: string) {
     const [activeView, setActiveView] = useState<ViewType>(() => {
@@ -7,7 +8,7 @@ export function useSessionViewType(storageKey: string) {
             return ViewType.Grid;
         }
 
-        const savedValue = sessionStorage.getItem(storageKey);
+        const savedValue = getSessionItem(storageKey);
         if (!savedValue) {
             return ViewType.Grid;
         }
@@ -16,7 +17,7 @@ export function useSessionViewType(storageKey: string) {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            sessionStorage.setItem(
+            setSessionItem(
                 storageKey,
                 activeView === ViewType.List ? 'list' : 'grid'
             );

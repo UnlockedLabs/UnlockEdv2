@@ -1,4 +1,9 @@
 import { INIT_KRATOS_LOGIN_FLOW } from '@/types';
+import {
+    getSessionItem,
+    removeSessionItem,
+    setSessionItem
+} from '@/lib/safeSessionStorage';
 
 const CHANNEL_NAME = 'unlocked_session_channel';
 const SESSION_STORAGE_KEY = 'tab_session_active';
@@ -61,16 +66,24 @@ class TabSessionManager {
         this.channel.postMessage(message);
     }
 
+    /*
+     * These three go through safeSessionStorage because hasLocalSession() is
+     * reached from checkExistingFlow, a route loader: a raw sessionStorage
+     * access that throws there takes the whole /login route to the error
+     * boundary and the resident can never sign in. Losing the flag instead is
+     * harmless — a false reading just means the tab re-checks the session with
+     * Ory, which is the same path a genuinely new tab takes.
+     */
     hasLocalSession(): boolean {
-        return sessionStorage.getItem(SESSION_STORAGE_KEY) === 'true';
+        return getSessionItem(SESSION_STORAGE_KEY) === 'true';
     }
 
     setLocalSession(): void {
-        sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+        setSessionItem(SESSION_STORAGE_KEY, 'true');
     }
 
     clearLocalSession(): void {
-        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        removeSessionItem(SESSION_STORAGE_KEY);
     }
 
     onLogin(): void {

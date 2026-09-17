@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Library, ServerResponseOne } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
+import { removeSessionItem } from '@/lib/safeSessionStorage';
 import { toast } from 'sonner';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { FormModal } from '@/components/shared/FormModal';
@@ -114,7 +115,7 @@ export default function LibraryViewer() {
         };
         void fetchLibraryData();
         return () => {
-            sessionStorage.removeItem('tag');
+            removeSessionItem('tag');
         };
     }, [libraryId, url, navigate]);
 

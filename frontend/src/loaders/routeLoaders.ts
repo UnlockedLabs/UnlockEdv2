@@ -49,9 +49,12 @@ function buildClassBreadcrumbs(
 // off for the facility.
 export const getStudentLevel1Data: LoaderFunction = async () => {
     const user = await fetchUser();
-    if (!user) return;
-
     const empty = { topUserContent: [], topFacilityContent: [] };
+    // Must always resolve to a shaped object: ResidentHome destructures this
+    // loader's data directly, so a bare `undefined` throws during render and the
+    // resident gets the generic error page instead of the homepage.
+    if (!user) return json(empty);
+
     if (!hasFeature(user, FeatureAccess.OpenContentAccess)) {
         return json(empty);
     }
