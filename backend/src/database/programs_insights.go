@@ -40,8 +40,18 @@ func (db *DB) GetProgramEngagementOverview(args *models.QueryContext, start, end
 		return overview, newGetRecordsDBError(err, "users")
 	}
 
+	// "Active" means engaged with a program at any point during the selected
+	// window (enrollment overlaps [start, end)), not just currently-Enrolled
+	// status -- a resident who completed a program mid-range was still active
+	// during that range.
 	activeTx := db.piEnrollmentResidentScope(args, facilityID).
-		Where("pce.enrollment_status = ? AND pce.enrollment_ended_at IS NULL", models.Enrolled)
+		Where("pce.enrolled_at IS NOT NULL")
+	if end != nil {
+		activeTx = activeTx.Where("pce.enrolled_at < ?", *end)
+	}
+	if start != nil {
+		activeTx = activeTx.Where("pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at >= ?", *start)
+	}
 	if err := activeTx.Distinct("pce.user_id").Count(&overview.ActiveResidents).Error; err != nil {
 		return overview, newGetRecordsDBError(err, "program_class_enrollments")
 	}
@@ -54,6 +64,13 @@ func (db *DB) GetProgramEngagementOverview(args *models.QueryContext, start, end
 	overview.NeverEngagedResidents = overview.TotalResidents - everEnrolledCount
 	if overview.NeverEngagedResidents < 0 {
 		overview.NeverEngagedResidents = 0
+	}
+
+	// Ever-enrolled residents who aren't active in this window: completed,
+	// dropped, or otherwise engaged outside the selected range.
+	overview.PreviouslyEngagedResidents = everEnrolledCount - overview.ActiveResidents
+	if overview.PreviouslyEngagedResidents < 0 {
+		overview.PreviouslyEngagedResidents = 0
 	}
 
 	type progRow struct {

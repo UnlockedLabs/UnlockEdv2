@@ -251,6 +251,7 @@ export interface ProgramCompletionRank {
 
 export interface ProgramEngagementOverview {
     active_residents: number;
+    previously_engaged_residents: number;
     never_engaged_residents: number;
     total_residents: number;
     top_programs: ProgramCompletionRank[];

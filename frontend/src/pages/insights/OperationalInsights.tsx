@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import useSWR from 'swr';
+import useSWR, { SWRConfig } from 'swr';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import {
@@ -138,50 +138,52 @@ export default function OperationalInsightsPage() {
                     </div>
                 </div>
 
-                <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="bg-card border border-gray-200 dark:border-border p-1 h-auto gap-1">
-                        <TabsTrigger
-                            value="overview"
-                            className={TAB_TRIGGER_CLASS}
-                        >
-                            Overview
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="knowledge-center"
-                            className={TAB_TRIGGER_CLASS}
-                        >
-                            Knowledge Center
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="programs"
-                            className={TAB_TRIGGER_CLASS}
-                        >
-                            Programs
-                        </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="overview" className="mt-0">
-                        <OverviewTab
-                            dateParams={dateParams}
-                            selectedFacility={selectedFacility}
-                            canSwitch={canSwitch}
-                            rangeLabel={rangeLabel}
-                        />
-                    </TabsContent>
-                    <TabsContent value="knowledge-center" className="mt-0">
-                        <KnowledgeCenterTab
-                            dateParams={dateParams}
-                            selectedFacility={selectedFacility}
-                            rangeLabel={rangeLabel}
-                        />
-                    </TabsContent>
-                    <TabsContent value="programs" className="mt-0">
-                        <ProgramsTab
-                            dateParams={dateParams}
-                            selectedFacility={selectedFacility}
-                            rangeLabel={rangeLabel}
-                        />
-                    </TabsContent>
-                </Tabs>
+                <SWRConfig value={{ keepPreviousData: true }}>
+                    <Tabs defaultValue="overview" className="space-y-6">
+                        <TabsList className="bg-card border border-gray-200 dark:border-border p-1 h-auto gap-1">
+                            <TabsTrigger
+                                value="overview"
+                                className={TAB_TRIGGER_CLASS}
+                            >
+                                Overview
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="knowledge-center"
+                                className={TAB_TRIGGER_CLASS}
+                            >
+                                Knowledge Center
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="programs"
+                                className={TAB_TRIGGER_CLASS}
+                            >
+                                Programs
+                            </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="overview" className="mt-0">
+                            <OverviewTab
+                                dateParams={dateParams}
+                                selectedFacility={selectedFacility}
+                                canSwitch={canSwitch}
+                                rangeLabel={rangeLabel}
+                            />
+                        </TabsContent>
+                        <TabsContent value="knowledge-center" className="mt-0">
+                            <KnowledgeCenterTab
+                                dateParams={dateParams}
+                                selectedFacility={selectedFacility}
+                                rangeLabel={rangeLabel}
+                            />
+                        </TabsContent>
+                        <TabsContent value="programs" className="mt-0">
+                            <ProgramsTab
+                                dateParams={dateParams}
+                                selectedFacility={selectedFacility}
+                                rangeLabel={rangeLabel}
+                            />
+                        </TabsContent>
+                    </Tabs>
+                </SWRConfig>
             </div>
         </div>
     );

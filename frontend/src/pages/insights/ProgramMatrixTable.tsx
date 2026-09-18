@@ -7,6 +7,18 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+
+export function AllTimeBadge() {
+    return (
+        <Badge
+            variant="outline"
+            title="This section is not affected by the date range filter above"
+        >
+            All time
+        </Badge>
+    );
+}
 
 export function LegendSwatch({
     className,
@@ -55,9 +67,12 @@ export function ProgramMatrixTable({
         <Table>
             <TableHeader>
                 <TableRow>
-                    <TableHead>Program</TableHead>
-                    {facilities.map(([id, name]) => (
-                        <TableHead key={id} className="text-center">
+                    <TableHead className="pl-6">Program</TableHead>
+                    {facilities.map(([id, name], i) => (
+                        <TableHead
+                            key={id}
+                            className={`text-center ${i === facilities.length - 1 ? 'pr-6' : ''}`}
+                        >
                             {name}
                         </TableHead>
                     ))}
@@ -66,16 +81,17 @@ export function ProgramMatrixTable({
             <TableBody>
                 {programs.map((program) => (
                     <TableRow key={program}>
-                        <TableCell className="font-medium text-brand-dark dark:text-white">
+                        <TableCell className="pl-6 font-medium text-brand-dark dark:text-white">
                             {program}
                         </TableCell>
-                        {facilities.map(([id]) => {
+                        {facilities.map(([id], i) => {
+                            const isLast = i === facilities.length - 1;
                             const cell = cellByKey.get(`${program}::${id}`);
                             if (!cell) {
                                 return (
                                     <TableCell
                                         key={id}
-                                        className="text-center text-muted-foreground"
+                                        className={`text-center text-muted-foreground ${isLast ? 'pr-6' : ''}`}
                                     >
                                         —
                                     </TableCell>
@@ -84,7 +100,7 @@ export function ProgramMatrixTable({
                             return (
                                 <TableCell
                                     key={id}
-                                    className={`text-center ${matrixCellClass(cell)}`}
+                                    className={`text-center ${matrixCellClass(cell)} ${isLast ? 'pr-6' : ''}`}
                                     title={
                                         cell.insufficient
                                             ? `n=${cell.enrolled} (insufficient data, need 3+)`

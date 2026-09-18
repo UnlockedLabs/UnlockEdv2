@@ -260,10 +260,11 @@ func (p *Program) GetUniqueCreditTypeString() string {
 }
 
 type ProgramEngagementOverview struct {
-	ActiveResidents       int64                   `json:"active_residents"`
-	NeverEngagedResidents int64                   `json:"never_engaged_residents"`
-	TotalResidents        int64                   `json:"total_residents"`
-	TopPrograms           []ProgramCompletionRank `json:"top_programs"`
+	ActiveResidents            int64                   `json:"active_residents"`
+	PreviouslyEngagedResidents int64                   `json:"previously_engaged_residents"`
+	NeverEngagedResidents      int64                   `json:"never_engaged_residents"`
+	TotalResidents             int64                   `json:"total_residents"`
+	TopPrograms                []ProgramCompletionRank `json:"top_programs"`
 }
 
 type ProgramCompletionRank struct {

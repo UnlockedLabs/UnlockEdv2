@@ -88,6 +88,7 @@ export default function LoginTrendChart({ data }: LoginTrendChartProps) {
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 4, fill: BRAND_DARK }}
+                    isAnimationActive={false}
                 />
             </LineChart>
         </ResponsiveContainer>

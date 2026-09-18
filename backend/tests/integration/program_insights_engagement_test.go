@@ -36,8 +36,11 @@ func TestProgramEngagementOverview(t *testing.T) {
 	now := time.Now()
 	_, err = env.CreateTestEnrollmentWithDates(class.ID, activeUser.ID, models.Enrolled, now, nil)
 	require.NoError(t, err)
-	endedAt := now.Add(time.Hour)
-	_, err = env.CreateTestEnrollmentWithDates(class.ID, completedUser.ID, models.EnrollmentCompleted, now, &endedAt)
+	// Completed well before the endpoint's default 30-day lookback window, so it
+	// falls into "previously engaged" rather than "active in this range".
+	completedEnrolledAt := now.AddDate(0, 0, -40)
+	completedEndedAt := now.AddDate(0, 0, -35)
+	_, err = env.CreateTestEnrollmentWithDates(class.ID, completedUser.ID, models.EnrollmentCompleted, completedEnrolledAt, &completedEndedAt)
 	require.NoError(t, err)
 
 	overview := NewRequest[models.ProgramEngagementOverview](env.Client, t, http.MethodGet,
@@ -49,6 +52,7 @@ func TestProgramEngagementOverview(t *testing.T) {
 
 	require.Equal(t, int64(3), overview.TotalResidents)
 	require.Equal(t, int64(1), overview.ActiveResidents)
+	require.Equal(t, int64(1), overview.PreviouslyEngagedResidents)
 	// never-engaged = residents with ZERO enrollment rows ever -> only "never-res"
 	require.Equal(t, int64(1), overview.NeverEngagedResidents)
 	require.Len(t, overview.TopPrograms, 0) // below the >=5-enrollee threshold, so excluded
@@ -165,6 +169,7 @@ func TestProgramEngagementOverview_FacilityScopingIsolatesData(t *testing.T) {
 
 	require.Equal(t, int64(2), overview.TotalResidents)
 	require.Equal(t, int64(1), overview.ActiveResidents)
+	require.Equal(t, int64(0), overview.PreviouslyEngagedResidents)
 	require.Equal(t, int64(1), overview.NeverEngagedResidents)
 	require.Empty(t, overview.TopPrograms, "facility two's program must not leak into facility one's results")
 }
@@ -208,7 +213,11 @@ func TestProgramEngagementOverview_AllFacilitiesAggregates(t *testing.T) {
 		GetData()
 
 	require.Equal(t, int64(11), overview.TotalResidents)
-	require.Equal(t, int64(2), overview.ActiveResidents)
+	// All 10 enrollments (completed + still-enrolled) were created "now", so all
+	// fall within the endpoint's default 30-day lookback window and count as
+	// active-in-range, regardless of current status.
+	require.Equal(t, int64(10), overview.ActiveResidents)
+	require.Equal(t, int64(0), overview.PreviouslyEngagedResidents)
 	require.Equal(t, int64(1), overview.NeverEngagedResidents)
 	require.Equal(t, []models.ProgramCompletionRank{
 		{ProgramName: "Program Two", Enrolled: 5, Completed: 5, CompletionRate: 100},
