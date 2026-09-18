@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,13 +12,35 @@ import (
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
+
+// The two ways initServiceFromRequest can fail on the caller's account rather
+// than ours. Everything else it returns -- a database failure, a provider whose
+// own auth setup is broken -- is our problem, not a bad request.
+var (
+	errInvalidProviderID   = errors.New("invalid provider id")
+	errUnsupportedProvider = errors.New("unsupported provider type")
+)
+
+// providerServiceStatus maps an initServiceFromRequest error onto a response
+// code, so the caller can tell "you asked wrong" from "we are broken".
+func providerServiceStatus(err error) int {
+	switch {
+	case errors.Is(err, errInvalidProviderID), errors.Is(err, errUnsupportedProvider):
+		return http.StatusBadRequest
+	case errors.Is(err, gorm.ErrRecordNotFound):
+		return http.StatusNotFound
+	default:
+		return http.StatusInternalServerError
+	}
+}
 
 func (sh *ServiceHandler) initServiceFromRequest(ctx context.Context, r *http.Request) (ProviderServiceInterface, error) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil {
 		log.Printf("Error: %v", err)
-		return nil, fmt.Errorf("failed to find provider: %v", err)
+		return nil, fmt.Errorf("%w: %v", errInvalidProviderID, err)
 	}
 	var provider models.ProviderPlatform
 	err = sh.db.WithContext(ctx).First(&provider, "id = ?", id).Error
@@ -33,7 +56,7 @@ func (sh *ServiceHandler) initServiceFromRequest(ctx context.Context, r *http.Re
 	case models.Brightspace:
 		return newBrightspaceService(&provider, sh.db, nil)
 	}
-	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
+	return nil, fmt.Errorf("%w: %s", errUnsupportedProvider, provider.Type)
 }
 
 func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *nats.Msg) (ProviderServiceInterface, error) {

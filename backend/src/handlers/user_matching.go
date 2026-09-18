@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"context"
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -137,24 +140,47 @@ func MatchUsers(canvasUsers []models.ImportUser, unlockEdUsers []models.User) Ma
 // --- Handlers ---
 
 func (srv *Server) handleMatchUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
-	service, err := srv.getService(r)
+	providerID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		return newBadRequestServiceError(err, err.Error())
+		return newBadRequestServiceError(err, "provider ID")
+	}
+	provider, err := srv.Db.GetProviderPlatformByID(providerID)
+	if err != nil {
+		return newDatabaseServiceError(err)
 	}
 	facilityID := srv.getQueryContext(r).FacilityID
 
-	canvasUsers, err := service.GetUsers()
+	providerUsers, err := srv.listProviderUsers(r.Context(), provider)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching provider users")
 	}
 
-	unlockEdUsers, err := srv.Db.GetAllUnmappedUsers(int(service.ProviderPlatformID), facilityID)
+	unlockEdUsers, err := srv.Db.GetAllUnmappedUsers(providerID, facilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 
-	result := MatchUsers(canvasUsers, unlockEdUsers)
+	result := MatchUsers(providerUsers, unlockEdUsers)
 	return writeJsonResponse(w, http.StatusOK, result)
+}
+
+// listProviderUsers reads the provider's unmapped users. Providers that can list
+// their own users (Essential Ed) are read directly; the rest go through
+// provider-middleware as before.
+func (srv *Server) listProviderUsers(ctx context.Context, provider *models.ProviderPlatform) ([]models.ImportUser, error) {
+	if lister, ok := srv.liveUserListerFor(provider); ok {
+		users, err := lister.ListUsers(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return srv.unmappedProviderUsers(provider.ID, users)
+	}
+	service, err := src.GetProviderService(provider, srv.Client)
+	if err != nil {
+		return nil, err
+	}
+	// provider-middleware already filters out mapped users for these providers.
+	return service.GetUsers()
 }
 
 func (srv *Server) handleApplyMatches(w http.ResponseWriter, r *http.Request, log sLog) error {

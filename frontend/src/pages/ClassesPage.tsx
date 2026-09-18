@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
+import { useCanvasLoadingPoll } from '@/hooks/useCanvasLoadingPoll';
 import { useNavigate, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
@@ -8,7 +9,8 @@ import {
     Facility,
     Program,
     ServerResponseMany,
-    SelectedClassStatus
+    SelectedClassStatus,
+    externalSourceLabel
 } from '@/types';
 import {
     getClassSchedule,
@@ -40,7 +42,8 @@ import {
     Filter,
     MapPin,
     Users,
-    RefreshCw
+    RefreshCw,
+    Loader2
 } from 'lucide-react';
 
 const CANVAS_CLASS_ID_OFFSET = 100_000_000;
@@ -119,7 +122,22 @@ export default function ClassesPage() {
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
         crossFacility ? '/api/facilities' : null
     );
-    const allClasses = useMemo(() => classesResp?.data ?? [], [classesResp]);
+    const allRows = useMemo(() => classesResp?.data ?? [], [classesResp]);
+    // Placeholder rows stand in for a provider still being read. They are held
+    // out of the filter chain below -- a search or status filter would hide them
+    // and the page would look finished while classes were still arriving.
+    const loadingProviders = useMemo(
+        () => allRows.filter((c) => c.loading),
+        [allRows]
+    );
+    const allClasses = useMemo(
+        () => allRows.filter((c) => !c.loading),
+        [allRows]
+    );
+    const { exhausted: classPollExhausted } = useCanvasLoadingPoll(
+        loadingProviders.length > 0,
+        mutateClasses
+    );
     const facilities = useMemo(
         () => facilitiesResp?.data ?? [],
         [facilitiesResp]
@@ -421,7 +439,17 @@ export default function ClassesPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {paginatedClasses.length === 0 ? (
+                            {loadingProviders.map((provider) => (
+                                <SyncingClassRow
+                                    key={`syncing-${provider.id}`}
+                                    sourceLabel={externalSourceLabel(
+                                        provider.source
+                                    )}
+                                    exhausted={classPollExhausted}
+                                />
+                            ))}
+                            {paginatedClasses.length === 0 &&
+                            loadingProviders.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan={7}
@@ -625,6 +653,41 @@ export default function ClassesPage() {
     );
 }
 
+// Stands in for a provider whose classes are still being read. The classes we
+// own render immediately; these rows fill in on a later poll.
+function SyncingClassRow({
+    sourceLabel,
+    exhausted
+}: {
+    sourceLabel: string;
+    exhausted: boolean;
+}) {
+    return (
+        <tr>
+            <td colSpan={7} className="px-6 py-4">
+                {exhausted ? (
+                    <span className="text-sm text-amber-600">
+                        {sourceLabel} is taking longer than expected —{' '}
+                        <button
+                            className="underline"
+                            onClick={() => window.location.reload()}
+                        >
+                            refresh to retry
+                        </button>
+                    </span>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                        <span className="text-sm text-blue-600">
+                            Syncing classes from {sourceLabel}…
+                        </span>
+                    </div>
+                )}
+            </td>
+        </tr>
+    );
+}
+
 function ClassRow({
     cls,
     showFacility,
@@ -746,7 +809,7 @@ function ClassRow({
                         className="text-blue-700 border-blue-300 bg-blue-50 gap-1 whitespace-nowrap"
                     >
                         <RefreshCw className="size-3" />
-                        Canvas
+                        {externalSourceLabel(cls.source)}
                     </Badge>
                 )}
             </td>

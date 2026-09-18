@@ -74,31 +74,19 @@ func seedTestData(db *gorm.DB) {
 			log.Printf("Failed to create facility: %v", err)
 		}
 	}
-	platforms := []models.ProviderPlatform{}
-	platforms = []models.ProviderPlatform{
+	// The local Canvas from `make canvas`. base_url is the compose service name, not
+	// localhost:3001, because the API calls originate inside the server and provider-service
+	// containers. The access key still has to be pasted in by hand -- it is minted per machine.
+	platforms := []models.ProviderPlatform{
 		{
 			Name:      "Canvas",
-			BaseUrl:   "https://canvas.staging.unlockedlabs.xyz",
+			BaseUrl:   "http://canvas",
 			AccountID: "1",
 			Type:      models.CanvasOSS,
 			State:     models.Enabled,
 			AccessKey: "testing_key_replace_me",
-		}, {
-			Name:      "Kolibri",
-			BaseUrl:   "https://kolibri.staging.unlockedlabs.xyz",
-			AccountID: "1234567890",
-			Type:      models.Kolibri,
-			State:     models.Enabled,
-			AccessKey: "testing_key_replace_me",
 		},
-		{
-			Name:      "Brightspace",
-			BaseUrl:   "https://unlocked.brightspacedemo.com",
-			AccountID: "testing_client_id_replace_me", //clientID
-			Type:      models.Brightspace,
-			State:     models.Disabled,
-			AccessKey: "testing_client_secret_replace_me", //ClientSecret;refresh-token
-		}}
+	}
 	for idx := range platforms {
 		if err := db.Create(&platforms[idx]).Error; err != nil {
 			log.Printf("Failed to create platform: %v", err)
@@ -140,19 +128,10 @@ func seedTestData(db *gorm.DB) {
 		if err := testServer.HandleCreateUserKratos(users[idx].Username, "ChangeMe!"); err != nil {
 			log.Fatalf("unable to create test user in kratos")
 		}
-		for i := range len(platforms) {
-			if platforms[i].Type != models.Brightspace { //omitting brightspace here, we don't want bad users in the seeded data...we want real users
-				mapping := models.ProviderUserMapping{
-					UserID:             users[idx].ID,
-					ProviderPlatformID: platforms[i].ID,
-					ExternalUsername:   users[idx].Username,
-					ExternalUserID:     strconv.Itoa(idx) + strconv.Itoa(rand.Intn(30000)),
-				}
-				if err = db.Create(&mapping).Error; err != nil {
-					log.Printf("Failed to create provider user mapping: %v", err)
-				}
-			}
-		}
+		// No ProviderUserMapping is seeded on purpose. A mapping with a made-up
+		// external_user_id makes a resident look linked to a provider account that does not
+		// exist, and GetUnmappedUsers then hides them from the list you would use to link
+		// them for real. Link users by hand against a live provider instead.
 	}
 	courses := []models.Course{}
 	if err := json.Unmarshal([]byte(coursesStr), &courses); err != nil {

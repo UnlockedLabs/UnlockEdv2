@@ -76,7 +76,11 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     credit_types: string;
     class_status: SelectedClassStatus;
     is_canvas_event?: boolean;
+    source?: string;
     canvas_timezone?: string;
+    // Set on a placeholder standing in for a provider still being fetched; it
+    // carries no times and is never rendered on the calendar.
+    loading?: boolean;
 }
 
 export interface Instructor {
