@@ -1,0 +1,8 @@
+node_modules
+dist
+public/videos
+public/thumbnails
+.fallow
+.gstack
+.husky
+*.tsbuildinfo

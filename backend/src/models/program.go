@@ -258,3 +258,65 @@ func (p *Program) GetUniqueCreditTypeString() string {
 	}
 	return strings.Join(keys, ",")
 }
+
+type ProgramEngagementOverview struct {
+	ActiveResidents            int64                   `json:"active_residents"`
+	PreviouslyEngagedResidents int64                   `json:"previously_engaged_residents"`
+	NeverEngagedResidents      int64                   `json:"never_engaged_residents"`
+	TotalResidents             int64                   `json:"total_residents"`
+	TopPrograms                []ProgramCompletionRank `json:"top_programs"`
+}
+
+type ProgramCompletionRank struct {
+	ProgramName    string  `json:"program_name"`
+	Enrolled       int64   `json:"enrolled"`
+	Completed      int64   `json:"completed"`
+	CompletionRate float64 `json:"completion_rate"`
+}
+
+type SecondProgramEnrollmentRow struct {
+	FacilityName   string  `json:"facility_name"`
+	ProgramType    string  `json:"program_type"`
+	CompletedFirst int64   `json:"completed_first"`
+	EnrolledSecond int64   `json:"enrolled_second"`
+	Rate           float64 `json:"rate"`
+}
+
+type ProgramCompletionMatrixCell struct {
+	ProgramName              string  `json:"program_name"`
+	FacilityID               uint    `json:"facility_id"`
+	FacilityName             string  `json:"facility_name"`
+	Enrolled                 int64   `json:"enrolled"`
+	Completed                int64   `json:"completed"`
+	CompletionRate           float64 `json:"completion_rate"`
+	Insufficient             bool    `json:"insufficient"`
+	DeltaFromFacilityAverage float64 `json:"delta_from_facility_average"`
+}
+
+type ProgramLoadBucket struct {
+	Bucket string `json:"bucket"` // "0", "1", "2", "3", "4+"
+	Count  int64  `json:"count"`
+}
+
+type ProgramLoadFacilityRow struct {
+	FacilityID   uint   `json:"facility_id"`
+	FacilityName string `json:"facility_name"`
+	Zero         int64  `json:"zero"`
+	One          int64  `json:"one"`
+	Two          int64  `json:"two"`
+	Three        int64  `json:"three"`
+	FourPlus     int64  `json:"four_plus"`
+	Total        int64  `json:"total"`
+}
+
+type ProgramLoadDistribution struct {
+	Statewide  []ProgramLoadBucket      `json:"statewide"`
+	ByFacility []ProgramLoadFacilityRow `json:"by_facility"`
+}
+
+type ProgramTypeEnrollment struct {
+	ProgramType string  `json:"program_type"`
+	Enrolled    int64   `json:"enrolled"`
+	Completed   int64   `json:"completed"`
+	Rate        float64 `json:"rate"`
+}
