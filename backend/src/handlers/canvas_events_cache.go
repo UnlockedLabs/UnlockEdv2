@@ -84,13 +84,30 @@ func (srv *Server) warmCanvasEventCache(dtRng *models.DateRange, facilityID uint
 	scoped := *dtRng
 	go func() {
 		defer srv.canvasInflight.Delete(cacheKey)
-		events, err := srv.appendCanvasEventsForFacility(&scoped, facilityID)
+		events, failed, err := srv.appendCanvasEventsForFacility(&scoped, facilityID)
 		if err != nil {
 			log.WithError(err).Warn("warmCanvasEventCache: failed to fetch provider events")
 			// Clear the loading marker, and date the entry so the next request
 			// refreshes it. Writing time.Now() here would serve this failed result
 			// as fresh for a full TTL instead.
 			srv.restoreCanvasEvents(cacheKey, previous)
+			return
+		}
+		if len(failed) > 0 {
+			// A partial listing must not be stored as fresh: the providers that
+			// failed contributed nothing, so their events would vanish from the
+			// calendar for a whole TTL. Keep serving what they had and retry sooner.
+			log.Warnf("warmCanvasEventCache: %d provider(s) failed, carrying over their cached events", len(failed))
+			events = carryOverFailedProviders(events, previous, failed,
+				func(e models.FacilityProgramClassEvent) uint { return e.ProgramID })
+			if len(events) == 0 {
+				srv.restoreCanvasEvents(cacheKey, previous)
+				return
+			}
+			srv.putCanvasEvents(cacheKey, CachedCanvasEvents{
+				Events:      events,
+				LastUpdated: retryableCacheTimestamp(canvasEventCacheTTL),
+			})
 			return
 		}
 		srv.putCanvasEvents(cacheKey, CachedCanvasEvents{Events: events, LastUpdated: time.Now(), Loading: false})

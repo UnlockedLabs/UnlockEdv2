@@ -20,7 +20,7 @@ import (
 
 func essentialEdServer(t *testing.T, handler http.HandlerFunc) (*Server, *models.ProviderPlatform, func()) {
 	t.Helper()
-	ts := httptest.NewServer(handler)
+	ts := httptest.NewTLSServer(handler)
 	srv := &Server{Client: ts.Client()}
 	provider := &models.ProviderPlatform{
 		BaseUrl:   ts.URL,
@@ -579,6 +579,25 @@ func TestExpandWeeklySchedule(t *testing.T) {
 		assert.Equal(t, 15, events[0].StartAt.UTC().Hour(), "9am CST is 15:00 UTC")
 	})
 
+	// The calendar hands this function UTC midnights converted into the facility's
+	// zone, so each day is 6pm the previous local evening -- an instant already past
+	// a close date the provider reported as bare UTC midnight. Comparing instants
+	// rather than dates dropped the meetings on the real last day of class.
+	t.Run("open and close dates bound the facility's calendar days, not UTC instants", func(t *testing.T) {
+		closed := course
+		closeDate := march(4) // the class closes on the Wednesday
+		closed.endDt = &closeDate
+		events := expandWeeklySchedule(closed, march(2).In(chicago), march(8).In(chicago), chicago)
+		assert.Len(t, events, 3, "the Monday plus both Wednesday meetings")
+		assert.Equal(t, 4, events[2].StartAt.In(chicago).Day(), "the last day of class is kept")
+
+		late := course
+		late.startDt = march(3)
+		events = expandWeeklySchedule(late, march(2).In(chicago), march(8).In(chicago), chicago)
+		assert.Len(t, events, 2, "the Monday before the open date is dropped")
+		assert.Equal(t, 4, events[0].StartAt.In(chicago).Day())
+	})
+
 	t.Run("a class with no schedule yields no events", func(t *testing.T) {
 		assert.Empty(t, expandWeeklySchedule(liveCourse{name: "No Schedule"}, march(2), march(8), time.UTC))
 	})
@@ -744,58 +763,81 @@ func TestEssentialEdErrorIncludesResponseBody(t *testing.T) {
 
 // Essential Ed has no calendar endpoint, so the class lists build their schedule
 // string from the weekly pattern on the class record itself.
-func TestWeeklyScheduleClassEvent(t *testing.T) {
+func TestWeeklyScheduleClassEvents(t *testing.T) {
 	chicago, err := time.LoadLocation("America/Chicago")
 	assert.NoError(t, err)
 	// 2026-03-04 is a Wednesday; the Monday that follows is 2026-03-09.
 	now := time.Date(2026, time.March, 4, 12, 0, 0, 0, time.UTC)
 
+	type wantEvent struct {
+		rule     string
+		duration string
+	}
 	tests := []struct {
 		name     string
 		schedule map[time.Weekday][]meetingTime
 		loc      *time.Location
-		wantOK   bool
-		wantRule string
-		wantDur  string
+		want     []wantEvent
 	}{
 		{
-			name: "every scheduled weekday lands in BYDAY, in week order",
+			name: "weekdays that meet at the same time share one rule, in week order",
+			schedule: map[time.Weekday][]meetingTime{
+				time.Wednesday: {{540, 660}},
+				time.Monday:    {{540, 660}},
+			},
+			loc: time.UTC,
+			want: []wantEvent{
+				{"DTSTART:20260309T090000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE", "2h0m0s"},
+			},
+		},
+		{
+			name: "a weekday that meets at a different time keeps its own time and duration",
 			schedule: map[time.Weekday][]meetingTime{
 				time.Wednesday: {{600, 690}},
 				time.Monday:    {{540, 660}},
 			},
+			loc: time.UTC,
+			want: []wantEvent{
+				{"DTSTART:20260309T090000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO", "2h0m0s"},
+				// Each rule anchors on its own next occurrence, and now is a Wednesday.
+				{"DTSTART:20260304T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE", "1h30m0s"},
+			},
+		},
+		{
+			name:     "a second meeting on the same day is not dropped",
+			schedule: map[time.Weekday][]meetingTime{time.Monday: {{540, 660}, {840, 900}}},
 			loc:      time.UTC,
-			wantOK:   true,
-			wantRule: "DTSTART:20260309T090000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE",
-			wantDur:  "2h0m0s",
+			want: []wantEvent{
+				{"DTSTART:20260309T090000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO", "2h0m0s"},
+				{"DTSTART:20260309T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO", "1h0m0s"},
+			},
 		},
 		{
 			name:     "the pattern's wall clock is anchored in the facility's zone",
 			schedule: map[time.Weekday][]meetingTime{time.Monday: {{540, 660}}},
 			loc:      chicago,
-			wantOK:   true,
-			// 09:00 on 2026-03-09 is CDT, so 14:00Z -- DST began the day before.
-			wantRule: "DTSTART:20260309T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO",
-			wantDur:  "2h0m0s",
+			want: []wantEvent{
+				// 09:00 on 2026-03-09 is CDT, so 14:00Z -- DST began the day before.
+				{"DTSTART:20260309T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO", "2h0m0s"},
+			},
 		},
 		{
 			name:     "a class with no pattern reports no schedule",
 			schedule: nil,
 			loc:      time.UTC,
-			wantOK:   false,
+			want:     nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			course := liveCourse{rawID: 69742, name: "College Prep I", weeklySchedule: tt.schedule}
-			ev, ok := weeklyScheduleClassEvent(course, tt.loc, now)
-			assert.Equal(t, tt.wantOK, ok)
-			if !tt.wantOK {
-				return
+			evs := weeklyScheduleClassEvents(course, tt.loc, now)
+			assert.Len(t, evs, len(tt.want))
+			for i, want := range tt.want {
+				assert.Equal(t, want.rule, evs[i].RecurrenceRule)
+				assert.Equal(t, want.duration, evs[i].Duration)
 			}
-			assert.Equal(t, tt.wantRule, ev.RecurrenceRule)
-			assert.Equal(t, tt.wantDur, ev.Duration)
 		})
 	}
 }

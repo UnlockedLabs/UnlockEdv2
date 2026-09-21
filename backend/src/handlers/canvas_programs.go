@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -189,6 +190,26 @@ const canvasCacheRetryDelay = 30 * time.Second
 // nor an empty result served as fresh for a whole TTL.
 func retryableCacheTimestamp(ttl time.Duration) time.Time {
 	return time.Now().Add(canvasCacheRetryDelay - ttl)
+}
+
+// carryOverFailedProviders re-appends the rows a previous cache entry held for
+// the providers that failed this refresh. Without it a provider being briefly
+// unreachable drops its rows from the page and caches that absence as a
+// complete result.
+func carryOverFailedProviders[T any](fresh, previous []T, failedProviders []uint, programID func(T) uint) []T {
+	if len(failedProviders) == 0 || len(previous) == 0 {
+		return fresh
+	}
+	failed := make(map[uint]bool, len(failedProviders))
+	for _, id := range failedProviders {
+		failed[models.CanvasProgramIDOffset+id] = true
+	}
+	for _, item := range previous {
+		if failed[programID(item)] {
+			fresh = append(fresh, item)
+		}
+	}
+	return fresh
 }
 
 // warmCanvasProgramCache fires a background goroutine that fetches program data
@@ -433,6 +454,11 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform,
 func (srv *Server) fetchAllCanvasPages(ctx context.Context, provider *models.ProviderPlatform, startURL string, max int) ([]map[string]interface{}, error) {
 	var all []map[string]interface{}
 	for pageURL := startURL; pageURL != ""; {
+		// Checked every iteration, not just on startURL: the next page comes from
+		// the provider's own Link header.
+		if err := requireHTTPS(pageURL); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
 		if err != nil {
 			return nil, err
@@ -696,13 +722,15 @@ func weeklyScheduleFacilityEvents(
 
 // fetchCanvasClassesAllProviders returns a ProgramClassCohort for every Canvas course
 // across all active Canvas provider platforms. Failures per-provider are logged
-// and skipped so a single unreachable provider doesn't break the response.
+// and skipped so a single unreachable provider doesn't break the response; the
+// IDs of those providers are returned so the caller can tell a complete listing
+// from a partial one.
 // facilityID must be non-nil and non-zero; for the statewide (all-facilities) case
 // use fetchCanvasClassesAllProvidersAllFacilities instead.
-func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.ProgramClassCohort, error) {
+func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.ProgramClassCohort, []uint, error) {
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var facility *models.Facility
 	if facilityID != nil && *facilityID != 0 {
@@ -711,6 +739,7 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 		}
 	}
 	var result []models.ProgramClassCohort
+	var failed []uint
 	for _, provider := range providers {
 		if !isLiveProgramProvider(&provider) {
 			continue
@@ -719,12 +748,14 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 		reader, err := srv.newLiveProgramProvider(&provider)
 		if err != nil {
 			log.WithError(err).Warnf("no live reader for provider %d, skipping", provider.ID)
+			failed = append(failed, provider.ID)
 			continue
 		}
 		ctx := context.Background()
 		listing, err := reader.ListCourses(ctx)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", provider.ID)
+			failed = append(failed, provider.ID)
 			continue
 		}
 		entries := listing.Courses
@@ -772,23 +803,24 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 			})
 		}
 	}
-	return result, nil
+	return result, failed, nil
 }
 
 // fetchCanvasClassesAllProvidersAllFacilities returns one ProgramClassCohort per
 // (facility × Canvas course) with facility-scoped IDs. Used by the statewide
 // classes index when facility=all so every returned class has a navigable,
 // facility-scoped ID.
-func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.ProgramClassCohort, error) {
+func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.ProgramClassCohort, []uint, error) {
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	facilities, err := srv.Db.GetAllFacilitiesOrdered()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var result []models.ProgramClassCohort
+	var failed []uint
 	for _, provider := range providers {
 		if !isLiveProgramProvider(&provider) {
 			continue
@@ -797,12 +829,14 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 		reader, err := srv.newLiveProgramProvider(&provider)
 		if err != nil {
 			log.WithError(err).Warnf("no live reader for provider %d, skipping", provider.ID)
+			failed = append(failed, provider.ID)
 			continue
 		}
 		ctx := context.Background()
 		listing, err := reader.ListCourses(ctx)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", provider.ID)
+			failed = append(failed, provider.ID)
 			continue
 		}
 		entries := listing.Courses
@@ -854,18 +888,21 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 			}
 		}
 	}
-	return result, nil
+	return result, failed, nil
 }
 
 // appendCanvasEventsForFacility iterates all active Canvas provider platforms
-// and collects calendar events for the given date range.
-func (srv *Server) appendCanvasEventsForFacility(dtRng *models.DateRange, facilityID uint) ([]models.FacilityProgramClassEvent, error) {
+// and collects calendar events for the given date range. Providers that could
+// not be read are logged, skipped, and returned so the caller can tell a
+// complete listing from a partial one.
+func (srv *Server) appendCanvasEventsForFacility(dtRng *models.DateRange, facilityID uint) ([]models.FacilityProgramClassEvent, []uint, error) {
 	loc := srv.facilityLocation(facilityID)
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var result []models.FacilityProgramClassEvent
+	var failed []uint
 	for _, provider := range providers {
 		if !isLiveProgramProvider(&provider) {
 			continue
@@ -873,11 +910,12 @@ func (srv *Server) appendCanvasEventsForFacility(dtRng *models.DateRange, facili
 		evs, err := srv.fetchCanvasCalendarEvents(&provider, dtRng.Start, dtRng.End, loc)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas calendar events for provider %d, skipping", provider.ID)
+			failed = append(failed, provider.ID)
 			continue
 		}
 		result = append(result, evs...)
 	}
-	return result, nil
+	return result, failed, nil
 }
 
 func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Request, log sLog, programID uint) error {
@@ -1070,13 +1108,13 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 	facilityTimezone := srv.getQueryContext(r).Timezone
 	for i, cls := range classes {
 		_, rawID := decodeCanvasClassID(cls.ID)
-		if ev, ok := scheduleEvents[rawID]; ok {
-			classes[i].Events = []models.ProgramClassEvent{ev}
+		if evs := scheduleEvents[rawID]; len(evs) > 0 {
+			classes[i].Events = evs
 			tz := courseTimezones[rawID]
 			if tz == "" {
 				tz = facilityTimezone
 			}
-			sched, _ := services.FormatClassScheduleAndRoom([]models.ProgramClassEvent{ev}, tz)
+			sched, _ := services.FormatClassScheduleAndRoom(evs, tz)
 			classes[i].Schedule = sched
 		}
 	}
@@ -1140,13 +1178,21 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 	}
 	wg.Wait()
 
-	// Batch-fetch upcoming calendar events for all courses to derive schedule strings.
-	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, entries, srv.facilityLocation(srv.getQueryContext(r).FacilityID))
-	facilityTimezone := srv.getQueryContext(r).Timezone
+	// Canvas calendar events carry absolute times, so one fetch serves every
+	// facility. A weekly meeting pattern is wall clock in the facility's own zone,
+	// so it has to be rebuilt for each facility row below.
+	perFacilitySchedules := !isCanvasProvider(provider)
+	var scheduleEvents map[uint][]models.ProgramClassEvent
+	if !perFacilitySchedules {
+		scheduleEvents = srv.fetchCanvasCoursesScheduleEvents(provider, entries, nil)
+	}
 
 	// Build one row per (facility × course).
 	classes := make([]models.ProgramClassDetail, 0, len(facilities)*len(entries))
 	for _, facility := range facilities {
+		if perFacilitySchedules {
+			scheduleEvents = srv.fetchCanvasCoursesScheduleEvents(provider, entries, locationOrUTC(facility.Timezone))
+		}
 		for i, entry := range entries {
 			enrolled := int64(0)
 			if facilityCounts[i] != nil {
@@ -1155,12 +1201,16 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 			scopedID := encodeFacilityCanvasClassID(facility.ID, connectionID, entry.rawID)
 			var sched string
 			var evSlice []models.ProgramClassEvent
-			if ev, ok := scheduleEvents[entry.rawID]; ok {
-				ev.CohortID = scopedID
-				evSlice = []models.ProgramClassEvent{ev}
+			if evs := scheduleEvents[entry.rawID]; len(evs) > 0 {
+				// Cloned because a Canvas listing shares one slice across every
+				// facility row, and each row scopes the events to its own class ID.
+				evSlice = slices.Clone(evs)
+				for j := range evSlice {
+					evSlice[j].CohortID = scopedID
+				}
 				tz := courseTimezones[entry.rawID]
 				if tz == "" {
-					tz = facilityTimezone
+					tz = facility.Timezone
 				}
 				sched, _ = services.FormatClassScheduleAndRoom(evSlice, tz)
 			}
@@ -1228,71 +1278,86 @@ func buildCanvasEventRRule(startAt, endAt time.Time, canvasRRule string) (recurr
 	return
 }
 
-// weeklyScheduleClassEvent renders a recurring weekly meeting pattern as the
-// synthetic ProgramClassEvent the class lists format with
-// services.FormatClassScheduleAndRoom. DTSTART is anchored on the next occurrence
-// of the earliest scheduled meeting, so the rendered wall clock matches the
-// pattern in the facility's own zone, and BYDAY lists every day the class meets.
-func weeklyScheduleClassEvent(course liveCourse, loc *time.Location, now time.Time) (models.ProgramClassEvent, bool) {
+// weeklyScheduleClassEvents renders a recurring weekly meeting pattern as the
+// synthetic ProgramClassEvents the class lists format with
+// services.FormatClassScheduleAndRoom. A single rule carries one start time and
+// one duration, so days that meet at the same time share a rule and every other
+// distinct time -- including a second meeting on a day that already has one --
+// gets its own. Each DTSTART is anchored on the next occurrence of that rule's
+// earliest day, so the rendered wall clock matches the pattern in the facility's
+// own zone.
+func weeklyScheduleClassEvents(course liveCourse, loc *time.Location, now time.Time) []models.ProgramClassEvent {
 	if len(course.weeklySchedule) == 0 {
-		return models.ProgramClassEvent{}, false
+		return nil
 	}
 	if loc == nil {
 		loc = time.UTC
 	}
 
-	byDay := make([]string, 0, len(course.weeklySchedule))
-	var anchorDay time.Weekday
-	var anchor meetingTime
-	found := false
-	// Walk Sunday-to-Saturday rather than ranging the map, so BYDAY and the anchor
-	// are stable between calls.
+	type ruleGroup struct {
+		anchorDay time.Weekday
+		meeting   meetingTime
+		byDay     []string
+	}
+	var groups []*ruleGroup
+	byMeeting := make(map[meetingTime]*ruleGroup)
+	// Walk Sunday-to-Saturday rather than ranging the map, so the rules and their
+	// BYDAY lists are stable between calls.
 	for day := time.Sunday; day <= time.Saturday; day++ {
-		meetings := course.weeklySchedule[day]
-		if len(meetings) == 0 {
-			continue
-		}
-		byDay = append(byDay, weekdayToRRuleDay(day))
-		if !found {
-			anchorDay, anchor, found = day, meetings[0], true
+		rruleDay := weekdayToRRuleDay(day)
+		for _, meeting := range course.weeklySchedule[day] {
+			group, ok := byMeeting[meeting]
+			if !ok {
+				group = &ruleGroup{anchorDay: day, meeting: meeting}
+				byMeeting[meeting] = group
+				groups = append(groups, group)
+			}
+			if len(group.byDay) == 0 || group.byDay[len(group.byDay)-1] != rruleDay {
+				group.byDay = append(group.byDay, rruleDay)
+			}
 		}
 	}
-	if !found {
-		return models.ProgramClassEvent{}, false
+	if len(groups) == 0 {
+		return nil
 	}
 
 	local := now.In(loc)
-	offset := (int(anchorDay) - int(local.Weekday()) + 7) % 7
-	midnight := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, offset)
-	dtstart := midnight.Add(time.Duration(anchor.startMin) * time.Minute)
-
-	return models.ProgramClassEvent{
-		RecurrenceRule: fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=WEEKLY;BYDAY=%s",
-			dtstart.UTC().Format("20060102T150405Z"), strings.Join(byDay, ",")),
-		Duration: (time.Duration(anchor.endMin-anchor.startMin) * time.Minute).String(),
-	}, true
+	midnight := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc)
+	events := make([]models.ProgramClassEvent, 0, len(groups))
+	for _, group := range groups {
+		offset := (int(group.anchorDay) - int(local.Weekday()) + 7) % 7
+		dtstart := midnight.AddDate(0, 0, offset).Add(time.Duration(group.meeting.startMin) * time.Minute)
+		events = append(events, models.ProgramClassEvent{
+			RecurrenceRule: fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=WEEKLY;BYDAY=%s",
+				dtstart.UTC().Format("20060102T150405Z"), strings.Join(group.byDay, ",")),
+			Duration: (time.Duration(group.meeting.endMin-group.meeting.startMin) * time.Minute).String(),
+		})
+	}
+	return events
 }
 
 // fetchCanvasCoursesScheduleEvents returns a map of rawCourseID → synthetic
-// ProgramClassEvent carrying a RecurrenceRule and Duration suitable for
+// ProgramClassEvents carrying a RecurrenceRule and Duration suitable for
 // services.FormatClassScheduleAndRoom, mirroring how regular class events work.
 // Canvas is read from its calendar events endpoint; providers that describe a
 // recurring weekly pattern instead have no such endpoint, so their schedule is
-// built from the pattern the course listing already carried.
+// built from the pattern the course listing already carried. A weekly pattern is
+// wall clock in loc, so a caller building rows for more than one facility has to
+// call this once per facility.
 func (srv *Server) fetchCanvasCoursesScheduleEvents(
 	provider *models.ProviderPlatform,
 	courses []liveCourse,
 	loc *time.Location,
-) map[uint]models.ProgramClassEvent {
-	result := make(map[uint]models.ProgramClassEvent, len(courses))
+) map[uint][]models.ProgramClassEvent {
+	result := make(map[uint][]models.ProgramClassEvent, len(courses))
 	if len(courses) == 0 {
 		return result
 	}
 	if !isCanvasProvider(provider) {
 		now := time.Now()
 		for _, course := range courses {
-			if ev, ok := weeklyScheduleClassEvent(course, loc, now); ok {
-				result[course.rawID] = ev
+			if evs := weeklyScheduleClassEvents(course, loc, now); len(evs) > 0 {
+				result[course.rawID] = evs
 			}
 		}
 		return result
@@ -1347,10 +1412,10 @@ func (srv *Server) fetchCanvasCoursesScheduleEvents(
 		}
 		canvasRRule, _ := event["rrule"].(string)
 		rruleStr, durStr := buildCanvasEventRRule(startAt, endAt, canvasRRule)
-		result[rawID] = models.ProgramClassEvent{
+		result[rawID] = []models.ProgramClassEvent{{
 			RecurrenceRule: rruleStr,
 			Duration:       durStr,
-		}
+		}}
 	}
 	return result
 }
@@ -1608,8 +1673,8 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 
 	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, []liveCourse{entry}, srv.facilityLocation(facilityID))
 	events := []models.ProgramClassEvent{}
-	if ev, ok := scheduleEvents[rawCourseID]; ok {
-		events = []models.ProgramClassEvent{ev}
+	if evs := scheduleEvents[rawCourseID]; len(evs) > 0 {
+		events = evs
 	}
 
 	cls := models.ProgramClassCohort{
@@ -1676,10 +1741,16 @@ func expandWeeklySchedule(course liveCourse, start, end time.Time, loc *time.Loc
 		loc = time.UTC
 	}
 	for day := start; !day.After(end); day = day.AddDate(0, 0, 1) {
-		if !course.startDt.IsZero() && day.Before(course.startDt.Truncate(24*time.Hour)) {
+		// The meeting below is emitted on day's calendar date in the facility's
+		// zone, while the provider reports open/close as calendar dates in its own
+		// bare-UTC wall clock. Comparing the two as instants silently drops the
+		// meetings on the last day of class for any facility west of UTC, so both
+		// sides are reduced to a plain date first.
+		dayDate := calendarDate(day)
+		if !course.startDt.IsZero() && dayDate.Before(calendarDate(course.startDt)) {
 			continue
 		}
-		if course.endDt != nil && day.After(*course.endDt) {
+		if course.endDt != nil && dayDate.After(calendarDate(*course.endDt)) {
 			continue
 		}
 		for _, meeting := range course.weeklySchedule[day.Weekday()] {
@@ -1696,6 +1767,13 @@ func expandWeeklySchedule(course liveCourse, start, end time.Time, loc *time.Loc
 	return events
 }
 
+// calendarDate strips a timestamp down to the Y/M/D it reads as in its own zone,
+// so dates that arrived in different zones compare as dates rather than instants.
+func calendarDate(t time.Time) time.Time {
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+}
+
 // facilityLocation returns a facility's timezone, falling back to UTC when the
 // facility is unknown or its timezone will not load.
 func (srv *Server) facilityLocation(facilityID uint) *time.Location {
@@ -1706,7 +1784,14 @@ func (srv *Server) facilityLocation(facilityID uint) *time.Location {
 	if err != nil {
 		return time.UTC
 	}
-	loc, err := time.LoadLocation(facility.Timezone)
+	return locationOrUTC(facility.Timezone)
+}
+
+// locationOrUTC loads an IANA timezone name, falling back to UTC when it will
+// not load. Callers that already hold a facility use this rather than
+// facilityLocation, which reads the facility back from the database.
+func locationOrUTC(timezone string) *time.Location {
+	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return time.UTC
 	}

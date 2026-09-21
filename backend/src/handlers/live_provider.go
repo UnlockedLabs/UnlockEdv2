@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -36,6 +38,21 @@ type providerTransport interface {
 	fetchOne(ctx context.Context, provider *models.ProviderPlatform, url string) (map[string]interface{}, error)
 }
 
+// requireHTTPS reports whether a URL is safe to send a provider's access key to.
+// The handlers reject a non-https base URL on the way in; this is the backstop
+// for rows that predate that check and for a paging link that points somewhere
+// the provider chose.
+func requireHTTPS(rawURL string) error {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return fmt.Errorf("parsing provider url: %w", err)
+	}
+	if parsed.Scheme != "https" {
+		return fmt.Errorf("provider url must use https, got %q", parsed.Scheme)
+	}
+	return nil
+}
+
 // canvasTransport implements providerTransport for Canvas.
 type canvasTransport struct {
 	srv *Server
@@ -51,6 +68,9 @@ func (t canvasTransport) fetchAll(ctx context.Context, provider *models.Provider
 }
 
 func (t canvasTransport) fetchOne(ctx context.Context, provider *models.ProviderPlatform, url string) (map[string]interface{}, error) {
+	if err := requireHTTPS(url); err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

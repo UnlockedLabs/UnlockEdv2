@@ -93,6 +93,9 @@ type essentialEdPage struct {
 
 func (t essentialEdTransport) fetchPage(ctx context.Context, provider *models.ProviderPlatform, pageURL string) (essentialEdPage, error) {
 	var envelope essentialEdPage
+	if err := requireHTTPS(pageURL); err != nil {
+		return envelope, err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, nil)
 	if err != nil {
 		return envelope, err
@@ -113,6 +116,9 @@ func (t essentialEdTransport) fetchPage(ctx context.Context, provider *models.Pr
 }
 
 func (t essentialEdTransport) fetchOne(ctx context.Context, provider *models.ProviderPlatform, recordURL string) (map[string]interface{}, error) {
+	if err := requireHTTPS(recordURL); err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, recordURL, nil)
 	if err != nil {
 		return nil, err

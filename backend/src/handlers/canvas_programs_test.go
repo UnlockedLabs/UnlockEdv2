@@ -207,7 +207,7 @@ func TestBuildCourseTimezoneMap(t *testing.T) {
 func TestFetchAllCanvasPages(t *testing.T) {
 	t.Run("sends bearer auth and accepts json", func(t *testing.T) {
 		var gotAuth, gotAccept string
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotAuth = r.Header.Get("Authorization")
 			gotAccept = r.Header.Get("Accept")
 			_ = json.NewEncoder(w).Encode([]map[string]interface{}{{"id": float64(1)}})
@@ -227,7 +227,7 @@ func TestFetchAllCanvasPages(t *testing.T) {
 	t.Run("follows Link rel=next across pages", func(t *testing.T) {
 		var ts *httptest.Server
 		calls := 0
-		ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			calls++
 			if calls == 1 {
 				w.Header().Set("Link", `<`+ts.URL+`/page2>; rel="next"`)
@@ -247,7 +247,7 @@ func TestFetchAllCanvasPages(t *testing.T) {
 	})
 
 	t.Run("non-200 is an error, not an empty result", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 		}))
 		defer ts.Close()
@@ -260,7 +260,7 @@ func TestFetchAllCanvasPages(t *testing.T) {
 	})
 
 	t.Run("malformed json is an error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write([]byte(`{"not":"an array"}`))
 		}))
 		defer ts.Close()
@@ -272,7 +272,7 @@ func TestFetchAllCanvasPages(t *testing.T) {
 	})
 
 	t.Run("a cancelled context stops the fetch", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_ = json.NewEncoder(w).Encode([]map[string]interface{}{})
 		}))
 		defer ts.Close()
@@ -305,6 +305,51 @@ func TestIsLiveProgramProvider(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// A provider's access key rides on every request to its base URL, so a plaintext
+// URL would put it on the wire. The handlers reject one on the way in; the
+// transports refuse to send to one regardless of how the URL got there.
+func TestRequireHTTPS(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawURL  string
+		wantErr bool
+	}{
+		{"an https url is accepted", "https://api.essentialed.com/v20181129", false},
+		{"surrounding whitespace is tolerated", "  https://canvas.example.com  ", false},
+		{"plaintext http is refused", "http://canvas.example.com", true},
+		{"a scheme-less url is refused", "canvas.example.com", true},
+		{"an empty url is refused", "", true},
+		{"another scheme is refused", "ftp://canvas.example.com", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := requireHTTPS(tt.rawURL)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+// The guard has to hold on every page, not just the first: a Canvas Link header
+// names the next page, and that URL comes from the provider.
+func TestFetchAllCanvasPagesRefusesPlaintextNextPage(t *testing.T) {
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Link", `<http://canvas.example.com/api/v1/courses?page=2>; rel="next"`)
+		_, _ = w.Write([]byte(`[{"id":1}]`))
+	}))
+	defer ts.Close()
+	srv := &Server{Client: ts.Client()}
+	provider := &models.ProviderPlatform{BaseUrl: ts.URL, AccessKey: "secret-token", Type: models.CanvasOSS}
+
+	out, err := srv.fetchAllCanvasPages(context.Background(), provider, ts.URL+"/api/v1/courses", 0)
+
+	assert.Error(t, err)
+	assert.Nil(t, out)
 }
 
 func TestTransportFor(t *testing.T) {
@@ -342,7 +387,7 @@ func TestCanvasURLBuilders(t *testing.T) {
 func TestCanvasTransportFetchOne(t *testing.T) {
 	t.Run("returns the decoded record and authorizes the request", func(t *testing.T) {
 		var gotAuth string
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotAuth = r.Header.Get("Authorization")
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id": float64(105), "time_zone": "America/Chicago",
@@ -360,7 +405,7 @@ func TestCanvasTransportFetchOne(t *testing.T) {
 	})
 
 	t.Run("non-200 is an error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 		}))
 		defer ts.Close()
@@ -372,7 +417,7 @@ func TestCanvasTransportFetchOne(t *testing.T) {
 	})
 
 	t.Run("malformed json is an error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write([]byte(`[not an object]`))
 		}))
 		defer ts.Close()
@@ -389,7 +434,7 @@ func TestCanvasProviderListCourses(t *testing.T) {
 
 	newReader := func(t *testing.T, payload []map[string]interface{}) (LiveProgramProvider, func()) {
 		t.Helper()
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_ = json.NewEncoder(w).Encode(payload)
 		}))
 		srv := &Server{Client: ts.Client()}
@@ -451,7 +496,7 @@ func TestCanvasProviderListCourses(t *testing.T) {
 	})
 
 	t.Run("a transport error propagates", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 		}))
 		defer ts.Close()

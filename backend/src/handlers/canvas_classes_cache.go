@@ -92,12 +92,13 @@ func (srv *Server) warmCanvasClassCache(facilityID *uint, cacheKey string, previ
 		defer srv.canvasInflight.Delete(cacheKey)
 		var (
 			classes []models.ProgramClassCohort
+			failed  []uint
 			err     error
 		)
 		if scoped == nil {
-			classes, err = srv.fetchCanvasClassesAllProvidersAllFacilities()
+			classes, failed, err = srv.fetchCanvasClassesAllProvidersAllFacilities()
 		} else {
-			classes, err = srv.fetchCanvasClassesAllProviders(scoped)
+			classes, failed, err = srv.fetchCanvasClassesAllProviders(scoped)
 		}
 		if err != nil {
 			log.WithError(err).Warn("warmCanvasClassCache: failed to fetch provider classes")
@@ -105,6 +106,23 @@ func (srv *Server) warmCanvasClassCache(facilityID *uint, cacheKey string, previ
 			// refreshes it. Writing time.Now() here would serve this failed result
 			// as fresh for a full TTL instead.
 			srv.restoreCanvasClasses(cacheKey, previous)
+			return
+		}
+		if len(failed) > 0 {
+			// A partial listing must not be stored as fresh: the providers that
+			// failed contributed nothing, so their classes would vanish from the
+			// page for a whole TTL. Keep serving what they had and retry sooner.
+			log.Warnf("warmCanvasClassCache: %d provider(s) failed, carrying over their cached classes", len(failed))
+			classes = carryOverFailedProviders(classes, previous, failed,
+				func(c models.ProgramClassCohort) uint { return c.ProgramID })
+			if len(classes) == 0 {
+				srv.restoreCanvasClasses(cacheKey, previous)
+				return
+			}
+			srv.putCanvasClasses(cacheKey, CachedCanvasClasses{
+				Classes:     classes,
+				LastUpdated: retryableCacheTimestamp(canvasClassCacheTTL),
+			})
 			return
 		}
 		srv.putCanvasClasses(cacheKey, CachedCanvasClasses{Classes: classes, LastUpdated: time.Now(), Loading: false})
