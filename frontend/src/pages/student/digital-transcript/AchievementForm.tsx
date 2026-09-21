@@ -301,7 +301,7 @@ function renderStepFields(
                                 tags={FUNNEL_Q5_BEFORE_TAGS}
                                 selected={entry.q5BeforeTags}
                                 max={FUNNEL_Q5_TAGS_MAX}
-                                groupLabel="Before this program, I felt..."
+                                groupLabel="Before this achievement, I felt..."
                                 onChange={(q5BeforeTags) =>
                                     onChange({ q5BeforeTags })
                                 }

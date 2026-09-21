@@ -337,7 +337,7 @@ export const FUNNEL_FIELD_DESCRIPTIONS = {
         "A completion date may not apply for every achievement - it's okay to skip to the next question.",
     whatMadeYouFinish:
         'Think about what drove you to keep going, even when it was hard.',
-    q4: 'Was there a standout moment or person from this program?',
+    q4: 'Was there a standout moment or person from this achievement?',
     q5: 'Choose up to 2 tags from each group.',
     adviceToPeer: 'How would you describe what mattered most to someone else?',
     confidence:
@@ -414,19 +414,19 @@ export function funnelStepFieldLabel(field: FunnelStepField): string {
         case 'programName':
             return 'Achievement';
         case 'completionDate':
-            return 'Program completion date';
+            return 'Completion date';
         case 'whatMadeYouFinish':
             return 'What made you finish it?';
         case 'q4':
-            return 'Was there a standout moment or person from this program?';
+            return 'Was there a standout moment or person from this achievement?';
         case 'q5':
             return 'How has completing this changed how you feel about yourself or how you show up for others?';
         case 'adviceToPeer':
             return 'What was valuable about this achievement?';
         case 'confidence':
-            return 'How confident do you feel about your future since completing this program?';
+            return 'How confident do you feel about your future since completing this achievement?';
         case 'q8Selections':
-            return 'What did this program build in you?';
+            return 'What did this achievement build in you?';
         case 'q9Selections':
             return "What does this connect to for a goal, job, or career you're working toward?";
         case 'oneSentence':
