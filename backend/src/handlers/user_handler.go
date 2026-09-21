@@ -19,6 +19,11 @@ import (
 	"unicode"
 )
 
+// maxDocIDLen matches the users.doc_id column (VARCHAR(32), migration 00042).
+// Without this bound an over-long value from a non-browser client reaches
+// Postgres and fails as a 22001 (500) instead of a 400.
+const maxDocIDLen = 32
+
 func (srv *Server) registerUserRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
 	return []routeDef{
@@ -207,7 +212,12 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	}
 	invalidUser := validateUser(&reqForm.User)
 	if invalidUser != "" {
-		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
+		return newBadRequestServiceError(errors.New("invalid user"), invalidUser)
+	}
+
+	reqForm.User.DocID = strings.TrimSpace(reqForm.User.DocID)
+	if invalidDocID := validateResidentID(reqForm.User.Role, reqForm.User.DocID); invalidDocID != "" {
+		return newBadRequestServiceError(errors.New("invalid resident id"), invalidDocID)
 	}
 	log.add("created_username", reqForm.User.Username)
 	userNameExists, docExists := srv.Db.UserIdentityExists(reqForm.User.Username, reqForm.User.DocID)
@@ -215,7 +225,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newBadRequestServiceError(err, "Username already exists")
 	}
 	if docExists {
-		return newBadRequestServiceError(err, "Doc ID already exists")
+		return newBadRequestServiceError(err, "Resident ID already exists")
 	}
 	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, isUsernameChar)
 	err = srv.WithUserContext(r).CreateUser(&reqForm.User)
@@ -334,12 +344,17 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	// Casing is fixed at creation; even a same-identity resubmission must not
 	// silently re-case the stored value via UpdateStruct below.
 	user.Username = toUpdate.Username
+	user.DocID = strings.TrimSpace(user.DocID)
 	if user.DocID == "" && toUpdate.DocID != "" {
 		user.DocID = toUpdate.DocID
 	}
+
+	if invalidDocID := validateResidentID(toUpdate.Role, user.DocID); invalidDocID != "" {
+		return newBadRequestServiceError(errors.New("invalid resident id"), invalidDocID)
+	}
 	invalidUser := validateUser(&user)
 	if invalidUser != "" {
-		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
+		return newBadRequestServiceError(errors.New("invalid user"), invalidUser)
 	}
 	models.UpdateStruct(toUpdate, &user)
 	err = srv.WithUserContext(r).UpdateUser(toUpdate)
@@ -448,6 +463,28 @@ func validateUser(user *models.User) string {
 				return fmt.Sprintf("%s cannot contain %q, please use only %s", field.label, string(char), field.allowed)
 			}
 		}
+	}
+	return ""
+}
+
+// validateResidentID enforces that residents carry a resident ID (ID-835) so
+// records can be correlated with OMS later; the value itself is never verified.
+// Scoped to students because admins share models.User and legitimately have
+// none. The role is passed in rather than read off the user because PATCH
+// bodies omit it — callers must supply the stored role on update.
+//
+// This deliberately lives at the API boundary and not on the model or in
+// db.CreateUser: the provider-sync imports create students with no source for
+// an ID and must keep working.
+func validateResidentID(role models.UserRole, docID string) string {
+	if role != models.Student {
+		return ""
+	}
+	if docID == "" {
+		return "Resident ID is required"
+	}
+	if len(docID) > maxDocIDLen {
+		return fmt.Sprintf("Resident ID must be %d characters or fewer", maxDocIDLen)
 	}
 	return ""
 }

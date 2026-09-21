@@ -207,17 +207,17 @@ export const addResidentSchema = z.object({
     name_first: requiredString('First name', 50),
     name_last: requiredString('Last name', 50),
     username: requiredString('Username', 50),
-    doc_id: optionalString('Resident ID', 50),
+    doc_id: requiredString('Resident ID', 32),
     facility_id: z.string().optional()
 });
 
 export type AddResidentInput = z.infer<typeof addResidentSchema>;
 
-/** "Edit Resident" dialog. `username` is read-only; `doc_id` optional. */
+/** "Edit Resident" dialog. `username` is read-only; `doc_id` is required (ID-835). */
 export const editResidentSchema = z.object({
     name_first: requiredString('First name', 50),
     name_last: requiredString('Last name', 50),
-    doc_id: optionalString('Resident ID', 50)
+    doc_id: requiredString('Resident ID', 32)
 });
 
 export type EditResidentInput = z.infer<typeof editResidentSchema>;
