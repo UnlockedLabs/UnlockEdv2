@@ -14,6 +14,7 @@ func (srv *Server) registerFacilityFeatureAccessRoutes() []routeDef {
 		newDeptAdminRoute("PUT /api/facilities/features/apply-all", srv.handleApplyFacilityFeaturesToAll),
 		newDeptAdminRoute("GET /api/facilities/{id}/features", srv.handleGetFacilityFeatureDetail),
 		newDeptAdminRoute("PUT /api/facilities/{id}/features/{feature}", srv.handleSetFacilityFeature),
+		newTutorFeatureRoute("PUT /api/tutor-features/{feature}", srv.handleSetOwnFacilityTutorFeature),
 	}
 }
 
@@ -101,6 +102,41 @@ func (srv *Server) handleSetFacilityFeature(w http.ResponseWriter, r *http.Reque
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "facility feature updated successfully")
+}
+
+/**
+* PUT: /api/tutor-features/{feature}
+* Lets any admin turn an AI Tutor capability on or off for THEIR OWN facility.
+* Deliberately has no {id}: the facility is always claims.FacilityID, so there is
+* no cross-facility request to authorize. newTutorFeatureRoute has already
+* rejected any feature outside models.TutorSubFeatures; the check is repeated here
+* so the handler is safe on its own if it is ever rewired. Sys/dept admins setting
+* another facility keep using PUT /api/facilities/{id}/features/{feature}.
+**/
+func (srv *Server) handleSetOwnFacilityTutorFeature(w http.ResponseWriter, r *http.Request, log sLog) error {
+	feature := models.FeatureAccess(r.PathValue("feature"))
+	if !models.IsTutorSubFeature(feature) {
+		return newBadRequestServiceError(errors.New("not a tutor feature"), "invalid feature")
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	log.add("facility_id", claims.FacilityID)
+	log.add("feature", feature)
+
+	var req setFacilityFeatureRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if req.Enabled == nil {
+		return newBadRequestServiceError(errors.New("enabled required"), "enabled required")
+	}
+
+	args := srv.getQueryContext(r)
+	// The parent cascade lives in here: enabling a sub-feature where ai_tutor is
+	// off is rejected, so a crafted request cannot get around the kill switch.
+	if err := srv.Db.UpsertFacilityFeatureFlag(&args, claims.FacilityID, feature, *req.Enabled, srv.features); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "tutor feature updated successfully")
 }
 
 type applyFacilityFeaturesRequest struct {

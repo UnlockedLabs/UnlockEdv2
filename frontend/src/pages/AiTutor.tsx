@@ -1,8 +1,11 @@
 export default function AiTutor() {
-    // Residents only (see tutor-routes.tsx). AuthenticatedLayout renders the
-    // h-16 header for them on mobile but not on desktop, so the h-16 is
-    // subtracted only below md. The admin branch this used to carry went with
-    // the admin route.
+    // One frame for everyone. The tutor decides what to show from the session's
+    // role: residents get the tutor itself, staff get a chooser for the teacher
+    // view and the curriculum builder. Nothing role-shaped belongs here — the
+    // host would only be guessing at what the tutor has.
+    //
+    // AuthenticatedLayout renders the h-16 header on mobile but not on desktop,
+    // so the h-16 is subtracted only below md.
     const heightClass = 'h-[calc(100vh-4rem)] md:h-screen';
 
     return (

@@ -228,6 +228,25 @@ func deptAdminFeatureRoute(method string, handler HttpFunc, features ...models.F
 	}
 }
 
+// newTutorFeatureRoute is for the AI Tutor capability switches. Unlike
+// newDeptAdminRoute it admits facility_admin, because the capability is scoped to
+// the caller's own facility (the handler reads claims.FacilityID; there is no
+// facility id in the path to get wrong) and to a two-item allowlist. That makes it
+// a narrower act than Feature Control, which edits any facility and every feature.
+// features: [AiTutorAccess] means the route is dead where the parent kill switch
+// is off, and the resolver constrains which feature may be set.
+func newTutorFeatureRoute(method string, handler HttpFunc) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    []models.FeatureAccess{models.AiTutorAccess},
+		resolver: func(tx *database.DB, r *http.Request) bool {
+			return models.IsTutorSubFeature(models.FeatureAccess(r.PathValue("feature")))
+		},
+	}
+}
+
 func newSystemAdminRoute(method string, handler HttpFunc) routeDef {
 	return routeDef{
 		routeMethod: method,

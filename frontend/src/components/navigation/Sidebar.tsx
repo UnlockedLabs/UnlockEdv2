@@ -149,10 +149,21 @@ interface NavSectionProps {
     onToggleHelpCenter?: () => void;
 }
 
-// Resident nav only. The AI Tutor MVP (ID-868) ships the resident-facing side
-// alone — there is no staff experience behind this link — so admins get no
-// entry point, and tutor-routes.tsx narrows the route to match. Admins still
-// enable the feature itself from Feature Control.
+// Both navs. For a resident this is the tutor itself; for an admin it is the
+// per-facility capability settings and the curriculum builder (AiTutor.tsx
+// branches on role). ID-868's resident-only placement is superseded — see
+// tutor-routes.tsx.
+//
+// A facility admin cannot bootstrap this: ai_tutor is the parent kill switch and
+// only a system or department admin can turn it on, in Feature Control. Without
+// it there is no link at all, which is why the empty state inside the page says
+// who to ask rather than the nav silently hiding.
+//
+// The capability check below is deliberately an OR, not more arguments to
+// hasFeature — hasFeature ANDs its list, and a resident needs *either*
+// capability to have something to open. Admins skip it: the settings switches
+// are the point of the page for them, and requiring a capability to reach the
+// screen that turns capabilities on would be circular.
 function AiTutorNavItem({
     collapsed,
     isActive,
@@ -160,6 +171,11 @@ function AiTutorNavItem({
 }: Pick<NavSectionProps, 'collapsed' | 'isActive' | 'onNavigate'>) {
     const { user } = useAuth();
     if (!user || !hasFeature(user, FeatureAccess.AiTutorAccess)) return null;
+    const hasSomethingToOpen =
+        isAdministrator(user) ||
+        hasFeature(user, FeatureAccess.HiSetTutorAccess) ||
+        hasFeature(user, FeatureAccess.CurriculumBuilderAccess);
+    if (!hasSomethingToOpen) return null;
 
     return (
         <NavLink
@@ -235,6 +251,11 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                 active={isActive(['/operational-insights'])}
                 collapsed={collapsed}
                 onClick={onNavigate}
+            />
+            <AiTutorNavItem
+                collapsed={collapsed}
+                isActive={isActive}
+                onNavigate={onNavigate}
             />
             {isAdministrator(user) &&
                 hasFeature(user, FeatureAccess.ProgramAccess) && (

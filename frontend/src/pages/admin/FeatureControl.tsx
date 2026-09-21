@@ -77,7 +77,7 @@ const FEATURE_CARDS: {
         feature: FeatureAccess.AiTutorAccess,
         title: 'AI Tutor',
         description:
-            'Provides an AI-powered HiSET tutor and writing assistant for residents'
+            'Master switch for the AI Tutor. Choose the individual capabilities below, or let a facility set its own from the AI Tutor page.'
     }
 ];
 
@@ -129,6 +129,23 @@ const SUB_FEATURE_GROUPS: Partial<
                 label: 'Programs Page for Residents',
                 description:
                     'Shows the Programs page and its nav item in the resident portal. Program tracking, data, and admin views are unaffected either way.'
+            }
+        ]
+    },
+    [FeatureAccess.AiTutorAccess]: {
+        note: 'Capabilities behind the AI Tutor (only available when AI Tutor is enabled). Facility admins can also set these for their own facility from the AI Tutor page.',
+        features: [
+            {
+                feature: FeatureAccess.HiSetTutorAccess,
+                label: 'HiSET Tutor',
+                description:
+                    'Lets residents work through HiSET test prep with an AI tutor they can ask questions of. On by default wherever AI Tutor is enabled.'
+            },
+            {
+                feature: FeatureAccess.CurriculumBuilderAccess,
+                label: 'Curriculum Courses',
+                description:
+                    'Lets admins build courses on any topic with AI and publish them. Residents only read what has been published — no AI conversation.'
             }
         ]
     }

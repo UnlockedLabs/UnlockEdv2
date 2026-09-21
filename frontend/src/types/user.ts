@@ -24,7 +24,9 @@ export enum FeatureAccess {
     RequestContentAccess = 'request_content',
     HelpfulLinksAccess = 'helpful_links',
     UploadVideoAccess = 'upload_video',
-    ResidentProgramsAccess = 'resident_programs'
+    ResidentProgramsAccess = 'resident_programs',
+    HiSetTutorAccess = 'hiset_tutor',
+    CurriculumBuilderAccess = 'curriculum_builder'
 }
 
 export interface User {

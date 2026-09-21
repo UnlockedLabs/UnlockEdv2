@@ -47,9 +47,14 @@ const (
 	HelpfulLinksAccess     FeatureAccess = "helpful_links"
 	UploadVideoAccess      FeatureAccess = "upload_video"
 	ResidentProgramsAccess FeatureAccess = "resident_programs"
+	// The two capabilities behind the AI Tutor. ai_tutor itself is now a container:
+	// hiset_tutor is the conversational tutor residents use, curriculum_builder is
+	// admin-authored coursework residents only read.
+	HiSetTutorAccess        FeatureAccess = "hiset_tutor"
+	CurriculumBuilderAccess FeatureAccess = "curriculum_builder"
 )
 
-var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, AiTutorAccess, RequestContentAccess, HelpfulLinksAccess, UploadVideoAccess, ResidentProgramsAccess}
+var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, AiTutorAccess, RequestContentAccess, HelpfulLinksAccess, UploadVideoAccess, ResidentProgramsAccess, HiSetTutorAccess, CurriculumBuilderAccess}
 
 // TopLevelFeatures are the features shown as their own card/pill on the Feature Control
 // page. Page-level (sub-)features are nested under their parent below.
@@ -58,10 +63,22 @@ var TopLevelFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, Progra
 // SubFeatureParent maps a page-level feature to the top-level feature that gates it:
 // a sub-feature can never be enabled at a facility where its parent is disabled.
 var SubFeatureParent = map[FeatureAccess]FeatureAccess{
-	RequestContentAccess:   OpenContentAccess,
-	HelpfulLinksAccess:     OpenContentAccess,
-	UploadVideoAccess:      OpenContentAccess,
-	ResidentProgramsAccess: ProgramAccess,
+	RequestContentAccess:    OpenContentAccess,
+	HelpfulLinksAccess:      OpenContentAccess,
+	UploadVideoAccess:       OpenContentAccess,
+	ResidentProgramsAccess:  ProgramAccess,
+	HiSetTutorAccess:        AiTutorAccess,
+	CurriculumBuilderAccess: AiTutorAccess,
+}
+
+// TutorSubFeatures are the features a facility admin may operate for their own
+// facility from the AI Tutor page. Deliberately an allowlist rather than "every
+// sub-feature": it is what keeps the facility-scoped route from becoming a second,
+// wider Feature Control.
+var TutorSubFeatures = []FeatureAccess{HiSetTutorAccess, CurriculumBuilderAccess}
+
+func IsTutorSubFeature(feature FeatureAccess) bool {
+	return slices.Contains(TutorSubFeatures, feature)
 }
 
 func Feature(kinds ...FeatureAccess) []FeatureAccess {
