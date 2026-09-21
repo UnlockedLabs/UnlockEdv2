@@ -31,7 +31,7 @@ export function AchievementFormMetadata({
     const programOk = Boolean(entry.programName.trim());
     const dateOk = Boolean(entry.completionDate.trim());
     const programLabel = isFunnel ? 'Achievement' : 'Program name';
-    const dateLabel = isFunnel ? 'Program completion date' : 'Completion date';
+    const dateLabel = 'Completion date';
 
     return (
         <div
