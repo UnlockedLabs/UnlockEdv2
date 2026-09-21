@@ -64,7 +64,7 @@ type User struct {
 	Role          UserRole   `gorm:"size:64;default:student" json:"role" validate:"oneof=student system_admin facility_admin department_admin"`
 	KratosID      string     `gorm:"size:255" json:"kratos_id"`
 	FacilityID    uint       `json:"facility_id"`
-	DocID         string     `json:"doc_id" gorm:"column:doc_id;size:25"`
+	DocID         string     `json:"doc_id" gorm:"column:doc_id;size:32"`
 	DeactivatedAt *time.Time `json:"deactivated_at,omitempty"`
 
 	/* foreign keys */
