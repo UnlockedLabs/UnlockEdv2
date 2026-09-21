@@ -8,7 +8,11 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import { AllTimeBadge } from './ProgramMatrixTable';
+import {
+    AllTimeBadge,
+    SectionError,
+    UpdatingBadge
+} from './ProgramMatrixTable';
 import { pct } from './programsUtils';
 
 interface SecondEnrollmentSectionProps {
@@ -18,25 +22,36 @@ interface SecondEnrollmentSectionProps {
 export function SecondEnrollmentSection({
     selectedFacility
 }: SecondEnrollmentSectionProps) {
-    const { data: secondEnrollmentResp } = useSWR<
-        ServerResponseMany<SecondProgramEnrollmentRow>
-    >(
+    const {
+        data: secondEnrollmentResp,
+        error,
+        isValidating
+    } = useSWR<ServerResponseMany<SecondProgramEnrollmentRow>, Error>(
         `/api/department-metrics/programs/second-enrollment?facility=${selectedFacility}`
     );
+
+    if (error) {
+        return <SectionError label="second program enrollment" />;
+    }
 
     if (!secondEnrollmentResp?.data || secondEnrollmentResp.data.length === 0) {
         return null;
     }
 
     return (
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div
+            className={`bg-card rounded-lg border border-border overflow-hidden transition-opacity ${isValidating ? 'opacity-60' : ''}`}
+        >
             <div className="px-6 pt-5 pb-4">
                 <div className="flex items-center justify-between gap-2">
                     <h3 className="text-brand-dark dark:text-white font-medium">
                         Second Program Enrollment After First Completion — by
                         Facility and Program Type
                     </h3>
-                    <AllTimeBadge />
+                    <div className="flex items-center gap-3">
+                        <UpdatingBadge show={isValidating} />
+                        <AllTimeBadge />
+                    </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
                     {pct(

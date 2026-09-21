@@ -20,7 +20,11 @@ import {
     ChartTooltipContent,
     type ChartConfig
 } from '@/components/ui/chart';
-import { AllTimeBadge } from './ProgramMatrixTable';
+import {
+    AllTimeBadge,
+    SectionError,
+    UpdatingBadge
+} from './ProgramMatrixTable';
 import { pct } from './programsUtils';
 
 const LOAD_CHART_CONFIG: ChartConfig = {
@@ -43,24 +47,35 @@ function loadStatewideInsight(buckets: ProgramLoadBucket[]): string {
 export function LoadDistributionSection({
     selectedFacility
 }: LoadDistributionSectionProps) {
-    const { data: loadResp } = useSWR<
-        ServerResponseOne<ProgramLoadDistribution>
-    >(
+    const {
+        data: loadResp,
+        error,
+        isValidating
+    } = useSWR<ServerResponseOne<ProgramLoadDistribution>, Error>(
         `/api/department-metrics/programs/load-distribution?facility=${selectedFacility}`
     );
+
+    if (error) {
+        return <SectionError label="program load distribution" />;
+    }
 
     if (!loadResp?.data) {
         return null;
     }
 
     return (
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div
+            className={`bg-card rounded-lg border border-border overflow-hidden transition-opacity ${isValidating ? 'opacity-60' : ''}`}
+        >
             <div className="px-6 pt-5 pb-4">
                 <div className="flex items-center justify-between gap-2">
                     <h2 className="text-brand-dark dark:text-white text-lg font-medium">
                         Program Load Distribution
                     </h2>
-                    <AllTimeBadge />
+                    <div className="flex items-center gap-3">
+                        <UpdatingBadge show={isValidating} />
+                        <AllTimeBadge />
+                    </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
                     Concurrent active enrollments per resident

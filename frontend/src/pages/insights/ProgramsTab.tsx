@@ -23,14 +23,26 @@ export default function ProgramsTab({
 }: ProgramsTabProps) {
     const query = `facility=${selectedFacility}&${dateQuery(dateParams)}`;
 
-    const { data: engagementResp, isLoading: engagementLoading } = useSWR<
-        ServerResponseOne<ProgramEngagementOverview>
-    >(`/api/department-metrics/programs/engagement-overview?${query}`);
+    const {
+        data: engagementResp,
+        error: engagementError,
+        isLoading: engagementLoading
+    } = useSWR<ServerResponseOne<ProgramEngagementOverview>, Error>(
+        `/api/department-metrics/programs/engagement-overview?${query}`
+    );
 
     if (engagementLoading) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-40 w-full rounded-lg" />
+            </div>
+        );
+    }
+
+    if (engagementError) {
+        return (
+            <div className="bg-card rounded-lg border border-border p-8 text-center text-muted-foreground">
+                Failed to load program data. Please try again.
             </div>
         );
     }

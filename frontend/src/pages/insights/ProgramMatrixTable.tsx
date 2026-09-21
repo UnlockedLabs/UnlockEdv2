@@ -20,6 +20,27 @@ export function AllTimeBadge() {
     );
 }
 
+// Shown next to a section's title while `keepPreviousData` is displaying a
+// stale response (e.g. the prior facility's data) during a background
+// refetch, so it's never silently mistaken for current data.
+export function UpdatingBadge({ show }: { show: boolean }) {
+    if (!show) return null;
+    return (
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+            <span className="size-1.5 rounded-full bg-brand animate-pulse" />
+            Updating…
+        </span>
+    );
+}
+
+export function SectionError({ label }: { label: string }) {
+    return (
+        <div className="bg-card rounded-lg border border-border p-6 text-center text-sm text-muted-foreground">
+            Failed to load {label}. Please try again.
+        </div>
+    );
+}
+
 export function LegendSwatch({
     className,
     label

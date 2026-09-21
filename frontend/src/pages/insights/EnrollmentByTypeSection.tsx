@@ -15,7 +15,7 @@ import {
     ChartTooltipContent,
     type ChartConfig
 } from '@/components/ui/chart';
-import { AllTimeBadge } from './ProgramMatrixTable';
+import { AllTimeBadge, SectionError } from './ProgramMatrixTable';
 import { pct } from './programsUtils';
 
 const TYPE_CHART_CONFIG: ChartConfig = {
@@ -23,9 +23,14 @@ const TYPE_CHART_CONFIG: ChartConfig = {
 };
 
 export function EnrollmentByTypeSection() {
-    const { data: enrollmentByTypeResp } = useSWR<
-        ServerResponseMany<ProgramTypeEnrollment>
+    const { data: enrollmentByTypeResp, error } = useSWR<
+        ServerResponseMany<ProgramTypeEnrollment>,
+        Error
     >('/api/department-metrics/programs/enrollment-by-type?facility=all');
+
+    if (error) {
+        return <SectionError label="enrollment by program type" />;
+    }
 
     if (!enrollmentByTypeResp?.data || enrollmentByTypeResp.data.length === 0) {
         return null;

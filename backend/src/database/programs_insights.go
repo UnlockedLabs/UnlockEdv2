@@ -201,7 +201,7 @@ func (db *DB) GetSecondProgramEnrollmentRates(args *models.QueryContext, facilit
 		if first == nil {
 			continue
 		}
-		k := key{facilityName: first.facilityName, programType: programTypeByID[first.programID]}
+		k := key{facilityName: first.facilityName, programType: programTypeLabelFor(programTypeByID, first.programID)}
 		completedFirst[k]++
 
 		for _, e := range enrollments {
@@ -259,6 +259,17 @@ func (db *DB) programTypeLabelsByProgramID(args *models.QueryContext) (map[uint]
 		labels[p.ID] = programTypeLabel(p.ProgramTypes)
 	}
 	return labels, nil
+}
+
+// programTypeLabelFor looks up a program's type label, falling back to
+// "Other" when the program isn't in the map -- e.g. a soft-deleted program
+// (DeleteProgram leaves its enrollments/cohorts in place) that
+// programTypeLabelsByProgramID's Find no longer returns.
+func programTypeLabelFor(labels map[uint]string, programID uint) string {
+	if label, ok := labels[programID]; ok && label != "" {
+		return label
+	}
+	return "Other"
 }
 
 const minEnrolledPerMatrixCell = 3
@@ -503,7 +514,7 @@ func (db *DB) GetEnrollmentByProgramType(args *models.QueryContext, facilityID *
 	}
 	byType := make(map[string]*typeAgg)
 	for _, row := range rows {
-		label := programTypeByID[row.ProgramID]
+		label := programTypeLabelFor(programTypeByID, row.ProgramID)
 		agg, ok := byType[label]
 		if !ok {
 			agg = &typeAgg{}
@@ -524,7 +535,12 @@ func (db *DB) GetEnrollmentByProgramType(args *models.QueryContext, facilityID *
 			Rate:        float64(agg.completed) / float64(agg.enrolled) * 100,
 		})
 	}
-	sort.Slice(all, func(i, j int) bool { return all[i].Enrolled > all[j].Enrolled })
+	sort.Slice(all, func(i, j int) bool {
+		if all[i].Enrolled != all[j].Enrolled {
+			return all[i].Enrolled > all[j].Enrolled
+		}
+		return all[i].ProgramType < all[j].ProgramType
+	})
 
 	if len(all) <= maxIndividualProgramTypes {
 		return all, nil

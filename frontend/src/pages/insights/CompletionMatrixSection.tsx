@@ -3,7 +3,9 @@ import { ProgramCompletionMatrixCell, ServerResponseMany } from '@/types';
 import {
     ProgramMatrixTable,
     LegendSwatch,
-    AllTimeBadge
+    AllTimeBadge,
+    SectionError,
+    UpdatingBadge
 } from './ProgramMatrixTable';
 
 interface CompletionMatrixSectionProps {
@@ -36,24 +38,35 @@ function matrixHighlight(cells: ProgramCompletionMatrixCell[]): string | null {
 export function CompletionMatrixSection({
     selectedFacility
 }: CompletionMatrixSectionProps) {
-    const { data: matrixResp } = useSWR<
-        ServerResponseMany<ProgramCompletionMatrixCell>
-    >(
+    const {
+        data: matrixResp,
+        error,
+        isValidating
+    } = useSWR<ServerResponseMany<ProgramCompletionMatrixCell>, Error>(
         `/api/department-metrics/programs/completion-matrix?facility=${selectedFacility}`
     );
+
+    if (error) {
+        return <SectionError label="the completion matrix" />;
+    }
 
     if (!matrixResp?.data || matrixResp.data.length === 0) {
         return null;
     }
 
     return (
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div
+            className={`bg-card rounded-lg border border-border overflow-hidden transition-opacity ${isValidating ? 'opacity-60' : ''}`}
+        >
             <div className="px-6 pt-5 pb-4">
                 <div className="flex items-center justify-between gap-2">
                     <h3 className="text-brand-dark dark:text-white font-medium">
                         Facility × Program Completion Matrix
                     </h3>
-                    <AllTimeBadge />
+                    <div className="flex items-center gap-3">
+                        <UpdatingBadge show={isValidating} />
+                        <AllTimeBadge />
+                    </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
                     {matrixHighlight(matrixResp.data) ??
