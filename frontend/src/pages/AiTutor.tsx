@@ -1,13 +1,9 @@
-import { useAuth, isAdministrator } from '@/auth/useAuth';
-
 export default function AiTutor() {
-    const { user } = useAuth();
-    // AuthenticatedLayout only renders the h-16 header for admins (any width)
-    // or on mobile; residents on desktop get no header, so there's nothing to
-    // subtract there.
-    const heightClass = isAdministrator(user)
-        ? 'h-[calc(100vh-4rem)]'
-        : 'h-[calc(100vh-4rem)] md:h-screen';
+    // Residents only (see tutor-routes.tsx). AuthenticatedLayout renders the
+    // h-16 header for them on mobile but not on desktop, so the h-16 is
+    // subtracted only below md. The admin branch this used to carry went with
+    // the admin route.
+    const heightClass = 'h-[calc(100vh-4rem)] md:h-screen';
 
     return (
         <div className={`w-full ${heightClass}`}>

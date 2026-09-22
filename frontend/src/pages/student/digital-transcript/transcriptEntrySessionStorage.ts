@@ -1,3 +1,4 @@
+import { newUuid } from '@/lib/uuid';
 import { TOP_SKILLS_MAX } from '@/pages/student/digital-transcript/transcriptReflectionConfig';
 import { entryIsComplete } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import type { LearningRecordFormVariant } from '@/pages/student/digital-transcript/learningRecordPrototypes';
@@ -10,7 +11,7 @@ import {
 } from '@/types/digital-transcript';
 
 function newId() {
-    return crypto.randomUUID();
+    return newUuid();
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -366,14 +367,16 @@ export function readEntrySessionFromStorage(): TranscriptEntrySession | null {
 }
 
 export function writeEntrySessionToStorage(session: TranscriptEntrySession) {
-    localStorage.setItem(
-        getDigitalTranscriptStorageKeys().entrySession,
-        JSON.stringify(session)
-    );
-}
-
-export function removeEntrySessionFromStorage() {
-    localStorage.removeItem(getDigitalTranscriptStorageKeys().entrySession);
+    try {
+        localStorage.setItem(
+            getDigitalTranscriptStorageKeys().entrySession,
+            JSON.stringify(session)
+        );
+    } catch {
+        // Blocked site data makes this throw. It runs in the entry page's mount effect,
+        // so the throw took out the whole editor via the router's errorElement. Dropping
+        // the write costs only reload-persistence of the UI session.
+    }
 }
 
 export function dispatchEntrySessionUpdated() {

@@ -1,5 +1,9 @@
 # AI Tutor Integration — Context for Part B (UnlockEdv2 side)
 
+> **Resident-only as of ID-868.** The AI Tutor MVP ships the resident-facing side
+> only. Anything below describing an admin nav entry or the staff/teacher view is
+> pre-ID-868 and no longer current.
+
 > **Status: FULLY IMPLEMENTED + LIVE-SMOKED (2026-07-14), uncommitted.** All of Part B
 > (B1–B4) plus role-based access and SuperAdmin impersonation are built and running in the
 > embedded stack. The B1–B4 sections below are kept as the build recipe / where-it-lives

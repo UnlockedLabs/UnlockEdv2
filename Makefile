@@ -31,7 +31,20 @@ CANVAS_ACCOUNT_NAME ?= UnlockEd Dev
 # flags (e.g. `-f some-file.yml`).
 define run_dev_compose
 	@set -e; \
-	AI_DIR=$${TUTOR_DIR:-$$(sed -n 's/^TUTOR_DIR=//p' .env 2>/dev/null | tail -1)}; \
+	if [ ! -f .env ]; then \
+		echo; \
+		echo "=============================================================="; \
+		echo " NO .env FILE FOUND in $$(pwd)."; \
+		echo " The stack cannot start without it. Create it with:"; \
+		echo; \
+		echo "     cp .env.example .env"; \
+		echo; \
+		echo " then re-run this target."; \
+		echo "=============================================================="; \
+		echo; \
+		exit 1; \
+	fi; \
+	AI_DIR=$${TUTOR_DIR:-$$(sed -n 's/^TUTOR_DIR=//p' .env | tail -1)}; \
 	AI_DIR=$${AI_DIR:-$(DEFAULT_AI_DIR)}; \
 	TUTOR_READY=0; TUTOR_WHY=; \
 	if [ -d "$$AI_DIR" ]; then \

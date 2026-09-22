@@ -121,7 +121,7 @@ func ValidateCSVHeaders(headers []string) (*HeaderMapping, error) {
 // signature to avoid import cycle
 type UserIdentityChecker func(username string, docID string) (bool, bool)
 
-func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existingResidentIDs map[string]int, checkIdentity UserIdentityChecker, existingUsernames map[string]int) (*models.ValidatedUserRow, *models.InvalidUserRow) {
+func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existingResidentIDs map[string]int, checkIdentity UserIdentityChecker, existingUsernames map[string]int, normalizeUsername func(string) string) (*models.ValidatedUserRow, *models.InvalidUserRow) {
 	if len(row) == 0 {
 		return nil, &models.InvalidUserRow{
 			ValidatedUserRow: models.ValidatedUserRow{
@@ -161,7 +161,11 @@ func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existin
 	}
 
 	if headerMap.UsernameIdx != -1 && headerMap.UsernameIdx < len(row) {
-		username = strings.TrimSpace(row[headerMap.UsernameIdx])
+		// Normalize before any check runs, not after: handleBulkCreate stores this
+		// same normalized form, so checking the raw value here would let e.g.
+		// "j.doe" pass validation distinct from an existing "jdoe" and then land
+		// on the same stored username anyway.
+		username = normalizeUsername(strings.TrimSpace(row[headerMap.UsernameIdx]))
 	}
 
 	if lastName == "" {
@@ -183,10 +187,14 @@ func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existin
 	}
 
 	if username != "" {
-		if existingRowNum, exists := existingUsernames[username]; exists {
+		// Usernames are unique case-insensitively (see UserIdentityExists), so the
+		// intra-batch check has to fold case too, or "calisio" and "Calisio" in the
+		// same file pass as distinct (ID-849).
+		lowerUsername := strings.ToLower(username)
+		if existingRowNum, exists := existingUsernames[lowerUsername]; exists {
 			errors = append(errors, fmt.Sprintf("Duplicate Username - also found in row %d", existingRowNum))
 		} else {
-			existingUsernames[username] = rowNum
+			existingUsernames[lowerUsername] = rowNum
 		}
 	}
 

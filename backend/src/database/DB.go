@@ -33,7 +33,19 @@ func NewDB(db *gorm.DB) *DB {
 
 func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 	for _, char := range fl.Field().String() {
-		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) && char != '-' {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) && char != '-' && char != '.' {
+			return false
+		}
+	}
+	return true
+}
+
+// ValidateAlphaNumPeriod backs the `alphanumperiod` tag on Username. The
+// built-in `alphanumunicode` it replaced rejected periods, which would have
+// failed a username the handler had already accepted.
+func ValidateAlphaNumPeriod(fl validator.FieldLevel) bool {
+	for _, char := range fl.Field().String() {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && char != '.' {
 			return false
 		}
 	}
@@ -43,6 +55,10 @@ func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 var Validate = sync.OnceValue(func() *validator.Validate {
 	Ins := validator.New(validator.WithRequiredStructEnabled())
 	err := Ins.RegisterValidation("alphanumspace", ValidateAlphaNumSpace, false)
+	if err != nil {
+		logrus.Fatalf("Failed to register custom validation: %v", err)
+	}
+	err = Ins.RegisterValidation("alphanumperiod", ValidateAlphaNumPeriod, false)
 	if err != nil {
 		logrus.Fatalf("Failed to register custom validation: %v", err)
 	}

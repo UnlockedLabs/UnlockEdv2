@@ -18,9 +18,14 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
 	log "github.com/sirupsen/logrus"
+	"unicode/utf8"
 )
+
+// maxDocIDLen matches the users.doc_id column (VARCHAR(32), migration 00042).
+// Without this bound an over-long value from a non-browser client reaches
+// Postgres and fails as a 22001 (500) instead of a 400.
+const maxDocIDLen = 32
 
 func (srv *Server) registerUserRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
@@ -210,7 +215,12 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	}
 	invalidUser := validateUser(&reqForm.User)
 	if invalidUser != "" {
-		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
+		return newBadRequestServiceError(errors.New("invalid user"), invalidUser)
+	}
+
+	reqForm.User.DocID = strings.TrimSpace(reqForm.User.DocID)
+	if invalidDocID := validateResidentID(reqForm.User.Role, reqForm.User.DocID); invalidDocID != "" {
+		return newBadRequestServiceError(errors.New("invalid resident id"), invalidDocID)
 	}
 	log.add("created_username", reqForm.User.Username)
 	userNameExists, docExists := srv.Db.UserIdentityExists(reqForm.User.Username, reqForm.User.DocID)
@@ -218,11 +228,9 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newBadRequestServiceError(err, "Username already exists")
 	}
 	if docExists {
-		return newBadRequestServiceError(err, "Doc ID already exists")
+		return newBadRequestServiceError(err, "Resident ID already exists")
 	}
-	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, func(char rune) bool {
-		return unicode.IsLetter(char) || unicode.IsDigit(char)
-	})
+	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, isUsernameChar)
 	err = srv.WithUserContext(r).CreateUser(&reqForm.User)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -331,16 +339,25 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if toUpdate.DeactivatedAt != nil {
 		return newBadRequestServiceError(errors.New("cannot update deactivated user"), "User is deactivated")
 	}
-	if toUpdate.Username != user.Username && user.Username != "" {
-		// usernames are immutable
+	if !strings.EqualFold(toUpdate.Username, user.Username) && user.Username != "" {
+		// usernames are immutable, but case-insensitively so (ID-849) — a
+		// same-username-different-case submission isn't actually a change.
 		return newBadRequestServiceError(errors.New("username cannot be updated"), "username")
 	}
+	// Casing is fixed at creation; even a same-identity resubmission must not
+	// silently re-case the stored value via UpdateStruct below.
+	user.Username = toUpdate.Username
+	user.DocID = strings.TrimSpace(user.DocID)
 	if user.DocID == "" && toUpdate.DocID != "" {
 		user.DocID = toUpdate.DocID
 	}
+
+	if invalidDocID := validateResidentID(toUpdate.Role, user.DocID); invalidDocID != "" {
+		return newBadRequestServiceError(errors.New("invalid resident id"), invalidDocID)
+	}
 	invalidUser := validateUser(&user)
 	if invalidUser != "" {
-		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
+		return newBadRequestServiceError(errors.New("invalid user"), invalidUser)
 	}
 	models.UpdateStruct(toUpdate, &user)
 	err = srv.WithUserContext(r).UpdateUser(toUpdate)
@@ -421,15 +438,56 @@ func canDeleteUser(currentUser *Claims, toDelete models.UserRole) bool {
 	}
 }
 
+func isUsernameChar(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '.'
+}
+
+func isNameChar(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsSpace(r) || r == '-' || r == '.'
+}
+
+// validateUser returns a message naming the offending field and the exact
+// character that broke it, or "" when the user is valid. The message is shown
+// to the user verbatim in a toast, so it has to say what to fix (ID-848).
 func validateUser(user *models.User) string {
-	if strings.ContainsFunc(user.Username, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsNumber(r) }) {
-		return "alphanum"
-	} else if strings.ContainsFunc(user.NameFirst, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsSpace(r) && r != '-' }) {
-		return "alphanum"
-	} else if strings.ContainsFunc(user.NameLast, func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsSpace(r) && r != '-'
-	}) {
-		return "alphanum"
+	fields := []struct {
+		label     string
+		value     string
+		isAllowed func(rune) bool
+		allowed   string
+	}{
+		{"Username", user.Username, isUsernameChar, "letters, numbers, and periods"},
+		{"First name", user.NameFirst, isNameChar, "letters, spaces, hyphens, and periods"},
+		{"Last name", user.NameLast, isNameChar, "letters, spaces, hyphens, and periods"},
+	}
+	for _, field := range fields {
+		for _, char := range field.value {
+			if !field.isAllowed(char) {
+				return fmt.Sprintf("%s cannot contain %q, please use only %s", field.label, string(char), field.allowed)
+			}
+		}
+	}
+	return ""
+}
+
+// validateResidentID enforces that residents carry a resident ID (ID-835) so
+// records can be correlated with OMS later; the value itself is never verified.
+// Scoped to students because admins share models.User and legitimately have
+// none. The role is passed in rather than read off the user because PATCH
+// bodies omit it — callers must supply the stored role on update.
+//
+// This deliberately lives at the API boundary and not on the model or in
+// db.CreateUser: the provider-sync imports create students with no source for
+// an ID and must keep working.
+func validateResidentID(role models.UserRole, docID string) string {
+	if role != models.Student {
+		return ""
+	}
+	if docID == "" {
+		return "Resident ID is required"
+	}
+	if utf8.RuneCountInString(docID) > maxDocIDLen {
+		return fmt.Sprintf("Resident ID must be %d characters or fewer", maxDocIDLen)
 	}
 	return ""
 }
@@ -811,11 +869,14 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 	checkIdentity := func(username string, docID string) (bool, bool) {
 		return srv.Db.UserIdentityExists(username, docID)
 	}
+	normalizeUsername := func(username string) string {
+		return stripNonAlphaChars(username, isUsernameChar)
+	}
 
 	for i, record := range records[1:] {
 		rowNum := i + 2
 
-		validRow, invalidRow := src.ValidateUserRow(record, rowNum, headerMap, existingResidentIDs, checkIdentity, existingUsernames)
+		validRow, invalidRow := src.ValidateUserRow(record, rowNum, headerMap, existingResidentIDs, checkIdentity, existingUsernames, normalizeUsername)
 		if validRow != nil {
 			validRows = append(validRows, *validRow)
 		}
@@ -874,9 +935,7 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 	usersToCreate := make([]models.User, 0, len(validRows))
 	for _, validRow := range validRows {
 		user := models.User{
-			Username: stripNonAlphaChars(validRow.Username, func(char rune) bool {
-				return unicode.IsLetter(char) || unicode.IsDigit(char)
-			}),
+			Username:   stripNonAlphaChars(validRow.Username, isUsernameChar),
 			NameFirst:  validRow.FirstName,
 			NameLast:   validRow.LastName,
 			DocID:      validRow.ResidentID,

@@ -114,6 +114,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerTagRoutes,
 		srv.registerReportsRoutes,
 		srv.registerLearningRecordRoutes,
+		srv.registerClientErrorRoutes,
 	} {
 		srv.register(route)
 	}

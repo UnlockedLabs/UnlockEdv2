@@ -302,9 +302,17 @@ func (db *DB) DeleteUser(id int) error {
 	})
 }
 
+// Usernames are unique case-insensitively (see UserIdentityExists), so login
+// matches on the folded value — a user stored as "Calisio" can sign in as
+// "calisio" (ID-849). Backed by idx_users_username_lower (migration 00076);
+// a plain equality index cannot serve a LOWER() predicate.
+//
+// First() emits ORDER BY id LIMIT 1, so if legacy data does contain a
+// case-duplicate pair the lowest id wins deterministically rather than
+// resolving by physical row order.
 func (db *DB) GetUserByUsername(username string) (*models.User, error) {
 	var user models.User
-	if err := db.Model(models.User{}).First(&user, "username = ?", username).Error; err != nil {
+	if err := db.Model(models.User{}).First(&user, "LOWER(username) = ?", strings.ToLower(username)).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
