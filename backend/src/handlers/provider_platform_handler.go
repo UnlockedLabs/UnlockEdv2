@@ -78,6 +78,12 @@ func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	// The access key travels on every request to this base URL, so a plaintext
+	// one would put it on the wire. Rejected here rather than in a model hook so
+	// the admin gets a message they can act on.
+	if err := requireHTTPS(platform.BaseUrl); err != nil {
+		return newBadRequestServiceError(err, "provider base URL must use https")
+	}
 	if platform.Type == models.Brightspace {
 		oauthURL, err := srv.getOAuthUrl(&platform)
 		if err != nil {
@@ -195,6 +201,14 @@ func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request, 
 	err = json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
+	}
+	// A PATCH carries only what changed, so an update that leaves base_url alone
+	// is not asked to justify it -- an existing plaintext provider can still be
+	// archived or disabled.
+	if platform.BaseUrl != "" {
+		if err := requireHTTPS(platform.BaseUrl); err != nil {
+			return newBadRequestServiceError(err, "provider base URL must use https")
+		}
 	}
 	dbWithCtx := srv.WithUserContext(r)
 

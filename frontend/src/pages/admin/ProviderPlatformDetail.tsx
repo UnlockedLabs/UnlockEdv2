@@ -45,7 +45,8 @@ const providerTypeLabels: Record<ProviderPlatformType, string> = {
     [ProviderPlatformType.CANVAS_CLOUD]: 'Canvas Cloud',
     [ProviderPlatformType.CANVAS_OSS]: 'Canvas OSS',
     [ProviderPlatformType.KOLIBRI]: 'Kolibri',
-    [ProviderPlatformType.BRIGHTSPACE]: 'Brightspace'
+    [ProviderPlatformType.BRIGHTSPACE]: 'Brightspace',
+    [ProviderPlatformType.ESSENTIAL_ED]: 'Essential Education'
 };
 
 const providerStateStyles: Record<ProviderPlatformState, string> = {

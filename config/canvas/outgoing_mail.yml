@@ -1,0 +1,12 @@
+# Canvas LMS outgoing mail config (local development only).
+# There is no SMTP server in dev. delivery_method `test` is Rails' in-memory delivery, so mail
+# never opens a socket -- without it Canvas defaults to :smtp and every notification job retries
+# against localhost:25 until it hits max_attempts. Must be `test`, not `:test`: the initializer
+# calls to_sym on the value, and ":test".to_sym is not :test.
+production:
+  delivery_method: test
+  address: "localhost"
+  port: 25
+  domain: "localhost"
+  outgoing_address: "canvas@localhost"
+  default_name: "Canvas (dev)"

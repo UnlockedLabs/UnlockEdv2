@@ -29,6 +29,23 @@ function formatTime(isoStr: string, timezone?: string): string {
     });
 }
 
+// Start and end as one compact label. Month cells are narrow, so a shared
+// meridiem is written once ("9:00 - 11:00 AM") and kept on both halves only when
+// the range crosses midday ("11:00 AM - 1:00 PM").
+function formatTimeRange(
+    startIso: string,
+    endIso: string,
+    timezone?: string
+): string {
+    const start = formatTime(startIso, timezone);
+    const end = formatTime(endIso, timezone);
+    const startMeridiem = start.slice(-2);
+    if (startMeridiem === end.slice(-2)) {
+        return `${start.slice(0, -3)} - ${end}`;
+    }
+    return `${start} - ${end}`;
+}
+
 // Returns YYYY-MM-DD in the given timezone (or UTC if none provided).
 function getDateInTimezone(isoStr: string, timezone?: string): string {
     return new Date(isoStr).toLocaleDateString('en-CA', {
@@ -41,7 +58,9 @@ export function CanvasScheduleTab({ classId }: Props) {
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth() + 1;
 
-    const { data: eventsResp, isLoading } = useSWR<ServerResponseMany<CanvasScheduleEvent>>(
+    const { data: eventsResp, isLoading } = useSWR<
+        ServerResponseMany<CanvasScheduleEvent>
+    >(
         `/api/program-classes/${classId}/canvas-schedule?month=${String(month).padStart(2, '0')}&year=${year}`
     );
 
@@ -58,7 +77,8 @@ export function CanvasScheduleTab({ classId }: Props) {
     const calStart = new Date(startOfMonth);
     calStart.setDate(calStart.getDate() - calStart.getDay());
 
-    const weeks: { date: Date; dateStr: string; isCurrentMonth: boolean }[][] = [];
+    const weeks: { date: Date; dateStr: string; isCurrentMonth: boolean }[][] =
+        [];
     const cursor = new Date(calStart);
     for (let w = 0; w < 6; w++) {
         if (w > 4 && cursor.getMonth() !== month - 1) break;
@@ -74,10 +94,15 @@ export function CanvasScheduleTab({ classId }: Props) {
         weeks.push(week);
     }
 
-    const monthLabel = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const monthLabel = viewDate.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric'
+    });
 
-    const prevMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-    const nextMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    const prevMonth = () =>
+        setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+    const nextMonth = () =>
+        setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -87,7 +112,9 @@ export function CanvasScheduleTab({ classId }: Props) {
                     <Button variant="outline" size="sm" onClick={prevMonth}>
                         <ChevronLeft className="size-4" />
                     </Button>
-                    <span className="text-sm font-medium w-36 text-center">{monthLabel}</span>
+                    <span className="text-sm font-medium w-36 text-center">
+                        {monthLabel}
+                    </span>
                     <Button variant="outline" size="sm" onClick={nextMonth}>
                         <ChevronRight className="size-4" />
                     </Button>
@@ -102,44 +129,64 @@ export function CanvasScheduleTab({ classId }: Props) {
                 <div className="overflow-x-auto">
                     <div className="min-w-[500px] border border-gray-200 rounded-lg overflow-hidden">
                         <div className="grid grid-cols-7 bg-gray-50">
-                            {DAY_HEADERS.map(d => (
-                                <div key={d} className="p-2 text-center text-sm font-medium text-gray-600 border-r border-gray-200 last:border-r-0">
+                            {DAY_HEADERS.map((d) => (
+                                <div
+                                    key={d}
+                                    className="p-2 text-center text-sm font-medium text-gray-600 border-r border-gray-200 last:border-r-0"
+                                >
                                     {d}
                                 </div>
                             ))}
                         </div>
                         {weeks.map((week, wi) => (
                             <div key={wi} className="grid grid-cols-7">
-                                {week.map(day => {
-                                    const evs = eventsByDate.get(day.dateStr) ?? [];
+                                {week.map((day) => {
+                                    const evs =
+                                        eventsByDate.get(day.dateStr) ?? [];
                                     const isToday = day.dateStr === todayStr;
                                     return (
                                         <div
                                             key={day.dateStr}
                                             className={cn(
                                                 'min-h-[80px] p-2 border-t border-r border-gray-200 last:border-r-0',
-                                                !day.isCurrentMonth && 'bg-gray-50',
+                                                !day.isCurrentMonth &&
+                                                    'bg-gray-50',
                                                 isToday && 'bg-blue-50',
-                                                day.isCurrentMonth && evs.length > 0 && !isToday && 'bg-green-50'
+                                                day.isCurrentMonth &&
+                                                    evs.length > 0 &&
+                                                    !isToday &&
+                                                    'bg-green-50'
                                             )}
                                         >
-                                            <span className={cn(
-                                                'text-sm',
-                                                !day.isCurrentMonth && 'text-gray-400',
-                                                isToday && 'font-bold text-blue-700'
-                                            )}>
+                                            <span
+                                                className={cn(
+                                                    'text-sm',
+                                                    !day.isCurrentMonth &&
+                                                        'text-gray-400',
+                                                    isToday &&
+                                                        'font-bold text-blue-700'
+                                                )}
+                                            >
                                                 {day.date.getDate()}
                                             </span>
-                                            {day.isCurrentMonth && evs.map(ev => (
-                                                <div key={ev.id} className={cn(
-                                                    'mt-1 text-xs rounded px-1.5 py-0.5',
-                                                    ev.is_cancelled
-                                                        ? 'bg-gray-200 text-gray-500 line-through'
-                                                        : 'bg-[#556830] text-white'
-                                                )}>
-                                                    {formatTime(ev.start_at, ev.timezone)}
-                                                </div>
-                                            ))}
+                                            {day.isCurrentMonth &&
+                                                evs.map((ev) => (
+                                                    <div
+                                                        key={ev.id}
+                                                        className={cn(
+                                                            'mt-1 text-xs rounded px-1.5 py-0.5',
+                                                            ev.is_cancelled
+                                                                ? 'bg-gray-200 text-gray-500 line-through'
+                                                                : 'bg-[#556830] text-white'
+                                                        )}
+                                                    >
+                                                        {formatTimeRange(
+                                                            ev.start_at,
+                                                            ev.end_at,
+                                                            ev.timezone
+                                                        )}
+                                                    </div>
+                                                ))}
                                         </div>
                                     );
                                 })}

@@ -181,7 +181,7 @@ func (srv *CanvasService) ImportCourses(db *gorm.DB) error {
 		return err
 	}
 	for _, course := range courses {
-		id := int(course["id"].(int64))
+		id := int(course["id"].(float64))
 		var count int64 = 0
 		log.Infof("importing course %d", id)
 		if db.Table("courses").Where("provider_platform_id = ?", srv.ProviderPlatformID).
@@ -403,13 +403,23 @@ func (srv *CanvasService) getUsersSubmissionsForCourse(courseId string, queryStr
 * Quizzes are included in assignments so we don't need to get them separately
 * */
 func (srv *CanvasService) ImportMilestones(courseIdPair map[string]any, mapping []map[string]any, db *gorm.DB, lastRun time.Time) error {
-	courseId := int(courseIdPair["course_id"].(int64))
+	courseId, ok := dbUint(courseIdPair, "course_id")
+	if !ok {
+		return fmt.Errorf("unexpected type %T for course_id in course mapping", courseIdPair["course_id"])
+	}
 	externalCourseId := courseIdPair["external_course_id"].(string)
 	values := url.Values{}
-	reversed := make(map[string]int)
+	reversed := make(map[string]uint)
 	for _, userMap := range mapping {
-		reversed[userMap["external_user_id"].(string)] = int(userMap["user_id"].(int64))
-		values.Add("user_ids[]", userMap["external_user_id"].(string))
+		userId, ok := dbUint(userMap, "user_id")
+		if !ok {
+			log.WithFields(log.Fields{"task": "ImportMilestones", "user_id": userMap["user_id"]}).
+				Warnf("skipping user mapping with unexpected user_id type %T", userMap["user_id"])
+			continue
+		}
+		externalUserId := userMap["external_user_id"].(string)
+		reversed[externalUserId] = userId
+		values.Add("user_ids[]", externalUserId)
 	}
 	fields := log.Fields{"task": "ImportMilestones", "course_id": courseId, "external_id": externalCourseId}
 	submissions, err := srv.getUsersSubmissionsForCourse(externalCourseId, values, lastRun)
@@ -420,15 +430,24 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]any, mapping 
 	}
 	for _, submission := range submissions {
 		externalUserID := fmt.Sprintf("%d", int(submission["user_id"].(float64)))
+		// The submissions endpoint does not honour the user filter we send, so it
+		// returns users we have no mapping for. Writing those gives UserID 0, which
+		// the users foreign key rejects -- skip them rather than log a failure per
+		// submission and then try the grade write for the same phantom user.
+		userID, mapped := reversed[externalUserID]
+		if !mapped {
+			log.WithFields(fields).Debugf("no user mapping for external user %s, skipping submission", externalUserID)
+			continue
+		}
 		milestone := models.Milestone{
-			UserID:      uint(reversed[externalUserID]),
+			UserID:      userID,
 			ExternalID:  fmt.Sprintf("%d", int(submission["id"].(float64))),
-			CourseID:    uint(courseId),
+			CourseID:    courseId,
 			Type:        "assignment_submission",
 			IsCompleted: submission["workflow_state"] == "complete" || submission["workflow_state"] == "graded",
 		}
-		if db.Create(&milestone).Error != nil {
-			log.Errorln("failed to create milestone in GetMilestonesForCourseUser: ", err)
+		if createErr := db.Create(&milestone).Error; createErr != nil {
+			log.WithFields(fields).Errorln("failed to create assignment_submission milestone: ", createErr)
 		}
 		_, ok := submission["grade"].(string)
 		if !ok {
@@ -439,13 +458,13 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]any, mapping 
 			anonId := submission["anonymous_id"].(string)
 			gradeReceived := models.Milestone{
 				CourseID:    uint(courseId),
-				UserID:      uint(reversed[externalUserID]),
+				UserID:      userID,
 				ExternalID:  anonId,
 				Type:        "grade_received",
 				IsCompleted: true,
 			}
-			if db.Create(&gradeReceived).Error != nil {
-				log.WithFields(fields).Errorln("failed to create grade_received milestone: ", err)
+			if createErr := db.Create(&gradeReceived).Error; createErr != nil {
+				log.WithFields(fields).Errorln("failed to create grade_received milestone: ", createErr)
 				continue
 			}
 		}
@@ -503,7 +522,10 @@ func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string
 }
 
 func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]any, db *gorm.DB) error {
-	courseId := int(coursePair["course_id"].(int64))
+	courseId, ok := dbUint(coursePair, "course_id")
+	if !ok {
+		return fmt.Errorf("unexpected type %T for course_id in course mapping", coursePair["course_id"])
+	}
 	externalId := coursePair["external_course_id"].(string)
 	enrollments, err := srv.getEnrollmentsForCourse(externalId)
 	if err != nil {
@@ -511,7 +533,7 @@ func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]any, db 
 		return err
 	}
 	for _, enrollment := range enrollments {
-		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(int64)))
+		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(float64)))
 		var userID uint
 		err := db.Model(models.ProviderUserMapping{}).Select("user_id").First(&userID, "provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, userId).Error
 		if err != nil {
@@ -519,7 +541,7 @@ func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]any, db 
 			continue
 		}
 		if db.Model(&models.UserEnrollment{}).First(&models.UserEnrollment{}, "user_id = ? AND course_id = ?", userID, courseId).RowsAffected == 0 {
-			if err := db.Create(&models.UserEnrollment{UserID: userID, CourseID: uint(courseId)}).Error; err != nil {
+			if err := db.Create(&models.UserEnrollment{UserID: userID, CourseID: courseId}).Error; err != nil {
 				log.WithFields(log.Fields{"userId": userID, "course_id": courseId, "error": err}).Error("Failed to create enrollment")
 				continue
 			}

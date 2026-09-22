@@ -93,6 +93,7 @@ export interface ProgramOverview extends Program {
     completion_rate: number;
     attendance_rate: number;
     active_class_facility_ids: number[];
+    source?: string;
     loading?: boolean;
 }
 
@@ -130,6 +131,21 @@ export interface ProgramsOverviewTable {
     status: boolean;
     source?: string;
     loading?: boolean;
+}
+
+// Programs whose classes are read live from a provider platform rather than
+// stored by UnlockEd. They cannot be edited, deleted or scheduled here.
+export function isExternalSource(source?: string): boolean {
+    return source === 'canvas' || source === 'essential_ed';
+}
+
+/**
+ * Human-readable name of the provider a program or class was read from, for
+ * badges and empty states. Falls back to Canvas so payloads written before
+ * `source` existed keep their old wording.
+ */
+export function externalSourceLabel(source?: string): string {
+    return source === 'essential_ed' ? 'Essential Education' : 'Canvas';
 }
 
 export interface ProgramsOverview {
@@ -211,6 +227,9 @@ export interface Cohort {
     room?: string;
     attendance_rate?: number;
     is_canvas?: boolean;
+    source?: string;
+    /** True for a placeholder row standing in for a provider still being read. */
+    loading?: boolean;
     canvas_timezone?: string;
 }
 
@@ -273,6 +292,7 @@ export interface ResidentProgramOverview {
     change_reason?: string;
     schedule?: string;
     is_canvas?: boolean;
+    source?: string;
 }
 
 export interface ProgramCompletion {

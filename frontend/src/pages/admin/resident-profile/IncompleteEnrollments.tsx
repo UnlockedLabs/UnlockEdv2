@@ -15,7 +15,7 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { formatDate, getEnrollmentStatusColor } from '@/lib/formatters';
-import { ResidentProgramOverview } from '@/types';
+import { ResidentProgramOverview, externalSourceLabel } from '@/types';
 
 interface IncompleteEnrollmentsProps {
     enrollments: ResidentProgramOverview[];
@@ -100,7 +100,9 @@ export function IncompleteEnrollments({
                                                     </span>
                                                     {enrollment.is_canvas && (
                                                         <Badge className="bg-[#E66000] text-white text-xs">
-                                                            Canvas
+                                                            {externalSourceLabel(
+                                                                enrollment.source
+                                                            )}
                                                         </Badge>
                                                     )}
                                                 </div>
