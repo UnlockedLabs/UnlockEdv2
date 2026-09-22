@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 // maxDocIDLen matches the users.doc_id column (VARCHAR(32), migration 00042).
@@ -483,7 +484,7 @@ func validateResidentID(role models.UserRole, docID string) string {
 	if docID == "" {
 		return "Resident ID is required"
 	}
-	if len(docID) > maxDocIDLen {
+	if utf8.RuneCountInString(docID) > maxDocIDLen {
 		return fmt.Sprintf("Resident ID must be %d characters or fewer", maxDocIDLen)
 	}
 	return ""
