@@ -15,7 +15,6 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
-import type { TranscriptEntry } from '@/types/digital-transcript';
 import { useAuth, hasFeature } from '@/auth/useAuth';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
 import TopContentList from '@/components/dashboard/TopContentList';
@@ -51,10 +50,9 @@ import {
     learningRecordOutlineButtonClassName
 } from '@/pages/student/digital-transcript/learningRecordButtons';
 import {
-    findIncompleteAchievementEntry,
-    sortEntriesNewestFirst
+    filterEntriesForExport,
+    findIncompleteAchievementEntry
 } from '@/pages/student/digital-transcript/transcriptEntrySessionStorage';
-import { entryIsComplete } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import { getLearningRecordFormVariant } from '@/pages/student/digital-transcript/learningRecordPrototypes';
 import { learningRecordResidentDisplayName } from '@/pages/student/digital-transcript/learningRecordResidentName';
 import { ViewAllAchievementsSheet } from '@/pages/student/digital-transcript/ViewAllAchievementsSheet';
@@ -93,19 +91,6 @@ const LAST_HOME_VISIT_KEY = 'unlocked.resident-home.last-visit';
 
 function achievementCountWord(count: number): string {
     return count === 1 ? 'achievement' : 'achievements';
-}
-
-function detectLearningState(
-    entries: TranscriptEntry[],
-    inProgressEntryExists: boolean,
-    formVariant: ReturnType<typeof getLearningRecordFormVariant>
-): ResidentHomeLearningState {
-    const savedCount = entries.filter((e) =>
-        entryIsComplete(e, formVariant)
-    ).length;
-    if (inProgressEntryExists) return 'returningWithIncomplete';
-    if (savedCount === 0) return 'new';
-    return 'returningComplete';
 }
 
 function parsePreviewLearningState(
@@ -531,25 +516,19 @@ export default function ResidentHome() {
         setIncompleteReminderDismissedId(inProgressEntryReminder.id);
     }, [inProgressEntryReminder]);
 
-    const savedEntries = useMemo(
-        () =>
-            entries.filter((e) =>
-                entryIsComplete(e, learningRecordFormVariant)
-            ),
-        [entries, learningRecordFormVariant]
-    );
     const achievementsNewestFirst = useMemo(
-        () => sortEntriesNewestFirst(savedEntries),
-        [savedEntries]
+        () => filterEntriesForExport(entries),
+        [entries]
     );
 
-    const isNewResident = savedEntries.length === 0 && !inProgressEntryExists;
+    const isNewResident =
+        achievementsNewestFirst.length === 0 && !inProgressEntryExists;
 
-    const detectedState = detectLearningState(
-        entries,
-        inProgressEntryExists,
-        learningRecordFormVariant
-    );
+    const detectedState: ResidentHomeLearningState = inProgressEntryExists
+        ? 'returningWithIncomplete'
+        : isNewResident
+          ? 'new'
+          : 'returningComplete';
     const learningState = previewLearningState ?? detectedState;
     const heroIsFirstTime = previewLearningState === 'new' || isNewResident;
     const heroCtaLabel = heroIsFirstTime
@@ -687,7 +666,7 @@ export default function ResidentHome() {
                                     </CardContent>
                                 </Card>
                                 <RecentAchievementsPanel
-                                    totalCount={savedEntries.length}
+                                    totalCount={achievementsNewestFirst.length}
                                     hasInProgressEntry={inProgressEntryExists}
                                     onExportClick={() =>
                                         setExportSheetOpen(true)
