@@ -407,7 +407,9 @@ func (svc *ClassesService) GetProgramClassDetailsForProgram(args *models.QueryCo
 		if room != "" {
 			classes[i].Room = room
 		}
-		classes[i].AttendanceRate = attendanceByClass[classes[i].ID]
+		if rate, ok := attendanceByClass[classes[i].ID]; ok {
+			classes[i].AttendanceRate = &rate
+		}
 	}
 
 	return classes, nil

@@ -318,7 +318,7 @@ type ProgramClassDetail struct {
 	HistoricalEnrollments int     `json:"historical_enrollments"`
 	Schedule              string  `json:"schedule"`
 	Room                  string  `json:"room"`
-	AttendanceRate        float64 `json:"attendance_rate"`
+	AttendanceRate        *float64 `json:"attendance_rate"`
 	Completed             int     `json:"completed"`
 }
 
