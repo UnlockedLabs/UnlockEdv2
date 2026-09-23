@@ -308,6 +308,11 @@ export default function ProgramOverviewStatewide() {
                 const activeClasses = facilityClasses.filter(
                     (cls) => cls.status === SelectedClassStatus.Active
                 ).length;
+                const startedClasses = facilityClasses.filter(
+                    (cls) =>
+                        cls.status !== SelectedClassStatus.Scheduled &&
+                        cls.status !== SelectedClassStatus.Cancelled
+                );
                 const totalEnrolled = facilityClasses.reduce(
                     (sum, cls) => sum + (cls.enrolled ?? 0),
                     0
@@ -320,11 +325,11 @@ export default function ProgramOverviewStatewide() {
                     totalCapacity > 0
                         ? (totalEnrolled / totalCapacity) * 100
                         : 0;
-                const completions = facilityClasses.reduce(
+                const completions = startedClasses.reduce(
                     (sum, cls) => sum + (cls.completed ?? 0),
                     0
                 );
-                const historicalEnrollments = facilityClasses.reduce(
+                const historicalEnrollments = startedClasses.reduce(
                     (sum, cls) => sum + (cls.historical_enrollments ?? 0),
                     0
                 );
@@ -419,11 +424,16 @@ export default function ProgramOverviewStatewide() {
         return Math.round(total / attendanceSamples.length);
     }, [classes]);
     const computedCompletionRateFromClasses = useMemo(() => {
-        const totalCompletions = classes.reduce(
+        const startedClasses = classes.filter(
+            (cls) =>
+                cls.status !== SelectedClassStatus.Scheduled &&
+                cls.status !== SelectedClassStatus.Cancelled
+        );
+        const totalCompletions = startedClasses.reduce(
             (sum, cls) => sum + (cls.completed ?? 0),
             0
         );
-        const totalHistoricalEnrollments = classes.reduce(
+        const totalHistoricalEnrollments = startedClasses.reduce(
             (sum, cls) => sum + (cls.historical_enrollments ?? 0),
             0
         );
