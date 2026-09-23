@@ -352,7 +352,9 @@ export function StatCards({
                             <TooltipTrigger asChild>
                                 <div className="cursor-help">
                                     <div className="text-3xl text-brand-dark mb-2">
-                                        —
+                                        <span className="inline-block translate-y-[35%]">
+                                            —
+                                        </span>
                                     </div>
                                     <div className="text-sm text-gray-600">
                                         No attendance recorded yet

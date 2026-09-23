@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
@@ -447,9 +447,13 @@ export default function ProgramsPage() {
                         <StatCard
                             label="Completion Rate"
                             value={
-                                stats.completionRate !== null
-                                    ? `${stats.completionRate}%`
-                                    : '—'
+                                stats.completionRate !== null ? (
+                                    `${stats.completionRate}%`
+                                ) : (
+                                    <span className="inline-block translate-y-[35%]">
+                                        —
+                                    </span>
+                                )
                             }
                             tooltip={
                                 stats.completionRate !== null
@@ -1141,7 +1145,7 @@ function StatCard({
     tooltip
 }: {
     label: string;
-    value: string | number;
+    value: ReactNode;
     tooltip?: string;
 }) {
     const cardContent = (
@@ -1754,9 +1758,13 @@ function ProgramsTable({
                                                 <div
                                                     className={`text-sm font-medium cursor-help w-fit ${completionRate !== null ? getPercentageColorClass(completionRate) : 'text-gray-500'}`}
                                                 >
-                                                    {completionRate !== null
-                                                        ? `${Math.round(completionRate)}%`
-                                                        : '—'}
+                                                    {completionRate !== null ? (
+                                                        `${Math.round(completionRate)}%`
+                                                    ) : (
+                                                        <span className="inline-block translate-y-[35%]">
+                                                            —
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-brand-dark text-white max-w-xs">
@@ -1775,9 +1783,13 @@ function ProgramsTable({
                                                 <div
                                                     className={`text-sm font-medium cursor-help w-fit ${attendanceRate !== null ? getPercentageColorClass(attendanceRate) : 'text-gray-500'}`}
                                                 >
-                                                    {attendanceRate !== null
-                                                        ? `${Math.round(attendanceRate)}%`
-                                                        : '—'}
+                                                    {attendanceRate !== null ? (
+                                                        `${Math.round(attendanceRate)}%`
+                                                    ) : (
+                                                        <span className="inline-block translate-y-[35%]">
+                                                            —
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-brand-dark text-white max-w-xs">
