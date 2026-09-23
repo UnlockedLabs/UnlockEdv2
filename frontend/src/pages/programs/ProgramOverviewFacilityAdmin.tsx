@@ -217,7 +217,7 @@ export default function ProgramOverviewFacilityAdmin() {
         totalCapacity > 0
             ? Math.round((totalEnrolled / totalCapacity) * 100)
             : 0;
-    const backendCompletionRate = program?.completion_rate ?? 0;
+    const backendCompletionRate = program?.completion_rate ?? null;
 
     async function handleArchiveCheck() {
         if (!program || archiveCheckLoading) return;
@@ -1379,7 +1379,7 @@ function PerformanceTab({
     totalCapacity: number;
     activeClassCount: number;
     totalClassCount: number;
-    completionRate: number;
+    completionRate: number | null;
 }) {
     const capacityPct =
         totalCapacity > 0
@@ -1437,15 +1437,33 @@ function PerformanceTab({
                         <p className="text-sm text-gray-600 mb-2">
                             Completion Rate
                         </p>
-                        <p className="text-3xl text-brand-dark mb-2">
-                            {Math.round(completionRate)}%
-                        </p>
-                        <Progress
-                            value={completionRate}
-                            className="h-2"
-                            indicatorClassName="bg-brand"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">&nbsp;</p>
+                        {completionRate !== null ? (
+                            <>
+                                <p className="text-3xl text-brand-dark mb-2">
+                                    {Math.round(completionRate)}%
+                                </p>
+                                <Progress
+                                    value={completionRate}
+                                    className="h-2"
+                                    indicatorClassName="bg-brand"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    &nbsp;
+                                </p>
+                            </>
+                        ) : (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <p className="text-3xl text-brand-dark mb-2 cursor-help w-fit">
+                                        —
+                                    </p>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                    No residents have reached completion
+                                    eligibility yet
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
                     </div>
                 </div>
             </CardContent>
