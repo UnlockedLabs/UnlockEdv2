@@ -1134,9 +1134,12 @@ function ClassRow({
                   ? 'text-brand-gold'
                   : 'text-gray-700'
             : 'text-gray-500';
+    const hasStarted =
+        cls.status !== SelectedClassStatus.Scheduled &&
+        cls.status !== SelectedClassStatus.Cancelled;
     const completionBase = cls.historical_enrollments ?? 0;
     const completionRate =
-        completionBase > 0
+        hasStarted && completionBase > 0
             ? Math.round((cls.completed / completionBase) * 100)
             : null;
     const completionClass =
@@ -1251,9 +1254,9 @@ function ClassRow({
                                             </span>
                                         </TooltipTrigger>
                                         <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                            No residents in this class have
-                                            reached completion eligibility yet (
-                                            {cls.enrolled} enrolled)
+                                            {!hasStarted
+                                                ? `This class hasn't started yet${cls.status === SelectedClassStatus.Scheduled ? ` — starts ${formatDate(cls.start_dt)}` : ''}`
+                                                : `No residents in this class have reached completion eligibility yet (${cls.enrolled} enrolled)`}
                                         </TooltipContent>
                                     </Tooltip>
                                 )}
