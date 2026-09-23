@@ -506,13 +506,13 @@ func (srv *Server) handleGetCumulativeAttendanceRate(w http.ResponseWriter, r *h
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	if uint(classID) >= models.CanvasClassIDOffset {
-		return writeJsonResponse(w, http.StatusOK, map[string]float64{"attendance_rate": 0})
+		return writeJsonResponse(w, http.StatusOK, map[string]*float64{"attendance_rate": nil})
 	}
 	attendanceRate, err := srv.Db.GetCumulativeAttendanceRateForClass(r.Context(), classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	response := map[string]float64{
+	response := map[string]*float64{
 		"attendance_rate": attendanceRate,
 	}
 	return writeJsonResponse(w, http.StatusOK, response)
