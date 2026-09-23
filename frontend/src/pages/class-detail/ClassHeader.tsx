@@ -3,6 +3,11 @@ import { Users, Calendar, AlertCircle, Edit, MapPin } from 'lucide-react';
 import { RRule, Weekday } from 'rrule';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger
+} from '@/components/ui/tooltip';
 import { Cohort } from '@/types/program';
 import { SelectedClassStatus } from '@/types/attendance';
 import {
@@ -106,7 +111,7 @@ interface ClassHeaderProps {
 
 interface StatCardsProps {
     cls: Cohort;
-    attendanceRate: number;
+    attendanceRate: number | null;
     atRiskCount: number;
     isCanvasClass?: boolean;
 }
@@ -286,7 +291,7 @@ export function StatCards({
     atRiskCount,
     isCanvasClass = false
 }: StatCardsProps) {
-    const avgRate = Math.round(attendanceRate);
+    const avgRate = attendanceRate !== null ? Math.round(attendanceRate) : null;
     const capacityPct =
         cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
     const spotsAvailable = cls.capacity - cls.enrolled;
@@ -326,19 +331,41 @@ export function StatCards({
                         <Calendar className="size-5 text-brand shrink-0" />
                         <h3 className="text-brand-dark truncate">Attendance</h3>
                     </div>
-                    <div className="text-3xl text-brand-dark mb-2">
-                        {avgRate}%
-                    </div>
-                    <Progress
-                        value={avgRate}
-                        className="h-2 mb-3"
-                        indicatorClassName={
-                            avgRate >= 85 ? 'bg-brand' : 'bg-brand-gold'
-                        }
-                    />
-                    <div className="text-sm text-gray-600">
-                        Average attendance rate
-                    </div>
+                    {avgRate !== null ? (
+                        <>
+                            <div className="text-3xl text-brand-dark mb-2">
+                                {avgRate}%
+                            </div>
+                            <Progress
+                                value={avgRate}
+                                className="h-2 mb-3"
+                                indicatorClassName={
+                                    avgRate >= 85 ? 'bg-brand' : 'bg-brand-gold'
+                                }
+                            />
+                            <div className="text-sm text-gray-600">
+                                Average attendance rate
+                            </div>
+                        </>
+                    ) : (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="cursor-help">
+                                    <div className="text-3xl text-brand-dark mb-2">
+                                        —
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        No attendance recorded yet
+                                    </div>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                {cls.status === SelectedClassStatus.Scheduled
+                                    ? `This class hasn't started yet — starts ${formatDate(cls.start_dt)}`
+                                    : 'No attendance has been taken for this class yet'}
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
                 </div>
             )}
 
