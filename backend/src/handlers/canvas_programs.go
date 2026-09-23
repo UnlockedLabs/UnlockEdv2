@@ -987,7 +987,7 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 					ActiveResidents:        activeEnrollments,
 					ActiveEnrollments:      activeEnrollments,
 					TotalEnrollments:       totalEnrollments,
-					CompletionRate:         cached.CompletionRate,
+					CompletionRate:         &cached.CompletionRate,
 					ActiveClassFacilityIDs: []int{},
 					Source:                 providerSourceLabel(provider),
 				})
