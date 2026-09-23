@@ -49,10 +49,15 @@ import {
     PopoverTrigger
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Plus, Filter, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Plus, Filter, ChevronDown, Loader2, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/Pagination';
+import {
+    NumericFilterPanel,
+    type NumericFilterField,
+    type NumericFilterValue
+} from '@/components/shared/NumericFilterPanel';
 import {
     Table,
     TableBody,
@@ -94,6 +99,79 @@ function parseCommaSeparated(value: string | null | undefined): string[] {
         .filter(Boolean);
 }
 
+function FilterChip({
+    label,
+    onRemove
+}: {
+    label: string;
+    onRemove: () => void;
+}) {
+    return (
+        <Badge variant="secondary" className="gap-1 pr-1 font-normal">
+            <span>{label}</span>
+            <button
+                type="button"
+                aria-label={`Remove ${label} filter`}
+                onClick={onRemove}
+                className="rounded-full p-0.5 hover:bg-gray-200"
+            >
+                <X className="size-3.5" aria-hidden />
+            </button>
+        </Badge>
+    );
+}
+
+type NumericFilterKey =
+    | 'classes'
+    | 'enrollment'
+    | 'capacity'
+    | 'completion'
+    | 'attendance';
+
+const NUMERIC_FILTER_FIELDS: NumericFilterField<NumericFilterKey>[] = [
+    { key: 'classes', label: 'Classes' },
+    { key: 'enrollment', label: 'Enrollment' },
+    { key: 'capacity', label: 'Capacity', suffix: '%' },
+    { key: 'completion', label: 'Completion', suffix: '%' },
+    { key: 'attendance', label: 'Attendance', suffix: '%' }
+];
+
+function getNumericFieldValue(
+    program: ProgramsOverviewTable,
+    key: NumericFilterKey
+): number {
+    switch (key) {
+        case 'classes':
+            return program.total_active_classes ?? 0;
+        case 'enrollment':
+            return program.total_active_enrollments ?? 0;
+        case 'capacity':
+            return getUtilizationRate(program);
+        case 'completion':
+            return Math.round(program.completion_rate ?? 0);
+        case 'attendance':
+            return Math.round(program.attendance_rate ?? 0);
+    }
+}
+
+function matchesNumericFilter(
+    actual: number,
+    filter: NumericFilterValue
+): boolean {
+    switch (filter.operator) {
+        case '>':
+            return actual > filter.value;
+        case '<':
+            return actual < filter.value;
+        case '>=':
+            return actual >= filter.value;
+        case '<=':
+            return actual <= filter.value;
+        case '=':
+            return actual === filter.value;
+    }
+}
+
 export default function ProgramsPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -101,9 +179,20 @@ export default function ProgramsPage() {
 
     const { data: resp, mutate } = useSWR<
         ServerResponseMany<ProgramsOverviewTable>
-    >('/api/programs/detailed-list?include_archived=true&per_page=100');
+    >('/api/programs/detailed-list?include_archived=true&per_page=1000');
 
     const programs = resp?.data ?? [];
+
+    // Filtering/sorting below is client-side over this single fetch, so if a
+    // facility ever exceeds per_page programs, the rest would silently never
+    // load. Surface that instead of letting search/filters quietly miss rows.
+    useEffect(() => {
+        if (resp && resp.meta.total > resp.data.length) {
+            toast.warning(
+                `Showing ${resp.data.length} of ${resp.meta.total} programs. Contact support to raise the display limit.`
+            );
+        }
+    }, [resp]);
     const hasLoadingCanvas = programs.some(
         (p) => isExternalSource(p.source) && p.loading
     );
@@ -124,6 +213,9 @@ export default function ProgramsPage() {
     const [selectedStatuses, setSelectedStatuses] = useState<
         ProgramEffectiveStatus[]
     >([]);
+    const [numericFilters, setNumericFilters] = useState<
+        Partial<Record<NumericFilterKey, NumericFilterValue>>
+    >({});
 
     const [showAddProgram, setShowAddProgram] = useState(false);
     const emptyProgramForm: ProgramCreateInput = {
@@ -193,7 +285,8 @@ export default function ProgramsPage() {
         search,
         sort,
         selectedTypes,
-        selectedStatuses
+        selectedStatuses,
+        numericFilters
     });
     useEffect(() => {
         const prev = prevFilters.current;
@@ -201,17 +294,26 @@ export default function ProgramsPage() {
             prev.search !== search ||
             prev.sort !== sort ||
             prev.selectedTypes !== selectedTypes ||
-            prev.selectedStatuses !== selectedStatuses
+            prev.selectedStatuses !== selectedStatuses ||
+            prev.numericFilters !== numericFilters
         ) {
             prevFilters.current = {
                 search,
                 sort,
                 selectedTypes,
-                selectedStatuses
+                selectedStatuses,
+                numericFilters
             };
             setPage(1);
         }
-    }, [search, sort, selectedTypes, selectedStatuses, setPage]);
+    }, [
+        search,
+        sort,
+        selectedTypes,
+        selectedStatuses,
+        numericFilters,
+        setPage
+    ]);
 
     const toggleTypeFilter = (type: ProgramType) => {
         setSelectedTypes((prev) =>
@@ -232,7 +334,28 @@ export default function ProgramsPage() {
     const clearFilters = () => {
         setSelectedTypes([]);
         setSelectedStatuses([]);
+        setNumericFilters({});
     };
+
+    const onNumericFilterChange = (
+        key: NumericFilterKey,
+        value: NumericFilterValue | undefined
+    ) => {
+        setNumericFilters((prev) => {
+            const next = { ...prev };
+            if (value) {
+                next[key] = value;
+            } else {
+                delete next[key];
+            }
+            return next;
+        });
+    };
+
+    const activeFilterCount =
+        selectedTypes.length +
+        selectedStatuses.length +
+        Object.keys(numericFilters).length;
 
     const programTypes: { value: ProgramType; label: string }[] = [
         { value: ProgramType.EDUCATIONAL, label: 'Educational' },
@@ -292,6 +415,18 @@ export default function ProgramsPage() {
             });
         }
 
+        const activeNumericFilters = Object.entries(numericFilters).filter(
+            (entry): entry is [NumericFilterKey, NumericFilterValue] =>
+                Boolean(entry[1])
+        );
+        if (activeNumericFilters.length > 0) {
+            result = result.filter((p) =>
+                activeNumericFilters.every(([key, filter]) =>
+                    matchesNumericFilter(getNumericFieldValue(p, key), filter)
+                )
+            );
+        }
+
         result = [...result].sort((a, b) => {
             switch (sort) {
                 case 'name-asc':
@@ -318,7 +453,14 @@ export default function ProgramsPage() {
         });
 
         return result;
-    }, [resp?.data, search, sort, selectedTypes, selectedStatuses]);
+    }, [
+        resp?.data,
+        search,
+        sort,
+        selectedTypes,
+        selectedStatuses,
+        numericFilters
+    ]);
 
     const paginatedPrograms = filtered.slice(
         (page - 1) * perPage,
@@ -579,19 +721,65 @@ export default function ProgramsPage() {
                                         )
                                     )}
                                 </div>
-                                {selectedTypes.length > 0 ||
-                                selectedStatuses.length > 0 ? (
-                                    <Button
-                                        className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        onClick={clearFilters}
-                                        size="sm"
-                                    >
-                                        Clear All Filters
-                                    </Button>
-                                ) : null}
                             </PopoverContent>
                         </Popover>
+                        {/* Classes / Enrollment / Capacity / Completion / Attendance Filters */}
+                        <NumericFilterPanel
+                            label="More Filters"
+                            fields={NUMERIC_FILTER_FIELDS}
+                            values={numericFilters}
+                            onChange={onNumericFilterChange}
+                        />
                     </div>
+                    {activeFilterCount > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 mt-3">
+                            {selectedTypes.map((type) => (
+                                <FilterChip
+                                    key={`type-${type}`}
+                                    label={formatDisplayName(type)}
+                                    onRemove={() => toggleTypeFilter(type)}
+                                />
+                            ))}
+                            {selectedStatuses.map((status) => (
+                                <FilterChip
+                                    key={`status-${status}`}
+                                    label={status}
+                                    onRemove={() => toggleStatusFilter(status)}
+                                />
+                            ))}
+                            {(
+                                Object.entries(numericFilters) as [
+                                    NumericFilterKey,
+                                    NumericFilterValue | undefined
+                                ][]
+                            ).map(([key, filter]) => {
+                                if (!filter) return null;
+                                const field = NUMERIC_FILTER_FIELDS.find(
+                                    (f) => f.key === key
+                                );
+                                if (!field) return null;
+                                return (
+                                    <FilterChip
+                                        key={`numeric-${key}`}
+                                        label={`${field.label} ${filter.operator} ${filter.value}${field.suffix ?? ''}`}
+                                        onRemove={() =>
+                                            onNumericFilterChange(
+                                                key,
+                                                undefined
+                                            )
+                                        }
+                                    />
+                                );
+                            })}
+                            <button
+                                type="button"
+                                onClick={clearFilters}
+                                className="text-xs text-brand hover:underline ml-1"
+                            >
+                                Clear all
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Add Program Form */}
