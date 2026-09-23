@@ -90,8 +90,8 @@ export interface ProgramOverview extends Program {
     active_enrollments: number;
     completions: number;
     total_enrollments: number;
-    completion_rate: number;
-    attendance_rate: number;
+    completion_rate: number | null;
+    attendance_rate: number | null;
     active_class_facility_ids: number[];
     source?: string;
     loading?: boolean;
@@ -123,8 +123,8 @@ export interface ProgramsOverviewTable {
     total_active_classes: number;
     total_capacity: number;
     total_filled_seats: number;
-    completion_rate: number;
-    attendance_rate: number;
+    completion_rate: number | null;
+    attendance_rate: number | null;
     program_types: string;
     credit_types: string;
     funding_type: string;
@@ -225,7 +225,7 @@ export interface Cohort {
     program: Program;
     schedule?: string;
     room?: string;
-    attendance_rate?: number;
+    attendance_rate?: number | null;
     is_canvas?: boolean;
     source?: string;
     /** True for a placeholder row standing in for a provider still being read. */
