@@ -35,7 +35,11 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
-import { getInstructorName, getStatusColor } from '@/lib/formatters';
+import {
+    formatDate,
+    getInstructorName,
+    getStatusColor
+} from '@/lib/formatters';
 import { programTypeColors } from '@/pages/program-detail/constants';
 import { cn } from '@/lib/utils';
 import { formatHistoryEntry } from '@/components/history/formatHistoryEntry';
@@ -1130,10 +1134,9 @@ function ClassRow({
                   ? 'text-brand-gold'
                   : 'text-gray-700'
             : 'text-gray-500';
-    const showCompletion = cls.status === SelectedClassStatus.Completed;
     const completionBase = cls.historical_enrollments ?? 0;
     const completionRate =
-        showCompletion && completionBase > 0
+        completionBase > 0
             ? Math.round((cls.completed / completionBase) * 100)
             : null;
     const completionClass =
@@ -1202,27 +1205,58 @@ function ClassRow({
                                 <span className="text-gray-600">
                                     Attendance:
                                 </span>
-                                <span
-                                    className={`font-medium ${attendanceClass}`}
-                                >
-                                    {attendanceRate !== null
-                                        ? `${attendanceRate}%`
-                                        : '—'}
-                                </span>
+                                {attendanceRate !== null ? (
+                                    <span
+                                        className={`font-medium ${attendanceClass}`}
+                                    >
+                                        {attendanceRate}%
+                                    </span>
+                                ) : (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span
+                                                className={`font-medium cursor-help ${attendanceClass}`}
+                                            >
+                                                —
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                            {cls.status ===
+                                            SelectedClassStatus.Scheduled
+                                                ? `No attendance yet — starts ${formatDate(cls.start_dt)}`
+                                                : 'No attendance has been recorded for this class yet'}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
                             </div>
                         )}
-                        {showCompletion && (
+                        {!isCanvas && (
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-600">
                                     Completion:
                                 </span>
-                                <span
-                                    className={`font-medium ${completionClass}`}
-                                >
-                                    {completionRate !== null
-                                        ? `${completionRate}%`
-                                        : '—'}
-                                </span>
+                                {completionRate !== null ? (
+                                    <span
+                                        className={`font-medium ${completionClass}`}
+                                    >
+                                        {completionRate}%
+                                    </span>
+                                ) : (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span
+                                                className={`font-medium cursor-help ${completionClass}`}
+                                            >
+                                                —
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                            No residents in this class have
+                                            reached completion eligibility yet (
+                                            {cls.enrolled} enrolled)
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
                             </div>
                         )}
                     </div>
