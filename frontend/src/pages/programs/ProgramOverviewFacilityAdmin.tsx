@@ -1215,7 +1215,7 @@ function ClassRow({
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <span
-                                                className={`font-medium cursor-help ${attendanceClass}`}
+                                                className={`inline-block translate-y-[35%] font-medium cursor-help ${attendanceClass}`}
                                             >
                                                 —
                                             </span>
@@ -1245,7 +1245,7 @@ function ClassRow({
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <span
-                                                className={`font-medium cursor-help ${completionClass}`}
+                                                className={`inline-block translate-y-[35%] font-medium cursor-help ${completionClass}`}
                                             >
                                                 —
                                             </span>
@@ -1455,7 +1455,9 @@ function PerformanceTab({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <p className="text-3xl text-brand-dark mb-2 cursor-help w-fit">
-                                        —
+                                        <span className="inline-block translate-y-[35%]">
+                                            —
+                                        </span>
                                     </p>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-brand-dark text-white max-w-xs">

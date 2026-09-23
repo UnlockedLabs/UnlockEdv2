@@ -720,7 +720,9 @@ export default function ProgramOverviewStatewide() {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div className="text-3xl text-brand-dark mb-1 cursor-help w-fit">
-                                        —
+                                        <span className="inline-block translate-y-[35%]">
+                                            —
+                                        </span>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-brand-dark text-white max-w-xs">
@@ -746,7 +748,9 @@ export default function ProgramOverviewStatewide() {
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <div className="text-3xl text-brand-dark mb-1 cursor-help w-fit">
-                                            —
+                                            <span className="inline-block translate-y-[35%]">
+                                                —
+                                            </span>
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent className="bg-brand-dark text-white max-w-xs">
@@ -990,9 +994,13 @@ export default function ProgramOverviewStatewide() {
                                                             }`}
                                                         >
                                                             {stat.completionRate !==
-                                                            null
-                                                                ? `${Math.round(stat.completionRate)}%`
-                                                                : '—'}
+                                                            null ? (
+                                                                `${Math.round(stat.completionRate)}%`
+                                                            ) : (
+                                                                <span className="inline-block translate-y-[35%]">
+                                                                    —
+                                                                </span>
+                                                            )}
                                                         </span>
                                                     </TooltipTrigger>
                                                     <TooltipContent className="bg-brand-dark text-white max-w-xs">
@@ -1025,9 +1033,13 @@ export default function ProgramOverviewStatewide() {
                                                                 }`}
                                                             >
                                                                 {stat.attendanceRate !==
-                                                                null
-                                                                    ? `${Math.round(stat.attendanceRate)}%`
-                                                                    : '—'}
+                                                                null ? (
+                                                                    `${Math.round(stat.attendanceRate)}%`
+                                                                ) : (
+                                                                    <span className="inline-block translate-y-[35%]">
+                                                                        —
+                                                                    </span>
+                                                                )}
                                                             </span>
                                                         </TooltipTrigger>
                                                         <TooltipContent className="bg-brand-dark text-white max-w-xs">
