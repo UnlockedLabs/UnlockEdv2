@@ -22,11 +22,31 @@
  * that getter and throws right along with it. Several call sites read as guarded
  * but were not, which is why every access now goes through here instead.
  *
- * Reads return null and writes are dropped when storage is unavailable. Every
- * caller already treats "nothing stored" as a valid state, so degrading to
- * in-memory-only is the correct behaviour: the feature quietly does less, and
- * nothing breaks.
+ * Reads return null and writes are dropped when storage is unavailable. For
+ * most callers "nothing stored" is a valid state, so the feature quietly does
+ * less and nothing breaks. The tab-session flag is the exception: without it no
+ * tab can ever hold a session. So /login calls isSessionStorageAvailable() up
+ * front and tells the resident why they can't sign in, instead of letting them
+ * submit credentials that can never stick (EN-80).
  */
+
+const PROBE_KEY = '__unlocked_storage_probe__';
+
+/**
+ * Whether this tab can store a value in sessionStorage and read it back. It
+ * writes and removes a probe key, because that round trip is what the
+ * tab-session flag depends on. Checking that the property exists is not enough.
+ */
+export function isSessionStorageAvailable(): boolean {
+    try {
+        sessionStorage.setItem(PROBE_KEY, PROBE_KEY);
+        const readBack = sessionStorage.getItem(PROBE_KEY);
+        sessionStorage.removeItem(PROBE_KEY);
+        return readBack === PROBE_KEY;
+    } catch {
+        return false;
+    }
+}
 
 export function getSessionItem(key: string): string | null {
     try {

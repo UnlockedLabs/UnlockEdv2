@@ -31,6 +31,7 @@ function formatCountdown(seconds: number): string {
 
 export default function LoginForm() {
     const loaderData = useLoaderData() as AuthFlow;
+    const storageBlocked = loaderData.storage_blocked === true;
     const [processing, setProcessing] = useState(false);
     const [user, setUser] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState(false);
@@ -68,6 +69,7 @@ export default function LoginForm() {
     }, [isLockedOut]);
 
     const onSubmit: SubmitHandler<LoginInput> = async (data) => {
+        if (storageBlocked) return;
         if (user) {
             data.identifier = user;
         }
@@ -214,10 +216,18 @@ export default function LoginForm() {
                     </p>
                 )}
 
+                {storageBlocked && (
+                    <p role="alert" className="mt-3 text-sm text-destructive">
+                        This browser is blocking site data for UnlockEd, so you
+                        can&apos;t log in on this device. Please let facility
+                        staff know.
+                    </p>
+                )}
+
                 <div className="flex items-center justify-end mt-6">
                     <Button
                         type="submit"
-                        disabled={processing}
+                        disabled={processing || storageBlocked}
                         className="btn-gold"
                     >
                         {processing ? (

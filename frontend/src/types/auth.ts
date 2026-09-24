@@ -177,6 +177,8 @@ export interface AuthFlow {
     csrf_token: string;
     redirect_to?: string;
     identifier?: string;
+    /** sessionStorage is unusable, so this tab can never hold a session (EN-80). */
+    storage_blocked?: boolean;
 }
 
 export interface AuthResponse {
