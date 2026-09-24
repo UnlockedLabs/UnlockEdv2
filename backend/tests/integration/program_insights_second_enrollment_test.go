@@ -35,6 +35,8 @@ func TestSecondProgramEnrollment(t *testing.T) {
 	require.NoError(t, err)
 	earlyUser, err := env.CreateTestUser("earlyres", models.Student, facility.ID, "")
 	require.NoError(t, err)
+	sameProgramUser, err := env.CreateTestUser("sameprogres", models.Student, facility.ID, "")
+	require.NoError(t, err)
 
 	completedAt := time.Now().Add(-48 * time.Hour)
 	// user completes Vocational, then enrolls in LifeSkills AFTER completion -> counts
@@ -63,6 +65,17 @@ func TestSecondProgramEnrollment(t *testing.T) {
 		earlyCompletedAt.Add(-30*time.Minute), &earlyCompletedAt)
 	require.NoError(t, err)
 
+	// sameProgramUser completes Vocational, then re-enrolls in Vocational again
+	// (same program, not a different one) -> must NOT count as a "second
+	// program" enrollment, even though it starts after the first completion.
+	sameProgramCompletedAt := time.Now().Add(-6 * time.Hour)
+	_, err = env.CreateTestEnrollmentWithDates(classA.ID, sameProgramUser.ID, models.EnrollmentCompleted,
+		sameProgramCompletedAt.Add(-time.Hour), &sameProgramCompletedAt)
+	require.NoError(t, err)
+	_, err = env.CreateTestEnrollmentWithDates(classA.ID, sameProgramUser.ID, models.Enrolled,
+		sameProgramCompletedAt.Add(time.Hour), nil)
+	require.NoError(t, err)
+
 	// SystemAdmin can switch facilities, so getQueryContext defaults to
 	// statewide (facility_id 0) unless a facility is named explicitly -
 	// pass it via the "facility" param that resolveFacilityFilter reads.
@@ -77,7 +90,7 @@ func TestSecondProgramEnrollment(t *testing.T) {
 	row := rows[0]
 	require.Equal(t, "Second Enrollment Facility", row.FacilityName)
 	require.Equal(t, "Vocational", row.ProgramType)
-	require.Equal(t, int64(3), row.CompletedFirst)
+	require.Equal(t, int64(4), row.CompletedFirst)
 	require.Equal(t, int64(1), row.EnrolledSecond)
-	require.InDelta(t, 33.33, row.Rate, 0.01)
+	require.InDelta(t, 25.0, row.Rate, 0.01)
 }

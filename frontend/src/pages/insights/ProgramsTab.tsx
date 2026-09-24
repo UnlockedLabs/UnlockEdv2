@@ -14,12 +14,14 @@ interface ProgramsTabProps {
     dateParams: InsightsDateParams;
     selectedFacility: string;
     rangeLabel: string;
+    scopeLabel: string;
 }
 
 export default function ProgramsTab({
     dateParams,
     selectedFacility,
-    rangeLabel
+    rangeLabel,
+    scopeLabel
 }: ProgramsTabProps) {
     const query = `facility=${selectedFacility}&${dateQuery(dateParams)}`;
 
@@ -70,8 +72,14 @@ export default function ProgramsTab({
             />
             <SecondEnrollmentSection selectedFacility={selectedFacility} />
             <CompletionMatrixSection selectedFacility={selectedFacility} />
-            <LoadDistributionSection selectedFacility={selectedFacility} />
-            <EnrollmentByTypeSection />
+            <LoadDistributionSection
+                selectedFacility={selectedFacility}
+                scopeLabel={scopeLabel}
+            />
+            <EnrollmentByTypeSection
+                selectedFacility={selectedFacility}
+                scopeLabel={scopeLabel}
+            />
 
             {topProgram && (
                 <Alert

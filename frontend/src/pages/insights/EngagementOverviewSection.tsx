@@ -127,7 +127,7 @@ export function EngagementOverviewSection({
                         ` ${topProgram.program_name} leads at ${Math.round(topProgram.completion_rate)}% completion.`}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-6 min-w-0">
                         {engagement.total_residents === 0 ? (
                             <p className="text-sm text-muted-foreground">
                                 No resident data available for this selection.
@@ -189,7 +189,7 @@ export function EngagementOverviewSection({
                             </>
                         )}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         {engagement.top_programs.length > 0 ? (
                             <>
                                 <p className="text-sm text-muted-foreground mb-2">

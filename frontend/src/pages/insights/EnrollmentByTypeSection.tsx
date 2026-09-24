@@ -15,18 +15,33 @@ import {
     ChartTooltipContent,
     type ChartConfig
 } from '@/components/ui/chart';
-import { AllTimeBadge, SectionError } from './ProgramMatrixTable';
+import {
+    AllTimeBadge,
+    SectionError,
+    UpdatingBadge
+} from './ProgramMatrixTable';
 import { pct } from './programsUtils';
 
 const TYPE_CHART_CONFIG: ChartConfig = {
     enrolled: { label: 'Enrolled', color: 'var(--brand)' }
 };
 
-export function EnrollmentByTypeSection() {
-    const { data: enrollmentByTypeResp, error } = useSWR<
-        ServerResponseMany<ProgramTypeEnrollment>,
-        Error
-    >('/api/department-metrics/programs/enrollment-by-type?facility=all');
+interface EnrollmentByTypeSectionProps {
+    selectedFacility: string;
+    scopeLabel: string;
+}
+
+export function EnrollmentByTypeSection({
+    selectedFacility,
+    scopeLabel
+}: EnrollmentByTypeSectionProps) {
+    const {
+        data: enrollmentByTypeResp,
+        error,
+        isValidating
+    } = useSWR<ServerResponseMany<ProgramTypeEnrollment>, Error>(
+        `/api/department-metrics/programs/enrollment-by-type?facility=${selectedFacility}`
+    );
 
     if (error) {
         return <SectionError label="enrollment by program type" />;
@@ -37,12 +52,17 @@ export function EnrollmentByTypeSection() {
     }
 
     return (
-        <div className="bg-card rounded-lg border border-border p-6">
+        <div
+            className={`bg-card rounded-lg border border-border p-6 transition-opacity ${isValidating ? 'opacity-60' : ''}`}
+        >
             <div className="flex items-center justify-between gap-2 mb-1">
                 <h3 className="text-brand-dark dark:text-white font-medium">
-                    Enrollment by Program Type (Statewide)
+                    Enrollment by Program Type ({scopeLabel})
                 </h3>
-                <AllTimeBadge />
+                <div className="flex items-center gap-3">
+                    <UpdatingBadge show={isValidating} />
+                    <AllTimeBadge />
+                </div>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
                 {(() => {
@@ -53,7 +73,7 @@ export function EnrollmentByTypeSection() {
                     const top = enrollmentByTypeResp.data.reduce((a, b) =>
                         b.enrolled > a.enrolled ? b : a
                     );
-                    return `${top.program_type} accounts for ${pct(top.enrolled, total)}% of enrollments statewide with a ${Math.round(top.rate)}% completion rate.`;
+                    return `${top.program_type} accounts for ${pct(top.enrolled, total)}% of enrollments with a ${Math.round(top.rate)}% completion rate.`;
                 })()}
             </p>
             <ChartContainer config={TYPE_CHART_CONFIG} className="h-56 w-full">

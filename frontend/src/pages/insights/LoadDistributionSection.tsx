@@ -33,6 +33,7 @@ const LOAD_CHART_CONFIG: ChartConfig = {
 
 interface LoadDistributionSectionProps {
     selectedFacility: string;
+    scopeLabel: string;
 }
 
 function loadStatewideInsight(buckets: ProgramLoadBucket[]): string {
@@ -45,7 +46,8 @@ function loadStatewideInsight(buckets: ProgramLoadBucket[]): string {
 }
 
 export function LoadDistributionSection({
-    selectedFacility
+    selectedFacility,
+    scopeLabel
 }: LoadDistributionSectionProps) {
     const {
         data: loadResp,
@@ -84,7 +86,7 @@ export function LoadDistributionSection({
             <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x md:divide-border border-t border-border">
                 <div className="p-6">
                     <h3 className="text-brand-dark dark:text-white font-medium mb-1">
-                        Statewide
+                        {scopeLabel}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4">
                         {loadStatewideInsight(loadResp.data.statewide)}

@@ -205,8 +205,8 @@ func (db *DB) GetSecondProgramEnrollmentRates(args *models.QueryContext, facilit
 		completedFirst[k]++
 
 		for _, e := range enrollments {
-			if e.programID == first.programID && e.status == models.EnrollmentCompleted {
-				continue // this is the "first completion" itself, not a second enrollment
+			if e.programID == first.programID {
+				continue // re-enrollment in the same program isn't a second *program*
 			}
 			if e.enrolledAt != nil && e.enrolledAt.After(*first.endedAt) {
 				enrolledSecond[k]++

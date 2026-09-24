@@ -44,7 +44,10 @@ export default function OperationalInsightsPage() {
                   (f) => String(f.id) === selectedFacility
               )?.name ?? 'Selected facility');
 
-    const rangeLabel = `${RANGE_LABELS[activeRange]} · ${canSwitch ? facilityLabel : 'Your facility'}`;
+    // What a section should call its scope in place of a hardcoded "Statewide":
+    // the actual facility name once one is selected, not just whoever can switch.
+    const scopeLabel = canSwitch ? facilityLabel : 'Your facility';
+    const rangeLabel = `${RANGE_LABELS[activeRange]} · ${scopeLabel}`;
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
@@ -180,6 +183,7 @@ export default function OperationalInsightsPage() {
                                 dateParams={dateParams}
                                 selectedFacility={selectedFacility}
                                 rangeLabel={rangeLabel}
+                                scopeLabel={scopeLabel}
                             />
                         </TabsContent>
                     </Tabs>
