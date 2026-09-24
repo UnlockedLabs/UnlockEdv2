@@ -54,6 +54,7 @@ export default function AuthenticatedLayout() {
         location.pathname === '/knowledge-center-management' ||
         location.pathname === '/knowledge-center';
     const isResidentKnowledgeCenter = location.pathname === '/knowledge-center';
+    const isResidentSchedule = location.pathname === '/resident-schedule';
     const isLearningRecord =
         location.pathname.startsWith('/learning-record-funnel') ||
         location.pathname.startsWith('/learning-record-categories');
@@ -63,6 +64,7 @@ export default function AuthenticatedLayout() {
         '/my-courses',
         '/my-progress',
         '/resident-programs',
+        '/resident-schedule',
         '/home'
     ].includes(location.pathname);
     const isFullBleed =
@@ -169,7 +171,11 @@ export default function AuthenticatedLayout() {
         ? ''
         : 'app-header-mobile-only';
     const rootClass = `h-screen bg-background flex overflow-hidden ${headerOffsetClass}`;
-    const contentClass = `flex-1 min-h-full ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : 'bg-[#E2E7EA]'}`;
+    // A route that manages its own height (overflow-hidden) needs `h-full`, not
+    // `min-h-full`: a min-height-only box has no definite height for its own
+    // h-full descendants to resolve against, per CSS percentage-height rules, so
+    // any h-full calendar/list inside it collapses to zero.
+    const contentClass = `flex-1 ${isResidentKnowledgeCenter || isResidentSchedule ? 'h-full overflow-hidden' : 'min-h-full overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : 'bg-[#E2E7EA]'}`;
 
     return (
         <div className={rootClass}>

@@ -10,6 +10,7 @@ import {
 } from '@/loaders/routeLoaders';
 import Error from '@/pages/Error';
 import ResidentOverview from '@/pages/learning/ResidentOverview';
+import ResidentSchedule from '@/pages/learning/ResidentSchedule';
 import ClassesPage from '@/pages/ClassesPage';
 import ProgramsPage from '@/pages/ProgramsPage';
 import ProgramManagementForm from '@/pages/programs/ProgramManagementForm';
@@ -32,6 +33,14 @@ export const ProgramRoutes = declareAuthenticatedRoutes(
             handle: {
                 title: 'My Programs',
                 path: ['resident-programs']
+            }
+        },
+        {
+            path: 'resident-schedule',
+            element: <ResidentSchedule />,
+            handle: {
+                title: 'Schedule',
+                path: ['resident-schedule']
             }
         }
     ],
