@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import useSWR from 'swr';
+import useSWR, { SWRConfig } from 'swr';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +14,7 @@ import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import { Facility, InsightsRangeKey, ServerResponseMany } from '@/types';
 import OverviewTab from './OverviewTab';
 import KnowledgeCenterTab from './KnowledgeCenterTab';
+import ProgramsTab from './ProgramsTab';
 import { RANGE_OPTIONS, RANGE_LABELS, rangeToParams } from './insightsRange';
 
 const TAB_TRIGGER_CLASS =
@@ -43,7 +44,10 @@ export default function OperationalInsightsPage() {
                   (f) => String(f.id) === selectedFacility
               )?.name ?? 'Selected facility');
 
-    const rangeLabel = `${RANGE_LABELS[activeRange]} · ${canSwitch ? facilityLabel : 'Your facility'}`;
+    // What a section should call its scope in place of a hardcoded "Statewide":
+    // the actual facility name once one is selected, not just whoever can switch.
+    const scopeLabel = canSwitch ? facilityLabel : 'Your facility';
+    const rangeLabel = `${RANGE_LABELS[activeRange]} · ${scopeLabel}`;
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
@@ -137,37 +141,53 @@ export default function OperationalInsightsPage() {
                     </div>
                 </div>
 
-                <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="bg-card border border-gray-200 dark:border-border p-1 h-auto gap-1">
-                        <TabsTrigger
-                            value="overview"
-                            className={TAB_TRIGGER_CLASS}
-                        >
-                            Overview
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="knowledge-center"
-                            className={TAB_TRIGGER_CLASS}
-                        >
-                            Knowledge Center
-                        </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="overview" className="mt-0">
-                        <OverviewTab
-                            dateParams={dateParams}
-                            selectedFacility={selectedFacility}
-                            canSwitch={canSwitch}
-                            rangeLabel={rangeLabel}
-                        />
-                    </TabsContent>
-                    <TabsContent value="knowledge-center" className="mt-0">
-                        <KnowledgeCenterTab
-                            dateParams={dateParams}
-                            selectedFacility={selectedFacility}
-                            rangeLabel={rangeLabel}
-                        />
-                    </TabsContent>
-                </Tabs>
+                <SWRConfig value={{ keepPreviousData: true }}>
+                    <Tabs defaultValue="overview" className="space-y-6">
+                        <TabsList className="bg-card border border-gray-200 dark:border-border p-1 h-auto gap-1">
+                            <TabsTrigger
+                                value="overview"
+                                className={TAB_TRIGGER_CLASS}
+                            >
+                                Overview
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="knowledge-center"
+                                className={TAB_TRIGGER_CLASS}
+                            >
+                                Knowledge Center
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="programs"
+                                className={TAB_TRIGGER_CLASS}
+                            >
+                                Programs
+                            </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="overview" className="mt-0">
+                            <OverviewTab
+                                dateParams={dateParams}
+                                selectedFacility={selectedFacility}
+                                canSwitch={canSwitch}
+                                rangeLabel={rangeLabel}
+                            />
+                        </TabsContent>
+                        <TabsContent value="knowledge-center" className="mt-0">
+                            <KnowledgeCenterTab
+                                dateParams={dateParams}
+                                selectedFacility={selectedFacility}
+                                rangeLabel={rangeLabel}
+                            />
+                        </TabsContent>
+                        <TabsContent value="programs" className="mt-0">
+                            <ProgramsTab
+                                dateParams={dateParams}
+                                selectedFacility={selectedFacility}
+                                rangeLabel={rangeLabel}
+                                scopeLabel={scopeLabel}
+                            />
+                        </TabsContent>
+                    </Tabs>
+                </SWRConfig>
             </div>
         </div>
     );
