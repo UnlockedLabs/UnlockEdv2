@@ -176,7 +176,7 @@ export default function ProgramsPage() {
             setShowAddProgram(false);
             programForm.reset(emptyProgramForm);
 
-            void mutate();
+            navigate(`/programs/${resp.data.id}`);
         } catch {
             toast.error('Failed to create program');
         }
