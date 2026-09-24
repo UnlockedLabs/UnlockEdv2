@@ -409,6 +409,16 @@ function StudentNav({
                     onClick={onNavigate}
                 />
             )}
+            {hasProgram && (
+                <NavLink
+                    to="/resident-schedule"
+                    icon={CalendarIcon}
+                    label="Schedule"
+                    active={isActive(['/resident-schedule'])}
+                    collapsed={collapsed}
+                    onClick={onNavigate}
+                />
+            )}
             <AiTutorNavItem
                 collapsed={collapsed}
                 isActive={isActive}
