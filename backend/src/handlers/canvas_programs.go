@@ -20,7 +20,7 @@ import (
 type CachedCanvasProgram struct {
 	Program        models.ProgramsOverviewTable
 	LastUpdated    time.Time
-	CompletionRate float64
+	CompletionRate *float64
 	Loading        bool
 }
 
@@ -255,7 +255,11 @@ func (srv *Server) warmCanvasProgramCache(provider *models.ProviderPlatform, fac
 			defer rateCancel()
 			log.Debugf("background: starting completion rate computation for provider %d", p.ID)
 			rate := srv.computeCanvasCompletionRate(rateCtx, &p)
-			log.Debugf("background: completion rate for provider %d = %.2f%%", p.ID, rate)
+			if rate != nil {
+				log.Debugf("background: completion rate for provider %d = %.2f%%", p.ID, *rate)
+			} else {
+				log.Debugf("background: no completion rate data for provider %d", p.ID)
+			}
 			entry, err := kv.Get(gKey)
 			if err != nil {
 				return
@@ -1546,20 +1550,20 @@ func (srv *Server) countMappedCanvasEnrollees(ctx context.Context, reader LivePr
 // enrollments that have enrollment_state == "completed".
 // ctx should carry a deadline — callers launching this in a goroutine must use
 // context.WithTimeout to bound the N+1 Canvas API requests.
-func (srv *Server) computeCanvasCompletionRate(ctx context.Context, provider *models.ProviderPlatform) float64 {
+func (srv *Server) computeCanvasCompletionRate(ctx context.Context, provider *models.ProviderPlatform) *float64 {
 	// The per-course loop below builds Canvas enrollment URLs and bearer auth by
 	// hand rather than going through the provider's transport, so running it for
 	// any other provider only spends a request per course to get an error back.
 	if !isCanvasProvider(provider) {
-		return 0
+		return nil
 	}
 	reader, err := srv.newLiveProgramProvider(provider)
 	if err != nil {
-		return 0
+		return nil
 	}
 	listing, err := reader.ListCourses(ctx)
 	if err != nil || len(listing.Courses) == 0 {
-		return 0
+		return nil
 	}
 
 	type courseResult struct {
@@ -1614,18 +1618,19 @@ func (srv *Server) computeCanvasCompletionRate(ctx context.Context, provider *mo
 		completedIDs = append(completedIDs, r.completedIDs...)
 	}
 	if len(allIDs) == 0 {
-		return 0
+		return nil
 	}
 
 	totalMapped, err := srv.Db.CountCanvasMappedEnrollees(provider.ID, allIDs)
 	if err != nil || totalMapped == 0 {
-		return 0
+		return nil
 	}
 	var completedMapped int64
 	if len(completedIDs) > 0 {
 		completedMapped, _ = srv.Db.CountCanvasMappedEnrollees(provider.ID, completedIDs)
 	}
-	return float64(completedMapped) / float64(totalMapped) * 100
+	rate := float64(completedMapped) / float64(totalMapped) * 100
+	return &rate
 }
 
 func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Request, log sLog, classID uint) error {

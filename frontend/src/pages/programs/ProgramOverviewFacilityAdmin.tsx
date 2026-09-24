@@ -35,7 +35,11 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
-import { getInstructorName, getStatusColor } from '@/lib/formatters';
+import {
+    formatDate,
+    getInstructorName,
+    getStatusColor
+} from '@/lib/formatters';
 import { programTypeColors } from '@/pages/program-detail/constants';
 import { cn } from '@/lib/utils';
 import { formatHistoryEntry } from '@/components/history/formatHistoryEntry';
@@ -213,7 +217,7 @@ export default function ProgramOverviewFacilityAdmin() {
         totalCapacity > 0
             ? Math.round((totalEnrolled / totalCapacity) * 100)
             : 0;
-    const backendCompletionRate = program?.completion_rate ?? 0;
+    const backendCompletionRate = program?.completion_rate ?? null;
 
     async function handleArchiveCheck() {
         if (!program || archiveCheckLoading) return;
@@ -1130,10 +1134,12 @@ function ClassRow({
                   ? 'text-brand-gold'
                   : 'text-gray-700'
             : 'text-gray-500';
-    const showCompletion = cls.status === SelectedClassStatus.Completed;
+    const hasStarted =
+        cls.status !== SelectedClassStatus.Scheduled &&
+        cls.status !== SelectedClassStatus.Cancelled;
     const completionBase = cls.historical_enrollments ?? 0;
     const completionRate =
-        showCompletion && completionBase > 0
+        hasStarted && completionBase > 0
             ? Math.round((cls.completed / completionBase) * 100)
             : null;
     const completionClass =
@@ -1202,27 +1208,58 @@ function ClassRow({
                                 <span className="text-gray-600">
                                     Attendance:
                                 </span>
-                                <span
-                                    className={`font-medium ${attendanceClass}`}
-                                >
-                                    {attendanceRate !== null
-                                        ? `${attendanceRate}%`
-                                        : '—'}
-                                </span>
+                                {attendanceRate !== null ? (
+                                    <span
+                                        className={`font-medium ${attendanceClass}`}
+                                    >
+                                        {attendanceRate}%
+                                    </span>
+                                ) : (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span
+                                                className={`inline-block translate-y-[35%] font-medium cursor-help ${attendanceClass}`}
+                                            >
+                                                —
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                            {cls.status ===
+                                            SelectedClassStatus.Scheduled
+                                                ? `No attendance yet — starts ${formatDate(cls.start_dt)}`
+                                                : 'No attendance has been recorded for this class yet'}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
                             </div>
                         )}
-                        {showCompletion && (
+                        {!isCanvas && (
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-600">
                                     Completion:
                                 </span>
-                                <span
-                                    className={`font-medium ${completionClass}`}
-                                >
-                                    {completionRate !== null
-                                        ? `${completionRate}%`
-                                        : '—'}
-                                </span>
+                                {completionRate !== null ? (
+                                    <span
+                                        className={`font-medium ${completionClass}`}
+                                    >
+                                        {completionRate}%
+                                    </span>
+                                ) : (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span
+                                                className={`inline-block translate-y-[35%] font-medium cursor-help ${completionClass}`}
+                                            >
+                                                —
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                            {!hasStarted
+                                                ? `This class hasn't started yet${cls.status === SelectedClassStatus.Scheduled ? ` — starts ${formatDate(cls.start_dt)}` : ''}`
+                                                : `No residents in this class have reached completion eligibility yet (${cls.enrolled} enrolled)`}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1345,7 +1382,7 @@ function PerformanceTab({
     totalCapacity: number;
     activeClassCount: number;
     totalClassCount: number;
-    completionRate: number;
+    completionRate: number | null;
 }) {
     const capacityPct =
         totalCapacity > 0
@@ -1403,15 +1440,35 @@ function PerformanceTab({
                         <p className="text-sm text-gray-600 mb-2">
                             Completion Rate
                         </p>
-                        <p className="text-3xl text-brand-dark mb-2">
-                            {Math.round(completionRate)}%
-                        </p>
-                        <Progress
-                            value={completionRate}
-                            className="h-2"
-                            indicatorClassName="bg-brand"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">&nbsp;</p>
+                        {completionRate !== null ? (
+                            <>
+                                <p className="text-3xl text-brand-dark mb-2">
+                                    {Math.round(completionRate)}%
+                                </p>
+                                <Progress
+                                    value={completionRate}
+                                    className="h-2"
+                                    indicatorClassName="bg-brand"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    &nbsp;
+                                </p>
+                            </>
+                        ) : (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <p className="text-3xl text-brand-dark mb-2 cursor-help w-fit">
+                                        <span className="inline-block translate-y-[35%]">
+                                            —
+                                        </span>
+                                    </p>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                    No residents have reached completion
+                                    eligibility yet
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
                     </div>
                 </div>
             </CardContent>

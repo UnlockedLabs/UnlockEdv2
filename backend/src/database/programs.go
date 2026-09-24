@@ -46,11 +46,8 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 		COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) AS completions,
 		COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments,
 		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.user_id END) as active_residents,
-		CASE
-			WHEN COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status != 'Enrolled' THEN 1 END) = 0 THEN 0
-			ELSE COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status = 'Completed' THEN 1 END) * 1.0
-				/ COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status != 'Enrolled' THEN 1 END) * 100
-		END AS completion_rate
+		COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END) * 100.0
+			/ NULLIF(COUNT(CASE WHEN pce.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') AND pce.enrolled_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END), 0) AS completion_rate
 	`
 
 	tx := db.Table("program_class_enrollments pce").
@@ -68,14 +65,14 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 	partialAttendanceSQL := buildPartialAttendanceSQL(db.Name(), "pcea")
 	attendanceQuery := fmt.Sprintf(`
 		SELECT
-			COALESCE(SUM(
+			SUM(
 				CASE
 					WHEN pcea.attendance_status = 'present' THEN 1
 					WHEN pcea.attendance_status = 'partial' THEN %s
 					ELSE 0
 				END
 			) * 100.0 /
-				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN 1 END), 0), 0) AS attendance_rate
+				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN 1 END), 0) AS attendance_rate
 		FROM program_class_cohorts pc
 		LEFT JOIN program_class_enrollments pce ON pce.cohort_id = pc.id
 		LEFT JOIN program_class_events pcev ON pcev.cohort_id = pc.id
@@ -89,7 +86,7 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 	}
 
 	var attendanceResult struct {
-		AttendanceRate float64 `json:"attendance_rate"`
+		AttendanceRate *float64 `json:"attendance_rate"`
 	}
 	if err := db.Raw(attendanceQuery, attendanceArgs...).Scan(&attendanceResult).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_event_attendance")
@@ -803,16 +800,16 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		LEFT JOIN (
 			SELECT
 				p.id as program_id,
-				COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL ` + timeFilterCondition + ` THEN 1 END) * 100.0 /
-					NULLIF(COUNT(pce.id), 0), 0) AS completion_rate,
-				COALESCE(SUM(
+				COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') ` + timeFilterCondition + ` THEN 1 END) * 100.0 /
+					NULLIF(COUNT(CASE WHEN pce.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END), 0) AS completion_rate,
+				SUM(
 					CASE
 						WHEN pcea.attendance_status = 'present' ` + timeFilterCondition + ` THEN 1
 						WHEN pcea.attendance_status = 'partial' ` + timeFilterCondition + ` THEN ` + partialAttendanceSQL + `
 						ELSE 0
 					END
 				) * 100.0 /
-					NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' ` + timeFilterCondition + ` THEN 1 END), 0), 0) AS attendance_rate
+					NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' ` + timeFilterCondition + ` THEN 1 END), 0) AS attendance_rate
 			FROM programs p
 			LEFT JOIN program_class_cohorts pc ON pc.program_id = p.id ` + facilityFilterForRates + `
 			LEFT JOIN program_class_enrollments pce ON pce.cohort_id = pc.id
