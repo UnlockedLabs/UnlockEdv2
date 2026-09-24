@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import {
     Popover,
     PopoverContent,
@@ -50,6 +50,7 @@ function NumericFilterRow<T extends string>({
         current?.operator ?? '>'
     );
     const [valueStr, setValueStr] = useState(current?.value?.toString() ?? '');
+    const inputId = useId();
 
     function commit(nextOperator: NumericFilterOperator, nextValueStr: string) {
         if (nextValueStr === '') {
@@ -63,7 +64,10 @@ function NumericFilterRow<T extends string>({
 
     return (
         <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">
+            <label
+                htmlFor={inputId}
+                className="text-sm font-medium text-gray-700"
+            >
                 {field.label}
             </label>
             <div className="flex items-center gap-2">
@@ -75,7 +79,10 @@ function NumericFilterRow<T extends string>({
                         commit(nextOp, valueStr);
                     }}
                 >
-                    <SelectTrigger className="w-36">
+                    <SelectTrigger
+                        className="w-36"
+                        aria-label={`${field.label} comparison`}
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -87,6 +94,7 @@ function NumericFilterRow<T extends string>({
                     </SelectContent>
                 </Select>
                 <Input
+                    id={inputId}
                     type="number"
                     placeholder={field.suffix === '%' ? '0-100' : '0'}
                     className="w-24"

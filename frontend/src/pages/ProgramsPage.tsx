@@ -139,14 +139,16 @@ const NUMERIC_FILTER_FIELDS: NumericFilterField<NumericFilterKey>[] = [
 function getNumericFieldValue(
     program: ProgramsOverviewTable,
     key: NumericFilterKey
-): number {
+): number | null {
     switch (key) {
         case 'classes':
             return program.total_active_classes ?? 0;
         case 'enrollment':
             return program.total_active_enrollments ?? 0;
         case 'capacity':
-            return getUtilizationRate(program);
+            return isExternalSource(program.source)
+                ? null
+                : getUtilizationRate(program);
         case 'completion':
             return Math.round(program.completion_rate ?? 0);
         case 'attendance':
@@ -189,7 +191,8 @@ export default function ProgramsPage() {
     useEffect(() => {
         if (resp && resp.meta.total > resp.data.length) {
             toast.warning(
-                `Showing ${resp.data.length} of ${resp.meta.total} programs. Contact support to raise the display limit.`
+                `Showing ${resp.data.length} of ${resp.meta.total} programs. Contact support to raise the display limit.`,
+                { id: 'programs-truncated' }
             );
         }
     }, [resp]);
@@ -421,9 +424,12 @@ export default function ProgramsPage() {
         );
         if (activeNumericFilters.length > 0) {
             result = result.filter((p) =>
-                activeNumericFilters.every(([key, filter]) =>
-                    matchesNumericFilter(getNumericFieldValue(p, key), filter)
-                )
+                activeNumericFilters.every(([key, filter]) => {
+                    const actual = getNumericFieldValue(p, key);
+                    return (
+                        actual !== null && matchesNumericFilter(actual, filter)
+                    );
+                })
             );
         }
 
