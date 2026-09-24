@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import {
     UsersIcon,
@@ -25,6 +25,7 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
+import { InfoTooltip } from '@/components/shared';
 import LoginTrendChart from '@/components/charts/LoginTrendChart';
 import { MetricCard } from './MetricCard';
 import { InsightsDateParams, priorParams, dateQuery } from './insightsRange';
@@ -319,6 +320,7 @@ export default function OverviewTab({
                                     activeKey={sortKey}
                                     onSort={toggleSort}
                                     alignRight
+                                    tooltip="Residents with a platform account at this facility. Not filtered by the selected date range."
                                 />
                                 <SortableHead
                                     label="Active"
@@ -326,6 +328,13 @@ export default function OverviewTab({
                                     activeKey={sortKey}
                                     onSort={toggleSort}
                                     alignRight
+                                    tooltip={
+                                        <>
+                                            Registered residents who{' '}
+                                            <b>logged in at least once</b> in
+                                            the selected date range.
+                                        </>
+                                    }
                                 />
                                 <SortableHead
                                     label="Logins"
@@ -333,6 +342,13 @@ export default function OverviewTab({
                                     activeKey={sortKey}
                                     onSort={toggleSort}
                                     alignRight
+                                    tooltip={
+                                        <>
+                                            Every resident <b>login event</b> in
+                                            the selected date range (5 logins by
+                                            one person count as 5).
+                                        </>
+                                    }
                                 />
                                 <SortableHead
                                     label="Avg / Active"
@@ -340,6 +356,15 @@ export default function OverviewTab({
                                     activeKey={sortKey}
                                     onSort={toggleSort}
                                     alignRight
+                                    tooltip={
+                                        <>
+                                            <b>Logins &divide; Active.</b>{' '}
+                                            Average logins per active resident
+                                            &mdash; divided by <b>active</b>,
+                                            not registered, so inactive accounts
+                                            don&apos;t dilute it.
+                                        </>
+                                    }
                                 />
                                 <SortableHead
                                     label="Activation"
@@ -347,6 +372,14 @@ export default function OverviewTab({
                                     activeKey={sortKey}
                                     onSort={toggleSort}
                                     alignRight
+                                    tooltip={
+                                        <>
+                                            <b>Active &divide; Registered.</b> %
+                                            of registered residents who logged
+                                            in at least once in the selected
+                                            date range.
+                                        </>
+                                    }
                                 />
                             </TableRow>
                         </TableHeader>
@@ -399,6 +432,7 @@ interface SortableHeadProps {
     activeKey: SortKey;
     onSort: (key: SortKey) => void;
     alignRight?: boolean;
+    tooltip?: ReactNode;
 }
 
 function SortableHead({
@@ -406,7 +440,8 @@ function SortableHead({
     sortKey,
     activeKey,
     onSort,
-    alignRight
+    alignRight,
+    tooltip
 }: SortableHeadProps) {
     return (
         <TableHead
@@ -417,6 +452,13 @@ function SortableHead({
                 className={`flex items-center gap-1 ${alignRight ? 'justify-end' : ''}`}
             >
                 {label}
+                {tooltip && (
+                    <span onClick={(e) => e.stopPropagation()}>
+                        <InfoTooltip iconClassName="size-3.5">
+                            {tooltip}
+                        </InfoTooltip>
+                    </span>
+                )}
                 <ArrowsUpDownIcon
                     className={`size-3.5 ${activeKey === sortKey ? 'text-brand' : 'text-gray-400'}`}
                 />
