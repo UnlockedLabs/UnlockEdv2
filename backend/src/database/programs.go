@@ -801,7 +801,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			SELECT
 				p.id as program_id,
 				COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') ` + timeFilterCondition + ` THEN 1 END) * 100.0 /
-					NULLIF(COUNT(CASE WHEN pce.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END), 0) AS completion_rate,
+					NULLIF(COUNT(CASE WHEN pce.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END), 0) AS completion_rate,
 				SUM(
 					CASE
 						WHEN pcea.attendance_status = 'present' ` + timeFilterCondition + ` THEN 1
