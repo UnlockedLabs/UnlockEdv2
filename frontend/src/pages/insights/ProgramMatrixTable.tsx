@@ -49,9 +49,9 @@ export function LegendSwatch({
     label: string;
 }) {
     return (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
             <span className={`w-3 h-3 rounded-sm shrink-0 ${className}`} />
-            {label}
+            <span className="min-w-0">{label}</span>
         </div>
     );
 }

@@ -127,7 +127,7 @@ export function EngagementOverviewSection({
                         ` ${topProgram.program_name} leads at ${Math.round(topProgram.completion_rate)}% completion.`}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-center gap-6 min-w-0">
+                    <div className="flex flex-wrap items-center gap-6 min-w-0">
                         {engagement.total_residents === 0 ? (
                             <p className="text-sm text-muted-foreground">
                                 No resident data available for this selection.
@@ -172,7 +172,7 @@ export function EngagementOverviewSection({
                                         </Pie>
                                     </PieChart>
                                 </ChartContainer>
-                                <div className="space-y-2">
+                                <div className="space-y-2 min-w-0">
                                     <LegendSwatch
                                         className="bg-brand"
                                         label={`Active (${activePct}%)`}
