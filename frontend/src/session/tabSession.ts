@@ -68,11 +68,16 @@ class TabSessionManager {
 
     /*
      * These three go through safeSessionStorage because hasLocalSession() is
-     * reached from checkExistingFlow, a route loader: a raw sessionStorage
-     * access that throws there takes the whole /login route to the error
-     * boundary and the resident can never sign in. Losing the flag instead is
-     * harmless — a false reading just means the tab re-checks the session with
-     * Ory, which is the same path a genuinely new tab takes.
+     * reached from checkExistingFlow, a route loader. A raw sessionStorage
+     * access that throws there sends the whole /login route to the error
+     * boundary.
+     *
+     * When storage is blocked, the flag can never be set, so hasLocalSession()
+     * stays false and no tab can hold a session. That is deliberate. Treating
+     * "unknown" as "yes" would let one resident's session carry into a fresh
+     * tab on a shared facility workstation. Instead, checkExistingFlow probes
+     * storage first and /login tells the resident why they can't sign in
+     * (EN-80).
      */
     hasLocalSession(): boolean {
         return getSessionItem(SESSION_STORAGE_KEY) === 'true';

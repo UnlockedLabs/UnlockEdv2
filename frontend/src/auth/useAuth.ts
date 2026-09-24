@@ -15,6 +15,7 @@ import {
 import API from '@/api/api';
 import { tabSessionManager } from '@/session/tabSession';
 import { resetAnalytics } from '@/lib/events';
+import { isSessionStorageAvailable } from '@/lib/safeSessionStorage';
 
 interface AuthContextType {
     user: User | undefined;
@@ -118,6 +119,19 @@ const redirectTo = (url: string): AuthFlow => {
 };
 
 export const checkExistingFlow: LoaderFunction = async ({ request }) => {
+    // This runs before anything that can redirect. Without sessionStorage the
+    // tab-session flag can never be set, so a login here could never stick.
+    // Browsers that block site data usually block Kratos's cookies too, and
+    // then initFlow() can't read the flow and sends us back to
+    // INIT_KRATOS_LOGIN_FLOW, which lands here again. Stopping on /login with
+    // an explanation avoids both the silent lockout and the loop (EN-80).
+    if (!isSessionStorageAvailable()) {
+        return json<AuthFlow>({
+            flow_id: '',
+            csrf_token: '',
+            storage_blocked: true
+        });
+    }
     const url = new URL(request.url);
     const queryParams = new URLSearchParams(url.search);
     const flow = queryParams.get('flow');
