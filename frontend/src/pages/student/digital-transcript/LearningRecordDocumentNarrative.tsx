@@ -288,7 +288,7 @@ export function LearningRecordDocumentNarrative({
             {showHeadline ? (
                 isRecord ? (
                     <section
-                        aria-label="Program headline"
+                        aria-label="Achievement headline"
                         className="break-inside-avoid"
                     >
                         {headlineFilled ? (
