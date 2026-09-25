@@ -862,6 +862,11 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		case "mr.total_classes":
 			op, num := parseOperatorAndValue(val)
 			tx = tx.Where(fmt.Sprintf("mr.total_classes %s ?", op), num)
+		case "mr.total_active_classes":
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Where(fmt.Sprintf("mr.total_active_classes %s ?", op), num)
+		case "capacity_utilization":
+			tx = applyRateFilter(tx, "(mr.total_filled_seats * 100.0 / NULLIF(mr.total_capacity, 0))", val)
 		case "mr.total_active_facilities":
 			if !facilityScoped {
 				op, num := parseOperatorAndValue(val)
