@@ -13,6 +13,6 @@ export function learningRecordResidentDisplayName(
 }
 
 export function programsCompletedLabel(count: number): string {
-    if (count === 0) return 'No programs completed yet';
-    return `${count} ${count === 1 ? 'program' : 'programs'} completed`;
+    if (count === 0) return 'No achievements completed yet';
+    return `${count} ${count === 1 ? 'achievement' : 'achievements'} completed`;
 }

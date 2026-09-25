@@ -301,7 +301,7 @@ function LearningRecordDocumentImpl({
                                                     <EmptySlot
                                                         fallback={
                                                             <PlaceholderText>
-                                                                Your program
+                                                                Your achievement
                                                             </PlaceholderText>
                                                         }
                                                         skeleton={
@@ -375,7 +375,7 @@ function LearningRecordDocumentImpl({
                                             <EmptySlot
                                                 fallback={
                                                     <PlaceholderText>
-                                                        Your program
+                                                        Your achievement
                                                     </PlaceholderText>
                                                 }
                                                 skeleton={

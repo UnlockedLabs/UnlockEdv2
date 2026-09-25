@@ -88,7 +88,7 @@ export const REFLECTION_TEXT_NUDGES: Record<
         maxLength: 280,
         recommendedMin: 70,
         recommendedMax: 260,
-        hint: 'Linking this program to your next step shows momentum.'
+        hint: 'Linking this achievement to your next step shows momentum.'
     },
     standoutMoment: {
         maxLength: 400,
@@ -113,7 +113,7 @@ export const REFLECTION_TEXT_NUDGES: Record<
 
 /** Live document preview — section labels (layout order is handled in the preview component). */
 export const DOCUMENT_PREVIEW_LABELS = {
-    program: 'Program',
+    program: 'Achievement',
     location: 'Location',
     completed: 'Completed',
     confidence: 'Confidence in future',
@@ -128,7 +128,7 @@ export const DOCUMENT_PREVIEW_LABELS = {
 
 /** Achievements record preview — matches finalized Learning Record document. */
 export const LEARNING_RECORD_PREVIEW_LABELS = {
-    program: 'Program',
+    program: 'Achievement',
     location: 'Location',
     completed: 'Completed',
     confidence: 'Confidence in future',
@@ -150,9 +150,10 @@ export const REFLECTION_STEPS: readonly ReflectionStep[] = [
     {
         key: 'topSkills',
         kind: 'tags',
-        editorLabel: 'What new skill or knowledge did this program give you?',
+        editorLabel:
+            'What new skill or knowledge did this achievement give you?',
         editorSubtitle:
-            'These are your top skills from this program. Choose up to 5.',
+            'These are your top skills from this achievement. Choose up to 5.',
         previewLabel: 'Skills gained'
     },
     {
@@ -165,9 +166,9 @@ export const REFLECTION_STEPS: readonly ReflectionStep[] = [
         key: 'confidence',
         kind: 'confidence',
         editorLabel:
-            'How confident do you feel about your future since completing this program?',
+            'How confident do you feel about your future since completing this achievement?',
         previewLabel:
-            'How confident do you feel about your future since completing this program?'
+            'How confident do you feel about your future since completing this achievement?'
     },
     {
         key: 'pride',
@@ -187,9 +188,9 @@ export const REFLECTION_STEPS: readonly ReflectionStep[] = [
         key: 'standoutMoment',
         kind: 'text',
         editorLabel:
-            'Was there a moment or someone from this program that stood out for you?',
+            'Was there a moment or someone from this achievement that stood out for you?',
         previewLabel:
-            'Was there a moment or someone from this program that stood out for you?'
+            'Was there a moment or someone from this achievement that stood out for you?'
     },
     {
         key: 'adviceToPeer',
@@ -200,8 +201,8 @@ export const REFLECTION_STEPS: readonly ReflectionStep[] = [
     {
         key: 'oneSentence',
         kind: 'text',
-        editorLabel: 'How would you explain this program in one sentence?',
-        previewLabel: 'How would you explain this program in one sentence?'
+        editorLabel: 'How would you explain this achievement in one sentence?',
+        previewLabel: 'How would you explain this achievement in one sentence?'
     }
 ] as const;
 
@@ -287,7 +288,7 @@ export const FUNNEL_Q5_AFTER_TAGS = [
 
 export const FUNNEL_Q5_TAGS_MAX = 2;
 
-/** Q8 — what this program built in you. */
+/** Q8 — what this achievement built in you. */
 export const FUNNEL_Q8_OPTIONS = [
     'Vocational or Job Skills',
     'Business or Financial Skills',
@@ -320,7 +321,7 @@ export const FUNNEL_PREVIEW_LABELS = {
     q5: 'How it changed me',
     adviceToPeer: "What I'd tell others",
     confidence: 'My confidence in the future',
-    q8Selections: 'What this program built in me',
+    q8Selections: 'What this achievement built in me',
     q9Selections: 'Where this leads for me',
     oneSentence: 'In my own words'
 } as const;
@@ -401,7 +402,7 @@ export const FUNNEL_REFLECTION_TEXT_NUDGES: Record<
     },
     goalConnection: {
         ...FUNNEL_TEXT_NUDGE_200,
-        hint: 'Connecting this program to a goal shows momentum and intention.'
+        hint: 'Connecting this achievement to a goal shows momentum and intention.'
     },
     topSkillsParagraph: {
         ...FUNNEL_TEXT_NUDGE_200,
@@ -625,7 +626,7 @@ export const REFLECTION_CATEGORIES: readonly ReflectionCategorySection[] = [
         id: 'practical-future',
         title: 'Your practical future',
         description:
-            'Skills, confidence, and how this program connects to what you want next.',
+            'Skills, confidence, and how this achievement connects to what you want next.',
         stepKeys: ['topSkills', 'confidence', 'goalConnection']
     },
     {
@@ -644,7 +645,7 @@ export const REFLECTION_CATEGORIES: readonly ReflectionCategorySection[] = [
         id: 'in-summary',
         title: 'In summary',
         description:
-            'One sentence that captures the program for your learning record.',
+            'One sentence that captures the achievement for your learning record.',
         stepKeys: ['oneSentence']
     }
 ] as const;
