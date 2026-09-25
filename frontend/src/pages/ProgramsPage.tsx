@@ -49,10 +49,15 @@ import {
     PopoverTrigger
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Plus, Filter, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Plus, Filter, ChevronDown, Loader2, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/Pagination';
+import {
+    NumericFilterPanel,
+    type NumericFilterField,
+    type NumericFilterValue
+} from '@/components/shared/NumericFilterPanel';
 import {
     Table,
     TableBody,
@@ -94,16 +99,150 @@ function parseCommaSeparated(value: string | null | undefined): string[] {
         .filter(Boolean);
 }
 
+function FilterChip({
+    label,
+    onRemove
+}: {
+    label: string;
+    onRemove: () => void;
+}) {
+    return (
+        <Badge variant="secondary" className="gap-1 pr-1 font-normal">
+            <span>{label}</span>
+            <button
+                type="button"
+                aria-label={`Remove ${label} filter`}
+                onClick={onRemove}
+                className="rounded-full p-0.5 hover:bg-gray-200"
+            >
+                <X className="size-3.5" aria-hidden />
+            </button>
+        </Badge>
+    );
+}
+
+// Keys map straight to the backend's `filter_<key>` query param names
+// (see the `for col, val := range filters` switch in
+// backend/src/database/programs.go) so building the fetch URL is a direct
+// lookup, not a translation layer.
+type NumericFilterKey =
+    | 'mr.total_active_classes'
+    | 'mr.total_active_enrollments'
+    | 'capacity_utilization'
+    | 'completion_rate'
+    | 'attendance_rate'
+    | 'mr.total_active_facilities';
+
+const BASE_NUMERIC_FILTER_FIELDS: NumericFilterField<NumericFilterKey>[] = [
+    { key: 'mr.total_active_classes', label: 'Classes' },
+    { key: 'mr.total_active_enrollments', label: 'Enrollment' },
+    { key: 'capacity_utilization', label: 'Capacity', suffix: '%' },
+    { key: 'completion_rate', label: 'Completion', suffix: '%' },
+    { key: 'attendance_rate', label: 'Attendance', suffix: '%' }
+];
+
+// The backend only applies `mr.total_active_facilities` when the request is
+// NOT facility-scoped (see `if !facilityScoped` in programs.go) — showing it
+// to a facility admin would be a filter that silently does nothing.
+const DEPT_ADMIN_NUMERIC_FILTER_FIELDS: NumericFilterField<NumericFilterKey>[] =
+    [
+        ...BASE_NUMERIC_FILTER_FIELDS,
+        { key: 'mr.total_active_facilities', label: 'Facilities' }
+    ];
+
+const SORT_ORDER_BY: Record<SortOption, [string, string]> = {
+    'name-asc': ['programs.name', 'asc'],
+    'name-desc': ['programs.name', 'desc'],
+    'enrollment-asc': ['mr.total_active_enrollments', 'asc'],
+    'enrollment-desc': ['mr.total_active_enrollments', 'desc'],
+    'completion-asc': ['completion_rate', 'asc'],
+    'completion-desc': ['completion_rate', 'desc']
+};
+
+function numericFilterQueryParams(
+    numericFilters: Partial<Record<NumericFilterKey, NumericFilterValue>>
+): [string, string][] {
+    return (
+        Object.entries(numericFilters) as [
+            NumericFilterKey,
+            NumericFilterValue | undefined
+        ][]
+    )
+        .filter((entry): entry is [NumericFilterKey, NumericFilterValue] =>
+            Boolean(entry[1])
+        )
+        .map(([key, filter]) => [
+            `filter_${key}`,
+            `${filter.operator}${filter.value}`
+        ]);
+}
+
 export default function ProgramsPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const isDeptAdminUser = user ? canSwitchFacility(user) : false;
 
-    const { data: resp, mutate } = useSWR<
-        ServerResponseMany<ProgramsOverviewTable>
-    >('/api/programs/detailed-list?include_archived=true&per_page=100');
+    const numericFilterFields = isDeptAdminUser
+        ? DEPT_ADMIN_NUMERIC_FILTER_FIELDS
+        : BASE_NUMERIC_FILTER_FIELDS;
+
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20);
+
+    const [search, setSearch] = useState('');
+    const [sort, setSort] = useState<SortOption>('name-asc');
+    const [selectedTypes, setSelectedTypes] = useState<ProgramType[]>([]);
+    const [selectedStatuses, setSelectedStatuses] = useState<
+        ProgramEffectiveStatus[]
+    >([]);
+    const [numericFilters, setNumericFilters] = useState<
+        Partial<Record<NumericFilterKey, NumericFilterValue>>
+    >({});
+
+    // Filtering, sorting, and pagination all happen server-side (see the
+    // `filter_*`/`order_by`/`order`/`page`/`per_page` params GORM applies in
+    // GetProgramsOverviewTable) so this table scales past a single page of
+    // results instead of needing every program loaded into the browser.
+    const programsQuery = useMemo(() => {
+        const params = new URLSearchParams({
+            include_archived: 'true',
+            page: String(page),
+            per_page: String(perPage)
+        });
+        if (search) params.set('search', search);
+        const [orderBy, order] = SORT_ORDER_BY[sort];
+        params.set('order_by', orderBy);
+        params.set('order', order);
+        if (selectedTypes.length > 0) {
+            params.set('filter_pt.program_types', selectedTypes.join('|'));
+        }
+        if (selectedStatuses.length > 0) {
+            params.set('filter_programs.is_active', selectedStatuses.join('|'));
+        }
+        for (const [key, value] of numericFilterQueryParams(numericFilters)) {
+            params.set(key, value);
+        }
+        return `/api/programs/detailed-list?${params.toString()}`;
+    }, [
+        page,
+        perPage,
+        search,
+        sort,
+        selectedTypes,
+        selectedStatuses,
+        numericFilters
+    ]);
+
+    const { data: resp, mutate } =
+        useSWR<ServerResponseMany<ProgramsOverviewTable>>(programsQuery);
 
     const programs = resp?.data ?? [];
+
+    // Facility-wide totals for the stat cards, independent of the table's
+    // filters — a KPI header, not a summary of the currently filtered rows.
+    const { data: statsResp } = useSWR<
+        ServerResponseMany<ProgramsOverviewTable>
+    >('/api/programs/detailed-list?include_archived=true&all=true');
+
     const hasLoadingCanvas = programs.some(
         (p) => isExternalSource(p.source) && p.loading
     );
@@ -117,13 +256,6 @@ export default function ProgramsPage() {
         isDeptAdminUser ? '/api/facilities' : null
     );
     const facilities = facilitiesResp?.data ?? [];
-
-    const [search, setSearch] = useState('');
-    const [sort, setSort] = useState<SortOption>('name-asc');
-    const [selectedTypes, setSelectedTypes] = useState<ProgramType[]>([]);
-    const [selectedStatuses, setSelectedStatuses] = useState<
-        ProgramEffectiveStatus[]
-    >([]);
 
     const [showAddProgram, setShowAddProgram] = useState(false);
     const emptyProgramForm: ProgramCreateInput = {
@@ -182,8 +314,6 @@ export default function ProgramsPage() {
         }
     };
 
-    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20);
-
     // Reset to page 1 only when a filter/sort/search value actually changes.
     // Comparing against the previous values (rather than a first-render ref) keeps
     // this correct under React StrictMode, which double-invokes effects on mount
@@ -193,7 +323,8 @@ export default function ProgramsPage() {
         search,
         sort,
         selectedTypes,
-        selectedStatuses
+        selectedStatuses,
+        numericFilters
     });
     useEffect(() => {
         const prev = prevFilters.current;
@@ -201,17 +332,26 @@ export default function ProgramsPage() {
             prev.search !== search ||
             prev.sort !== sort ||
             prev.selectedTypes !== selectedTypes ||
-            prev.selectedStatuses !== selectedStatuses
+            prev.selectedStatuses !== selectedStatuses ||
+            prev.numericFilters !== numericFilters
         ) {
             prevFilters.current = {
                 search,
                 sort,
                 selectedTypes,
-                selectedStatuses
+                selectedStatuses,
+                numericFilters
             };
             setPage(1);
         }
-    }, [search, sort, selectedTypes, selectedStatuses, setPage]);
+    }, [
+        search,
+        sort,
+        selectedTypes,
+        selectedStatuses,
+        numericFilters,
+        setPage
+    ]);
 
     const toggleTypeFilter = (type: ProgramType) => {
         setSelectedTypes((prev) =>
@@ -232,7 +372,28 @@ export default function ProgramsPage() {
     const clearFilters = () => {
         setSelectedTypes([]);
         setSelectedStatuses([]);
+        setNumericFilters({});
     };
+
+    const onNumericFilterChange = (
+        key: NumericFilterKey,
+        value: NumericFilterValue | undefined
+    ) => {
+        setNumericFilters((prev) => {
+            const next = { ...prev };
+            if (value) {
+                next[key] = value;
+            } else {
+                delete next[key];
+            }
+            return next;
+        });
+    };
+
+    const activeFilterCount =
+        selectedTypes.length +
+        selectedStatuses.length +
+        Object.keys(numericFilters).length;
 
     const programTypes: { value: ProgramType; label: string }[] = [
         { value: ProgramType.EDUCATIONAL, label: 'Educational' },
@@ -263,88 +424,19 @@ export default function ProgramsPage() {
         { value: FundingType.OTHER, label: 'Other' }
     ];
 
-    const filtered = useMemo(() => {
-        const programs = resp?.data ?? [];
-        let result = programs;
-
-        if (search) {
-            const q = search.toLowerCase();
-            result = result.filter(
-                (p) =>
-                    p.program_name.toLowerCase().includes(q) ||
-                    p.description?.toLowerCase().includes(q)
-            );
-        }
-
-        if (selectedTypes.length > 0) {
-            result = result.filter((p) => {
-                const types = parseCommaSeparated(p.program_types);
-                return types.some((type) =>
-                    selectedTypes.includes(type as ProgramType)
-                );
-            });
-        }
-
-        if (selectedStatuses.length > 0) {
-            result = result.filter((p) => {
-                const status = getEffectiveStatus(p);
-                return selectedStatuses.includes(status);
-            });
-        }
-
-        result = [...result].sort((a, b) => {
-            switch (sort) {
-                case 'name-asc':
-                    return a.program_name.localeCompare(b.program_name);
-                case 'name-desc':
-                    return b.program_name.localeCompare(a.program_name);
-                case 'enrollment-asc':
-                    return (
-                        (a.total_active_enrollments ?? 0) -
-                        (b.total_active_enrollments ?? 0)
-                    );
-                case 'enrollment-desc':
-                    return (
-                        (b.total_active_enrollments ?? 0) -
-                        (a.total_active_enrollments ?? 0)
-                    );
-                case 'completion-asc':
-                    return (a.completion_rate ?? 0) - (b.completion_rate ?? 0);
-                case 'completion-desc':
-                    return (b.completion_rate ?? 0) - (a.completion_rate ?? 0);
-                default:
-                    return 0;
-            }
-        });
-
-        return result;
-    }, [resp?.data, search, sort, selectedTypes, selectedStatuses]);
-
-    const paginatedPrograms = filtered.slice(
-        (page - 1) * perPage,
-        page * perPage
-    );
-
     const stats = useMemo(() => {
-        const active = filtered.filter((p) => p.status && !p.archived_at);
-        const totalEnrollment = filtered.reduce(
+        const all = statsResp?.data ?? [];
+        const active = all.filter((p) => p.status && !p.archived_at);
+        const totalEnrollment = all.reduce(
             (sum, p) => sum + (p.total_active_enrollments ?? 0),
             0
         );
-        const totalClasses = filtered.reduce(
+        const totalClasses = all.reduce(
             (sum, p) => sum + (p.total_classes ?? 0),
             0
         );
-        const totalCapacity = filtered.reduce(
-            (sum, p) => sum + (p.total_capacity ?? 0),
-            0
-        );
-        const totalFilledSeats = filtered.reduce(
-            (sum, p) => sum + (p.total_filled_seats ?? 0),
-            0
-        );
 
-        const completedEnrollmentsSum = filtered.reduce(
+        const completedEnrollmentsSum = all.reduce(
             (sum, p) =>
                 sum +
                 ((p.completion_rate ?? 0) *
@@ -352,7 +444,7 @@ export default function ProgramsPage() {
                     100,
             0
         );
-        const totalCompletedEnrollments = filtered.reduce(
+        const totalCompletedEnrollments = all.reduce(
             (sum, p) =>
                 sum + (p.total_enrollments - (p.total_active_enrollments ?? 0)),
             0
@@ -365,19 +457,13 @@ export default function ProgramsPage() {
                   )
                 : 0;
 
-        const utilization =
-            totalCapacity > 0
-                ? Math.round((totalFilledSeats / totalCapacity) * 100)
-                : 0;
         return {
             activePrograms: active.length,
             totalClasses,
             totalEnrollment,
-            totalCapacity,
-            completionRate,
-            capacityUtilization: utilization
+            completionRate
         };
-    }, [filtered]);
+    }, [statsResp]);
 
     const subtitle = isDeptAdminUser
         ? 'Monitor program performance across all facilities'
@@ -579,19 +665,65 @@ export default function ProgramsPage() {
                                         )
                                     )}
                                 </div>
-                                {selectedTypes.length > 0 ||
-                                selectedStatuses.length > 0 ? (
-                                    <Button
-                                        className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        onClick={clearFilters}
-                                        size="sm"
-                                    >
-                                        Clear All Filters
-                                    </Button>
-                                ) : null}
                             </PopoverContent>
                         </Popover>
+                        {/* Classes / Enrollment / Capacity / Completion / Attendance Filters */}
+                        <NumericFilterPanel
+                            label="More Filters"
+                            fields={numericFilterFields}
+                            values={numericFilters}
+                            onChange={onNumericFilterChange}
+                        />
                     </div>
+                    {activeFilterCount > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 mt-3">
+                            {selectedTypes.map((type) => (
+                                <FilterChip
+                                    key={`type-${type}`}
+                                    label={formatDisplayName(type)}
+                                    onRemove={() => toggleTypeFilter(type)}
+                                />
+                            ))}
+                            {selectedStatuses.map((status) => (
+                                <FilterChip
+                                    key={`status-${status}`}
+                                    label={status}
+                                    onRemove={() => toggleStatusFilter(status)}
+                                />
+                            ))}
+                            {(
+                                Object.entries(numericFilters) as [
+                                    NumericFilterKey,
+                                    NumericFilterValue | undefined
+                                ][]
+                            ).map(([key, filter]) => {
+                                if (!filter) return null;
+                                const field = numericFilterFields.find(
+                                    (f) => f.key === key
+                                );
+                                if (!field) return null;
+                                return (
+                                    <FilterChip
+                                        key={`numeric-${key}`}
+                                        label={`${field.label} ${filter.operator} ${filter.value}${field.suffix ?? ''}`}
+                                        onRemove={() =>
+                                            onNumericFilterChange(
+                                                key,
+                                                undefined
+                                            )
+                                        }
+                                    />
+                                );
+                            })}
+                            <button
+                                type="button"
+                                onClick={clearFilters}
+                                className="text-xs text-brand hover:underline ml-1"
+                            >
+                                Clear all
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Add Program Form */}
@@ -1070,7 +1202,7 @@ export default function ProgramsPage() {
                     </div>
                 )}
 
-                {filtered.length === 0 ? (
+                {programs.length === 0 ? (
                     <div className="card-block p-12 text-center">
                         <p className="text-gray-600 mb-2">No programs found</p>
                         <p className="text-sm text-gray-500">
@@ -1081,7 +1213,7 @@ export default function ProgramsPage() {
                     <>
                         {isDeptAdminUser ? (
                             <ProgramsTable
-                                programs={paginatedPrograms}
+                                programs={programs}
                                 pollExhausted={canvasPollExhausted}
                                 onRowClick={(programId) =>
                                     navigate('/programs/' + programId)
@@ -1089,7 +1221,7 @@ export default function ProgramsPage() {
                             />
                         ) : (
                             <div className="grid grid-cols-2 gap-6 mb-4">
-                                {paginatedPrograms.map((program) => (
+                                {programs.map((program) => (
                                     <ProgramCard
                                         key={program.program_id}
                                         program={program}
@@ -1107,11 +1239,11 @@ export default function ProgramsPage() {
                         )}
 
                         {/* Pagination */}
-                        {filtered.length > 0 && (
+                        {(resp?.meta.total ?? 0) > 0 && (
                             <div className="mt-6">
                                 <Pagination
                                     currentPage={page}
-                                    totalItems={filtered.length}
+                                    totalItems={resp?.meta.total ?? 0}
                                     itemsPerPage={perPage}
                                     onPageChange={setPage}
                                     onItemsPerPageChange={setPerPage}
