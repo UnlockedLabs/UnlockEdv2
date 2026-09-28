@@ -519,3 +519,109 @@ func TestNewLiveProgramProviderRejectsNonLiveTypes(t *testing.T) {
 		assert.Nil(t, reader)
 	}
 }
+
+// filterCanvasPrograms and its helpers close the gap from the #1232 review:
+// Canvas rows have no backing `programs` row, so GetProgramsOverviewTable's
+// SQL WHERE clauses never see them, and before this they were appended to
+// every response unfiltered and counted in meta.total regardless of what the
+// admin was actually filtering for.
+
+func canvasRow(id uint, name string, totalActiveClasses, totalActiveEnrollments *int64, types string, loading bool) models.ProgramsOverviewTable {
+	return models.ProgramsOverviewTable{
+		ProgramID:              id,
+		ProgramName:            name,
+		Description:            "Courses pulled live from a connection: " + name,
+		TotalActiveClasses:     totalActiveClasses,
+		TotalActiveEnrollments: totalActiveEnrollments,
+		Types:                  types,
+		Status:                 true,
+		Source:                 "canvas",
+		Loading:                loading,
+	}
+}
+
+func int64Ptr(v int64) *int64 { return &v }
+
+func TestCanvasStatusMatches(t *testing.T) {
+	assert.True(t, canvasStatusMatches("Available"))
+	assert.True(t, canvasStatusMatches("Inactive|Available"))
+	assert.False(t, canvasStatusMatches("Inactive"))
+	assert.False(t, canvasStatusMatches("Archived"))
+	assert.False(t, canvasStatusMatches("Inactive|Archived"))
+}
+
+func TestCanvasTypesMatch(t *testing.T) {
+	assert.True(t, canvasTypesMatch("College", "College"))
+	assert.True(t, canvasTypesMatch("College", "Employment|College"))
+	assert.True(t, canvasTypesMatch("College", "college")) // SQL side is case-insensitive (~*)
+	assert.False(t, canvasTypesMatch("College", "Employment"))
+}
+
+func TestCanvasNumericMatches(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    *int64
+		filter   string
+		expected bool
+	}{
+		{"matches >=", int64Ptr(5), ">=5", true},
+		{"fails >=", int64Ptr(3), ">=5", false},
+		{"matches exact", int64Ptr(5), "=5", true},
+		{"malformed value does not exclude the row", int64Ptr(5), "garbage", true},
+		{"nil metric (still loading) cannot satisfy a real filter", nil, ">=0", false},
+		{"nil metric with malformed filter still passes (filter is a no-op)", nil, "garbage", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, canvasNumericMatches(tt.value, tt.filter))
+		})
+	}
+}
+
+func TestFilterCanvasPrograms(t *testing.T) {
+	rows := []models.ProgramsOverviewTable{
+		canvasRow(1, "Canvas - DOC", int64Ptr(4), int64Ptr(10), "College", false),
+		canvasRow(2, "Canvas - Facility B", int64Ptr(1), int64Ptr(2), "College", false),
+		canvasRow(3, "Canvas - Loading", nil, nil, "", true),
+	}
+
+	t.Run("no filters keeps every row", func(t *testing.T) {
+		out := filterCanvasPrograms(rows, &models.QueryContext{}, map[string]string{})
+		assert.Len(t, out, 3)
+	})
+
+	t.Run("search matches provider name", func(t *testing.T) {
+		out := filterCanvasPrograms(rows, &models.QueryContext{Search: "doc"}, map[string]string{})
+		assert.Len(t, out, 1)
+		assert.Equal(t, uint(1), out[0].ProgramID)
+	})
+
+	t.Run("status filter for Available keeps all live canvas rows", func(t *testing.T) {
+		out := filterCanvasPrograms(rows, &models.QueryContext{}, map[string]string{"programs.is_active": "Available"})
+		assert.Len(t, out, 3)
+	})
+
+	t.Run("status filter for Inactive/Archived excludes every canvas row", func(t *testing.T) {
+		out := filterCanvasPrograms(rows, &models.QueryContext{}, map[string]string{"programs.is_active": "Inactive"})
+		assert.Empty(t, out)
+	})
+
+	t.Run("numeric filter on total_active_classes excludes rows below threshold and the still-loading row", func(t *testing.T) {
+		out := filterCanvasPrograms(rows, &models.QueryContext{}, map[string]string{"mr.total_active_classes": ">=2"})
+		assert.Len(t, out, 1)
+		assert.Equal(t, uint(1), out[0].ProgramID)
+	})
+
+	t.Run("a filter dimension Canvas rows cannot satisfy excludes every row", func(t *testing.T) {
+		for _, col := range []string{"pct.credit_types", "programs.funding_type", "capacity_utilization",
+			"completion_rate", "attendance_rate", "mr.total_active_facilities", "facility_id"} {
+			out := filterCanvasPrograms(rows, &models.QueryContext{}, map[string]string{col: "anything"})
+			assert.Empty(t, out, "filter %q should exclude all canvas rows", col)
+		}
+	})
+
+	t.Run("program type filter matches the hardcoded College type", func(t *testing.T) {
+		out := filterCanvasPrograms(rows, &models.QueryContext{}, map[string]string{"pt.program_types": "College"})
+		assert.Len(t, out, 2) // the still-loading row has no type yet and is excluded
+	})
+}
