@@ -47,7 +47,7 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 		COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments,
 		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.user_id END) as active_residents,
 		COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END) * 100.0
-			/ NULLIF(COUNT(CASE WHEN pce.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') AND pce.enrolled_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END), 0) AS completion_rate
+			/ NULLIF(COUNT(CASE WHEN pce.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered', 'Incomplete: Segregated') AND pce.enrolled_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END), 0) AS completion_rate
 	`
 
 	tx := db.Table("program_class_enrollments pce").
@@ -712,6 +712,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
 			mr.total_active_classes AS total_active_classes,
+			mr.total_cancelled_classes AS total_cancelled_classes,
 			mr.total_capacity AS total_capacity,
 			mr.total_filled_seats AS total_filled_seats,
 			time_filtered_rates.completion_rate AS completion_rate,
@@ -732,6 +733,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
 			mr.total_active_classes AS total_active_classes,
+			mr.total_cancelled_classes AS total_cancelled_classes,
 			mr.total_capacity AS total_capacity,
 			mr.total_filled_seats AS total_filled_seats,
 			time_filtered_rates.completion_rate AS completion_rate,
@@ -754,6 +756,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) AND pc.status = 'Active' THEN pce.id END) AS total_filled_seats,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
 					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
+					COUNT(DISTINCT CASE WHEN pc.status = 'Cancelled' THEN pc.id END) AS total_cancelled_classes,
 					class_stats.total_capacity
 				FROM programs p
 				JOIN facilities_programs fp ON fp.program_id = p.id
@@ -779,6 +782,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) AND pc.status = 'Active' THEN pce.id END) AS total_filled_seats,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
 					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
+					COUNT(DISTINCT CASE WHEN pc.status = 'Cancelled' THEN pc.id END) AS total_cancelled_classes,
 					class_stats.total_capacity
 				FROM programs p
 				LEFT JOIN facilities_programs fp ON fp.program_id = p.id
@@ -812,8 +816,11 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		LEFT JOIN (
 			SELECT
 				p.id as program_id,
-				COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') ` + timeFilterCondition + ` THEN 1 END) * 100.0 /
-					NULLIF(COUNT(CASE WHEN pce.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END), 0) AS completion_rate,
+				-- DISTINCT on pce.id: the pcev/pcea joins below fan out one enrollment into many
+				-- rows (one per event/attendance record), so a plain COUNT double-counts enrollments
+				-- with more recorded attendance and skews the rate.
+				COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') ` + timeFilterCondition + ` THEN pce.id END) * 100.0 /
+					NULLIF(COUNT(DISTINCT CASE WHEN pce.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered', 'Incomplete: Segregated') AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN pce.id END), 0) AS completion_rate,
 				SUM(
 					CASE
 						WHEN pcea.attendance_status = 'present' ` + timeFilterCondition + ` THEN 1

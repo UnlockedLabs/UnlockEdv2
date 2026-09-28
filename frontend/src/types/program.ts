@@ -121,6 +121,7 @@ export interface ProgramsOverviewTable {
     total_active_enrollments: number;
     total_classes: number;
     total_active_classes: number;
+    total_cancelled_classes: number;
     total_capacity: number;
     total_filled_seats: number;
     completion_rate: number | null;

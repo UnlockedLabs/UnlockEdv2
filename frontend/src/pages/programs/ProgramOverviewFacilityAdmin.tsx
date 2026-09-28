@@ -1254,9 +1254,13 @@ function ClassRow({
                                             </span>
                                         </TooltipTrigger>
                                         <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                            {!hasStarted
-                                                ? `This class hasn't started yet${cls.status === SelectedClassStatus.Scheduled ? ` — starts ${formatDate(cls.start_dt)}` : ''}`
-                                                : `No residents in this class have reached completion eligibility yet (${cls.enrolled} enrolled)`}
+                                            {cls.status ===
+                                            SelectedClassStatus.Scheduled
+                                                ? `This class hasn't started yet — starts ${formatDate(cls.start_dt)}`
+                                                : cls.status ===
+                                                    SelectedClassStatus.Cancelled
+                                                  ? 'This class was cancelled before any residents reached completion eligibility'
+                                                  : `No residents in this class have reached completion eligibility yet (${cls.enrolled} enrolled)`}
                                         </TooltipContent>
                                     </Tooltip>
                                 )}

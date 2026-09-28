@@ -179,6 +179,7 @@ type ProgramsOverviewTable struct {
 	TotalActiveEnrollments *int64   `json:"total_active_enrollments"`
 	TotalClasses           *int64   `json:"total_classes"`
 	TotalActiveClasses     *int64   `json:"total_active_classes"`
+	TotalCancelledClasses  *int64   `json:"total_cancelled_classes"`
 	TotalCapacity          *int64   `json:"total_capacity"`
 	TotalFilledSeats       *int64   `json:"total_filled_seats"`
 	CompletionRate         *float64 `json:"completion_rate"`

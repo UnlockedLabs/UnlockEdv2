@@ -1902,7 +1902,10 @@ function ProgramsTable({
                                                     ? 'Percentage of residents who successfully completed the program out of all who have finished (not including current enrollments)'
                                                     : (program.total_classes ??
                                                             0) === 0
-                                                      ? 'No classes have been created for this program yet'
+                                                      ? (program.total_cancelled_classes ??
+                                                            0) > 0
+                                                          ? 'This program has no active or completed classes to calculate a completion rate from'
+                                                          : 'No classes have been created for this program yet'
                                                       : 'No residents have reached completion eligibility yet'}
                                             </TooltipContent>
                                         </Tooltip>
@@ -1927,7 +1930,10 @@ function ProgramsTable({
                                                     ? 'Average attendance rate across all active classes in this program'
                                                     : (program.total_classes ??
                                                             0) === 0
-                                                      ? 'No classes have been created for this program yet'
+                                                      ? (program.total_cancelled_classes ??
+                                                            0) > 0
+                                                          ? 'This program has no active classes to calculate an attendance rate from'
+                                                          : 'No classes have been created for this program yet'
                                                       : 'No classes have started taking attendance yet'}
                                             </TooltipContent>
                                         </Tooltip>
