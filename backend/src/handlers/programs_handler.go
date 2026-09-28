@@ -95,10 +95,14 @@ func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *ht
 	for i := range programs {
 		programs[i].Source = "unlocked"
 	}
-	if claims.hasFeatureAccess(models.ProviderAccess) {
+	// Canvas rows are synthetic (one per provider platform, not a `programs`
+	// row) and have no fixed position in the SQL sort order, so they are only
+	// ever shown on page 1 rather than repeated on every page.
+	if claims.hasFeatureAccess(models.ProviderAccess) && args.Page == 1 {
 		if canvasPrograms, canvasErr := srv.getCanvasProviderPrograms(args.FacilityID, adminRole); canvasErr != nil {
 			log.errorf("failed to fetch canvas provider programs: %v", canvasErr)
 		} else {
+			canvasPrograms = filterCanvasPrograms(canvasPrograms, &args, filters)
 			programs = append(programs, canvasPrograms...)
 			args.Total += int64(len(canvasPrograms))
 		}

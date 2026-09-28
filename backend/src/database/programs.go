@@ -651,7 +651,7 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 	return programsFacilityStats, nil
 }
 
-func parseOperatorAndValue(input string) (string, float64) {
+func ParseOperatorAndValue(input string) (string, float64) {
 	ops := []string{">=", "<=", "!=", "=", ">", "<"}
 	for _, op := range ops {
 		if strings.HasPrefix(input, op) {
@@ -666,9 +666,21 @@ func parseOperatorAndValue(input string) (string, float64) {
 	return "", 0
 }
 
+// applyNumericFilter mirrors applyRateFilter's fail-closed behavior: an
+// unparseable operator/value (e.g. a malformed `filter_mr.total_classes`
+// query param) leaves tx untouched instead of building a WHERE clause with a
+// missing operator, which Postgres rejects as a syntax error.
+func applyNumericFilter(tx *gorm.DB, column string, val string) *gorm.DB {
+	op, num := ParseOperatorAndValue(val)
+	if op == "" {
+		return tx
+	}
+	return tx.Where(fmt.Sprintf("%s %s ?", column, op), num)
+}
+
 func applyRateFilter(tx *gorm.DB, rateExpr string, val string) *gorm.DB {
 	const floatTolerance = 0.005
-	op, num := parseOperatorAndValue(val)
+	op, num := ParseOperatorAndValue(val)
 	switch op {
 	case "!=":
 		return tx.Where("ABS("+rateExpr+" - ?) > ?", num, floatTolerance)
@@ -854,23 +866,18 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		case "programs.name":
 			tx = tx.Where("programs.name ILIKE ?", "%"+val+"%")
 		case "mr.total_enrollments":
-			op, num := parseOperatorAndValue(val)
-			tx = tx.Where(fmt.Sprintf("mr.total_enrollments %s ?", op), num)
+			tx = applyNumericFilter(tx, "mr.total_enrollments", val)
 		case "mr.total_active_enrollments":
-			op, num := parseOperatorAndValue(val)
-			tx = tx.Where(fmt.Sprintf("mr.total_active_enrollments %s ?", op), num)
+			tx = applyNumericFilter(tx, "mr.total_active_enrollments", val)
 		case "mr.total_classes":
-			op, num := parseOperatorAndValue(val)
-			tx = tx.Where(fmt.Sprintf("mr.total_classes %s ?", op), num)
+			tx = applyNumericFilter(tx, "mr.total_classes", val)
 		case "mr.total_active_classes":
-			op, num := parseOperatorAndValue(val)
-			tx = tx.Where(fmt.Sprintf("mr.total_active_classes %s ?", op), num)
+			tx = applyNumericFilter(tx, "mr.total_active_classes", val)
 		case "capacity_utilization":
 			tx = applyRateFilter(tx, "(mr.total_filled_seats * 100.0 / NULLIF(mr.total_capacity, 0))", val)
 		case "mr.total_active_facilities":
 			if !facilityScoped {
-				op, num := parseOperatorAndValue(val)
-				tx = tx.Where(fmt.Sprintf("mr.total_active_facilities %s ?", op), num)
+				tx = applyNumericFilter(tx, "mr.total_active_facilities", val)
 			}
 		case "completion_rate":
 			tx = applyRateFilter(tx, "time_filtered_rates.completion_rate", val)
@@ -888,11 +895,11 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			for _, status := range statuses {
 				switch status {
 				case "Available":
-					conditions = append(conditions, "programs.is_active = true")
+					conditions = append(conditions, "programs.is_active = true AND programs.archived_at IS NULL")
 				case "Archived":
 					conditions = append(conditions, "programs.archived_at IS NOT NULL")
 				case "Inactive":
-					conditions = append(conditions, "programs.is_active = false")
+					conditions = append(conditions, "programs.is_active = false AND programs.archived_at IS NULL")
 				}
 			}
 			if len(conditions) > 0 {

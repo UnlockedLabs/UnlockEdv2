@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"UnlockEdv2/src/services"
 	"context"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -299,6 +301,114 @@ func (srv *Server) restoreCanvasProgram(cacheKey string, previous *models.Progra
 	}
 	if _, err := kv.Put(cacheKey, data); err != nil {
 		log.WithError(err).Warnf("restoreCanvasProgram: failed to restore entry at %s", cacheKey)
+	}
+}
+
+// filterCanvasPrograms applies the same search/filter predicates that
+// GetProgramsOverviewTable applies in SQL, in memory, to the synthetic
+// per-provider rows getCanvasProviderPrograms returns. Canvas rows have no
+// backing `programs` row, so the database-layer WHERE clauses never see them
+// — without this they bypass every filter and are always counted in
+// meta.total regardless of what actually matched.
+//
+// A filter with no meaningful counterpart on a Canvas row (credit type,
+// funding type, capacity utilization, completion/attendance rate, the
+// dept-admin facility_id filter) excludes the row: a row that cannot satisfy
+// a predicate should not appear to match it.
+func filterCanvasPrograms(programs []models.ProgramsOverviewTable, args *models.QueryContext, filters map[string]string) []models.ProgramsOverviewTable {
+	kept := make([]models.ProgramsOverviewTable, 0, len(programs))
+programLoop:
+	for _, p := range programs {
+		if args.Search != "" {
+			q := strings.ToLower(args.Search)
+			if !strings.Contains(strings.ToLower(p.ProgramName), q) &&
+				!strings.Contains(strings.ToLower(p.Description), q) {
+				continue
+			}
+		}
+		for col, val := range filters {
+			switch col {
+			case "programs.is_active":
+				if !canvasStatusMatches(val) {
+					continue programLoop
+				}
+			case "pt.program_types":
+				if !canvasTypesMatch(p.Types, val) {
+					continue programLoop
+				}
+			case "mr.total_active_classes":
+				if !canvasNumericMatches(p.TotalActiveClasses, val) {
+					continue programLoop
+				}
+			case "mr.total_active_enrollments":
+				if !canvasNumericMatches(p.TotalActiveEnrollments, val) {
+					continue programLoop
+				}
+			case "mr.total_classes":
+				if !canvasNumericMatches(p.TotalClasses, val) {
+					continue programLoop
+				}
+			case "mr.total_enrollments":
+				if !canvasNumericMatches(p.TotalEnrollments, val) {
+					continue programLoop
+				}
+			case "pct.credit_types", "programs.funding_type", "capacity_utilization",
+				"completion_rate", "attendance_rate", "mr.total_active_facilities", "facility_id":
+				continue programLoop
+			}
+		}
+		kept = append(kept, p)
+	}
+	return kept
+}
+
+// canvasStatusMatches reports whether a Canvas provider row satisfies a
+// `programs.is_active` filter. Canvas rows always represent a live,
+// unarchived connection, so they only ever match "Available".
+func canvasStatusMatches(val string) bool {
+	return slices.Contains(strings.Split(val, "|"), "Available")
+}
+
+// canvasTypesMatch mirrors the SQL side's `pt.program_types ~* val` regex
+// match against the Canvas row's single hardcoded type ("College").
+func canvasTypesMatch(types, val string) bool {
+	re, err := regexp.Compile("(?i)" + val)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(types)
+}
+
+// canvasNumericMatches evaluates a `filter_mr.total_*`-style operator/value
+// pair against a Canvas row's metric. A malformed value parses to no
+// operator, same as the SQL-side applyNumericFilter, and is treated the same
+// way: the filter doesn't apply, so the row is not excluded by it. A nil
+// metric (the row is still loading and has no value yet) cannot satisfy an
+// otherwise well-formed filter, so it is excluded.
+func canvasNumericMatches(value *int64, val string) bool {
+	op, num := database.ParseOperatorAndValue(val)
+	if op == "" {
+		return true
+	}
+	if value == nil {
+		return false
+	}
+	v := float64(*value)
+	switch op {
+	case "=":
+		return v == num
+	case "!=":
+		return v != num
+	case ">=":
+		return v >= num
+	case "<=":
+		return v <= num
+	case ">":
+		return v > num
+	case "<":
+		return v < num
+	default:
+		return false
 	}
 }
 
