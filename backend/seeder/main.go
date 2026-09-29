@@ -98,10 +98,7 @@ func seedTestData(db *gorm.DB) {
 	if err != nil {
 		log.Printf("Failed to get facilities: %v", err)
 	}
-	videos := []models.Video{}
-	libraries := []models.Library{}
-	libraries = generateFakeLibraries(2, 25)
-	videos = generateFakeVideos(3, 25)
+	videos := generateFakeVideos(3, 25)
 	for i := range videos {
 		// create open_content_url for each video
 		_ = db.Create(&models.OpenContentUrl{
@@ -112,11 +109,6 @@ func seedTestData(db *gorm.DB) {
 	for i := range videos {
 		if err := db.Create(&videos[i]).Error; err != nil {
 			log.Printf("Failed to create fake video: %v", err)
-		}
-	}
-	for i := range libraries {
-		if err := db.Create(&libraries[i]).Error; err != nil {
-			log.Printf("Failed to create fake library: %v", err)
 		}
 	}
 	users := generateFakeUsers(facilities)
@@ -364,27 +356,19 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 		}
 	}
 
-	openContentUrls := []models.OpenContentUrl{{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/numeric/math/acos"},
-		{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/numeric/math/acosh"},
-		{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/numeric/math/abs"},
-		{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/numeric/fenv"},
-		{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/index"},
-		{ContentURL: "/api/proxy/libraries/1/"},
-		{ContentURL: "/api/proxy/libraries/2/content/devdocs_en_go_2025-01/arena/index"},
-		{ContentURL: "/api/proxy/libraries/2/content/devdocs_en_go_2025-01/index"},
-	}
-	for _, url := range openContentUrls {
-		if err := db.Create(&url).Error; err != nil {
-			log.Printf("Failed to create openconenturl: %v", err)
-		}
-	}
-	if err := db.Find(&openContentUrls).Error; err != nil {
-		log.Printf("Failed to get open content urls: %v", err)
-	}
-
+	// libraries come from the kiwix scrape, so seed activity against whatever exists
 	var libraries []models.Library
 	if err := db.Model(&models.Library{}).Find(&libraries).Error; err != nil {
 		log.Printf("Failed to get libraries: %v", err)
+	}
+	for _, lib := range libraries {
+		if err := db.Create(&models.OpenContentUrl{ContentURL: fmt.Sprintf("/api/proxy/libraries/%d/", lib.ID)}).Error; err != nil {
+			log.Printf("Failed to create openconenturl: %v", err)
+		}
+	}
+	var openContentUrls []models.OpenContentUrl
+	if err := db.Find(&openContentUrls).Error; err != nil {
+		log.Printf("Failed to get open content urls: %v", err)
 	}
 	var videos []models.Video
 	if err := db.Model(&models.Video{}).Find(&videos).Error; err != nil {
@@ -518,26 +502,6 @@ func getRandomProgram(programMap map[string]models.ProgType) string {
 		keySlice = append(keySlice, key)
 	}
 	return keySlice[rand.Intn(len(keySlice))]
-}
-
-func generateFakeLibraries(providerID uint, count int) []models.Library {
-	langs := []string{"eng", "spa", "fra", "por", "deu"}
-	libraries := make([]models.Library, 0, count)
-	for range count {
-		lang := langs[rand.Intn(len(langs))]
-		title := faker.Word() + " Docs"
-		lib := models.Library{
-			OpenContentProviderID: providerID,
-			ExternalID:            models.StringPtr(fmt.Sprintf("urn:uuid:%s", faker.UUIDDigit())),
-			Title:                 title,
-			Language:              models.StringPtr(lang),
-			Description:           models.StringPtr(faker.Paragraph()),
-			Url:                   fmt.Sprintf("/content/devdocs_en_%s_%s", strings.ToLower(faker.Word()), "2025-01"),
-			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
-		}
-		libraries = append(libraries, lib)
-	}
-	return libraries
 }
 
 func generateFakeVideos(providerID uint, count int) []models.Video {

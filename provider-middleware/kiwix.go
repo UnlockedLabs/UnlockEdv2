@@ -7,24 +7,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
-	"sync"
 
 	"gorm.io/gorm"
 )
 
 const (
 	KiwixCatalogUrl = "/catalog/v2/entries?lang=eng&start=0&count="
+	maxLibraries    = 1000
 )
-
-var maxLibraries = sync.OnceValue(func() int {
-	if os.Getenv("APP_ENV") == "dev" {
-		return 10
-	} else {
-		return 1000
-	}
-})
 
 type KiwixService struct {
 	OpenContentProviderId uint
@@ -36,7 +27,7 @@ type KiwixService struct {
 }
 
 func NewKiwixService(openContentProvider *models.OpenContentProvider, params map[string]any) *KiwixService {
-	url := fmt.Sprintf("%s%s%d", openContentProvider.Url, KiwixCatalogUrl, maxLibraries())
+	url := fmt.Sprintf("%s%s%d", openContentProvider.Url, KiwixCatalogUrl, maxLibraries)
 	client := http.Client{}
 	jobID := params["job_id"].(string)
 	return &KiwixService{
