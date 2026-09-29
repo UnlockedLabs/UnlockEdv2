@@ -192,6 +192,7 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 					logrus.Fatalf("Failed to create role: %v", err)
 				}
 			}
+			db.seedTestFeatureFlags()
 		}
 
 		// Get system_batch user for audit field references
