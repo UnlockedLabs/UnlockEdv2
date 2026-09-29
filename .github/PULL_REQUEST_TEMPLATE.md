@@ -12,7 +12,7 @@
 
 Please provide a brief description of the changes included in this PR.
 
-- **Related issues**: Link to related Asana ticket that this closes.
+- **Related issues**: Link to related JIRA ticket that this closes.
 
 ## Screenshot(s)
 
