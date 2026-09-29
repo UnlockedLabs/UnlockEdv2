@@ -3,6 +3,7 @@ package tasks
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
+	"time"
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/nats-io/nats.go"
@@ -44,11 +45,29 @@ func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
 			hour = 1
 		}
 	}
-	if !dev {
+	if dev {
+		runner.scheduleDevLibraryScrape(tasks)
+	} else {
 		runner.execute()
 	}
 	runner.Start()
 	return &runner
+}
+
+// provider-service starts after the server and won't be able to access NATS,
+// so here we need to delay the scrape to avoid publishing before anyone is listening.
+const devLibraryScrapeDelay = 60 * time.Second
+
+func (s *Scheduler) scheduleDevLibraryScrape(tasks []models.RunnableTask) {
+	for _, task := range tasks {
+		if task.Job == nil || task.Job.Name != string(models.ScrapeKiwixJob) {
+			continue
+		}
+		startAt := gocron.OneTimeJobStartDateTime(time.Now().Add(devLibraryScrapeDelay))
+		if _, err := s.NewJob(gocron.OneTimeJob(startAt), gocron.NewTask(s.runTask, &task)); err != nil {
+			log.Errorf("Failed to schedule dev library scrape: %v", err)
+		}
+	}
 }
 
 func (s *Scheduler) Stop() error {

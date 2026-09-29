@@ -189,20 +189,17 @@ init: ascii_art
 	$(MAKE) dev
 
 dev: ascii_art
-	./config/zims.sh
 	$(call run_dev_compose,)
 
 # Like `dev`, but pulls the tutor image from GHCR instead of building it from a sibling
 # checkout. Needs `docker login ghcr.io` unless the package is Internal/Public.
 dev-registry: ascii_art
-	./config/zims.sh
 	docker compose pull tutor-service
 	docker compose up --force-recreate
 
 # Like `dev`, but mounts the sibling tutor checkout as a live volume so Next.js
 # HMR works — no rebuild needed when you edit tutor source files.
 dev-tutor: ascii_art
-	./config/zims.sh
 	docker compose -f docker-compose.yml -f docker-compose.dev-tutor.yml up $(BUILD_RECREATE)
 
 install-dep: ascii_art
