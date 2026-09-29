@@ -387,7 +387,7 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 		pc.name as class_name,
 		count(CASE WHEN pse.enrollment_status = 'Enrolled' THEN 1 END) as enrolled,
 		count(CASE WHEN pse.enrollment_status = 'Completed' THEN 1 END) as completed,
-		count(CASE WHEN pse.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') THEN 1 END) as historical_enrollments
+		count(CASE WHEN pse.enrollment_status IN (` + terminalEnrollmentStatusSQLList() + `) THEN 1 END) as historical_enrollments
 		`).
 		Joins(`join facilities fac on fac.id = ps.facility_id
 			AND fac.deleted_at IS NULL`).

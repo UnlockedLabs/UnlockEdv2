@@ -335,6 +335,19 @@ const (
 	EnrollmentIncompleteSegregated       ProgramEnrollmentStatus = "Incomplete: Segregated"
 )
 
+// TerminalEnrollmentStatuses are enrollment statuses with a resolved outcome
+// (successful or not). Completion-rate calculations across the codebase use
+// this as their denominator — keep it as the single source of truth rather
+// than repeating the status list at each call site.
+var TerminalEnrollmentStatuses = []ProgramEnrollmentStatus{
+	EnrollmentCompleted,
+	EnrollmentIncompleteWithdrawn,
+	EnrollmentIncompleteDropped,
+	EnrollmentIncompleteFailedToComplete,
+	EnrollmentIncompleteTransfered,
+	EnrollmentIncompleteSegregated,
+}
+
 type ClassCompletion struct {
 	DatabaseFields
 	UserID        uint      `json:"user_id" gorm:"not null"`
