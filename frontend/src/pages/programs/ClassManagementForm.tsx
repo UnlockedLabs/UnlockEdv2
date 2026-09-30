@@ -5,7 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import API from '@/api/api';
-import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
+import {
+    ANALYTICS_EVENTS,
+    captureEvent,
+    flowTimerSeconds,
+    programFacilityProps
+} from '@/lib/events';
 import { useFlowTimer } from '@/lib/useFlowTimer';
 import { useAuth } from '@/auth/useAuth';
 import {
@@ -161,11 +166,11 @@ export function ClassManagementFormInner({
     const [customRecurrenceInterval, setCustomRecurrenceInterval] = useState(1);
 
     const [instructors, setInstructors] = useState<Instructor[]>([]);
-    const startMsRef = useFlowTimer(
-        isNewClass ? ANALYTICS_EVENTS.ClassCreationStarted : null
-    );
-
     const resolvedFacilityId = facilityIdProp ?? user?.facility.id;
+    const startMsRef = useFlowTimer(
+        isNewClass ? ANALYTICS_EVENTS.ClassCreationStarted : null,
+        programFacilityProps(resolvedFacilityId)
+    );
 
     useEffect(() => {
         if (!resolvedFacilityId) return;
@@ -515,7 +520,8 @@ export function ClassManagementFormInner({
         );
         if (isNewClass) {
             captureEvent(ANALYTICS_EVENTS.ClassCreationCompleted, {
-                duration_seconds: flowTimerSeconds(startMsRef.current)
+                duration_seconds: flowTimerSeconds(startMsRef.current),
+                ...programFacilityProps(resolvedFacilityId)
             });
             if (onCreated) {
                 onCreated();
