@@ -93,6 +93,25 @@ function facilityTag(facilityId: number): string {
 }
 
 /**
+ * Facility a program or class event was *for* (EN-89), as event props.
+ *
+ * `facility` is where the person is; this is where the work was aimed. They
+ * differ for admins who act in facilities other than their own, which would
+ * otherwise be counted entirely under their home facility.
+ *
+ * Spread into an event's props. Returns nothing when there is no single
+ * facility (statewide actions, residents' own events) so the property is
+ * absent rather than a value that would show up as its own breakdown row.
+ * Deliberately not a super property: an admin moves between facilities
+ * within one session, so it must be set per event.
+ */
+export function programFacilityProps(
+    facilityId: number | null | undefined
+): AnalyticsProps {
+    return facilityId ? { program_facility: facilityTag(facilityId) } : {};
+}
+
+/**
  * Initialize PostHog, or deliberately don't. Never throws.
  *
  * Analytics is enabled only when the key looks like a real PostHog project key
