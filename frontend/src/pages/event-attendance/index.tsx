@@ -24,7 +24,12 @@ import {
     diffMinutes,
     formatPartialTime
 } from '@/lib/formatters';
-import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
+import {
+    ANALYTICS_EVENTS,
+    captureEvent,
+    flowTimerSeconds,
+    programFacilityProps
+} from '@/lib/events';
 import { useFlowTimer } from '@/lib/useFlowTimer';
 import { PageHeader } from '@/components/shared';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
@@ -81,6 +86,7 @@ export default function EventAttendance() {
     const navigate = useNavigate();
     const loaderData = useLoaderData() as ClassLoaderData;
     const className = loaderData?.class?.name ?? '';
+    const classFacilityId = loaderData?.class?.facility_id;
     const [rows, setRows] = useState<RowState[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [initialized, setInitialized] = useState(false);
@@ -177,7 +183,7 @@ export default function EventAttendance() {
 
     const startMsRef = useFlowTimer(
         ANALYTICS_EVENTS.AttendanceSessionStarted,
-        { class_id, event_id, date },
+        { class_id, event_id, date, ...programFacilityProps(classFacilityId) },
         [class_id, event_id, date],
         sessionReady
     );
@@ -368,7 +374,8 @@ export default function EventAttendance() {
                 class_id,
                 event_id,
                 date,
-                submitted_at: submittedAt.toISOString()
+                submitted_at: submittedAt.toISOString(),
+                ...programFacilityProps(classFacilityId)
             });
 
             void mutate();

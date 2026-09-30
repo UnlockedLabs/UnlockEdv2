@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import useSWR from 'swr';
-import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
+import {
+    ANALYTICS_EVENTS,
+    captureEvent,
+    programFacilityProps
+} from '@/lib/events';
 import { useDebounceValue } from 'usehooks-ts';
 import { Search, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -52,11 +56,12 @@ export function EnrollResidentsModal({
             captureEvent(ANALYTICS_EVENTS.EnrollModalOpened, {
                 class_id: classId,
                 capacity,
-                enrolled
+                enrolled,
+                ...programFacilityProps(classFacilityId)
             });
         }
         wasOpenRef.current = open;
-    }, [open, classId, capacity, enrolled]);
+    }, [open, classId, classFacilityId, capacity, enrolled]);
 
     const encodedSearch = encodeURIComponent(searchQuery);
     const { data: usersResp } = useSWR<ServerResponseMany<User>>(
@@ -100,7 +105,8 @@ export function EnrollResidentsModal({
         if (next.size > 0 && !selectionFiredRef.current) {
             selectionFiredRef.current = true;
             captureEvent(ANALYTICS_EVENTS.EnrollResidentsSelected, {
-                class_id: classId
+                class_id: classId,
+                ...programFacilityProps(classFacilityId)
             });
         }
         setSelectedIds(next);
@@ -131,7 +137,8 @@ export function EnrollResidentsModal({
         if (resp.success) {
             captureEvent(ANALYTICS_EVENTS.EnrollCompleted, {
                 class_id: classId,
-                selected_count: userIds.length
+                selected_count: userIds.length,
+                ...programFacilityProps(classFacilityId)
             });
             toast.success(
                 `${userIds.length} ${userIds.length === 1 ? 'resident' : 'residents'} enrolled in ${className}`
