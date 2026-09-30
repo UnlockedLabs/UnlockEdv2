@@ -157,7 +157,7 @@ type UserResponse struct {
 	NameLast      string               `json:"name_last"`
 	Email         string               `json:"email"`
 	Role          models.UserRole      `json:"role"`
-	DocID         string               `json:"doc_id"`
+	DocID         *string              `json:"doc_id"`
 	DeactivatedAt *time.Time           `json:"deactivated_at,omitempty"`
 	Facility      *models.Facility     `json:"facility,omitempty"`
 	LoginMetrics  *models.LoginMetrics `json:"login_metrics,omitempty"`
@@ -218,12 +218,12 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newBadRequestServiceError(errors.New("invalid user"), invalidUser)
 	}
 
-	reqForm.User.DocID = strings.TrimSpace(reqForm.User.DocID)
-	if invalidDocID := validateResidentID(reqForm.User.Role, reqForm.User.DocID); invalidDocID != "" {
+	reqForm.User.DocID = models.NilIfBlank(strings.TrimSpace(models.FormatNullableString(reqForm.User.DocID)))
+	if invalidDocID := validateResidentID(reqForm.User.Role, models.FormatNullableString(reqForm.User.DocID)); invalidDocID != "" {
 		return newBadRequestServiceError(errors.New("invalid resident id"), invalidDocID)
 	}
 	log.add("created_username", reqForm.User.Username)
-	userNameExists, docExists := srv.Db.UserIdentityExists(reqForm.User.Username, reqForm.User.DocID)
+	userNameExists, docExists := srv.Db.UserIdentityExists(reqForm.User.Username, models.FormatNullableString(reqForm.User.DocID))
 	if userNameExists {
 		return newBadRequestServiceError(err, "Username already exists")
 	}
@@ -305,7 +305,7 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 		return newDatabaseServiceError(err)
 	}
 	log.add("deleted_username", user.Username)
-	if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
+	if err := srv.deleteIdentityInKratos(r.Context(), user.KratosID); err != nil {
 		log.add("deleted_kratos_id", user.KratosID)
 		return newInternalServerServiceError(err, "error deleting user in kratos")
 	}
@@ -347,12 +347,12 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	// Casing is fixed at creation; even a same-identity resubmission must not
 	// silently re-case the stored value via UpdateStruct below.
 	user.Username = toUpdate.Username
-	user.DocID = strings.TrimSpace(user.DocID)
-	if user.DocID == "" && toUpdate.DocID != "" {
+	user.DocID = models.NilIfBlank(strings.TrimSpace(models.FormatNullableString(user.DocID)))
+	if user.DocID == nil {
 		user.DocID = toUpdate.DocID
 	}
 
-	if invalidDocID := validateResidentID(toUpdate.Role, user.DocID); invalidDocID != "" {
+	if invalidDocID := validateResidentID(toUpdate.Role, models.FormatNullableString(user.DocID)); invalidDocID != "" {
 		return newBadRequestServiceError(errors.New("invalid resident id"), invalidDocID)
 	}
 	invalidUser := validateUser(&user)
@@ -396,7 +396,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	}
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
-	if user.KratosID == "" {
+	if user.KratosID == nil {
 		err := srv.HandleCreateUserKratos(user.Username, newPass)
 		if err != nil {
 			return newInternalServerServiceError(err, "Error creating user in kratos")
@@ -938,7 +938,7 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 			Username:   stripNonAlphaChars(validRow.Username, isUsernameChar),
 			NameFirst:  validRow.FirstName,
 			NameLast:   validRow.LastName,
-			DocID:      validRow.ResidentID,
+			DocID:      models.NilIfBlank(validRow.ResidentID),
 			Role:       models.Student,
 			FacilityID: facilityID,
 		}
@@ -1046,7 +1046,7 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 		return newInternalServerServiceError(err, "Failed to convert attendance data to CSV format")
 	}
 
-	docLabel := strings.TrimSpace(user.DocID)
+	docLabel := strings.TrimSpace(models.FormatNullableString(user.DocID))
 	if docLabel == "" {
 		docLabel = fmt.Sprintf("User%d", userID)
 	}
@@ -1092,7 +1092,7 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 		UserID       uint   `json:"user_id"`
 		Username     string `json:"username"`
 		Name         string `json:"name"`
-		DocID        string `json:"doc_id"`
+		DocID        *string `json:"doc_id"`
 		TempPassword string `json:"temp_password"`
 	}
 	type failedEntry struct {
@@ -1133,7 +1133,7 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error creating temp password"})
 			continue
 		}
-		if user.KratosID == "" {
+		if user.KratosID == nil {
 			if err := srv.HandleCreateUserKratos(user.Username, newPass); err != nil {
 				log.add("user_id", user.ID)
 				log.error("bulk reset: error creating user in kratos")
@@ -1264,7 +1264,7 @@ func (srv *Server) handleBulkDeleteUsers(w http.ResponseWriter, r *http.Request,
 			failures = append(failures, bulkUserFailure{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "not authorized to delete this user"})
 			continue
 		}
-		if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
+		if err := srv.deleteIdentityInKratos(r.Context(), user.KratosID); err != nil {
 			log.add("user_id", user.ID)
 			log.error("bulk delete: error deleting identity in kratos")
 			failures = append(failures, bulkUserFailure{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error deleting identity"})

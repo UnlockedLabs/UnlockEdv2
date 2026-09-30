@@ -13,8 +13,8 @@ type Video struct {
 	Availability          VideoAvailability `json:"availability" gorm:"type:video_availability"`
 	ChannelTitle          *string           `json:"channel_title" gorm:"size:255"`
 	Duration              int               `json:"duration"`
-	Description           string            `json:"description"`
-	ThumbnailUrl          string            `json:"thumbnail_url" gorm:"size:255"`
+	Description           *string           `json:"description"`
+	ThumbnailUrl          *string           `json:"thumbnail_url" gorm:"size:255"`
 	OpenContentProviderID uint              `json:"open_content_provider_id" gorm:"not null"`
 	VisibilityStatus      bool              `gorm:"->" json:"visibility_status"`
 
@@ -64,8 +64,8 @@ func (Video) TableName() string { return "videos" }
 
 type VideoDownloadAttempt struct {
 	DatabaseFields
-	VideoID      uint   `json:"video_id" gorm:"not null"`
-	ErrorMessage string `json:"error_message" gorm:"size:512"`
+	VideoID      uint    `json:"video_id" gorm:"not null"`
+	ErrorMessage *string `json:"error_message" gorm:"size:512"`
 
 	Video *Video `json:"video" gorm:"foreignKey:VideoID"`
 }

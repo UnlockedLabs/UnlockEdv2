@@ -997,7 +997,7 @@ func getLinkedOverrideEventMap(event models.FacilityProgramClassEvent, overrides
 			continue
 		}
 
-		if override.IsCancelled && override.Reason == "rescheduled" {
+		if override.IsCancelled && models.FormatNullableString(override.Reason) == "rescheduled" {
 			programClassEvent, ok := overrideEventMap[override.ID]
 			if !ok {
 				continue
@@ -1069,11 +1069,11 @@ func checkEventCancelledAndRescheduled(occurrence time.Time, overrides []models.
 		)
 		//END day light savings time fix here
 		if consistentOverrideDate.Equal(occurrence) {
-			isRescheduled = override.Reason == "rescheduled"
+			isRescheduled = models.FormatNullableString(override.Reason) == "rescheduled"
 			isCancelled = override.IsCancelled
 			isRoomOrInstructor = !override.IsCancelled && !isRescheduled
 			overrideID = override.ID
-			overrideReason = override.Reason
+			overrideReason = models.FormatNullableString(override.Reason)
 			break
 		}
 	}

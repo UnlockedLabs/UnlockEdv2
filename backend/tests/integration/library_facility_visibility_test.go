@@ -22,7 +22,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 	facilityC, err := env.CreateTestFacility("Facility C")
 	require.NoError(t, err)
 
-	kiwix := &models.OpenContentProvider{Title: "Kiwix", Url: "http://kiwix"}
+	kiwix := &models.OpenContentProvider{Title: models.StringPtr("Kiwix"), Url: "http://kiwix"}
 	require.NoError(t, env.DB.Create(kiwix).Error)
 	library := &models.Library{OpenContentProviderID: kiwix.ID, Title: "Test Library", Url: "/test"}
 	require.NoError(t, env.DB.Create(library).Error)

@@ -218,13 +218,13 @@ func (srv *CanvasService) ImportCourses(db *gorm.DB) error {
 		unlockedCourse := models.Course{
 			ProviderPlatformID:      srv.ProviderPlatformID,
 			Name:                    course["name"].(string),
-			AltName:                 course["course_code"].(string),
+			AltName:                 models.NilIfBlank(course["course_code"].(string)),
 			ExternalID:              fmt.Sprintf("%d", id),
-			ExternalURL:             srv.BaseURL + "/courses/" + fmt.Sprintf("%d", id),
+			ExternalURL:             models.StringPtr(srv.BaseURL + "/courses/" + fmt.Sprintf("%d", id)),
 			Type:                    models.CourseType(progType),
-			OutcomeTypes:            "grade, college_credit",
-			Description:             description,
-			ThumbnailURL:            thumbnailURL,
+			OutcomeTypes:            models.StringPtr("grade, college_credit"),
+			Description:             models.NilIfBlank(description),
+			ThumbnailURL:            models.NilIfBlank(thumbnailURL),
 			TotalProgressMilestones: uint(totalMilestones),
 		}
 		datePattern := "2006-01-02T15:04:05Z"

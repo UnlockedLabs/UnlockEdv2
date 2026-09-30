@@ -167,12 +167,12 @@ type ProgramClassEventOverride struct {
 	OverrideRrule string `json:"override_rrule" gorm:"not null"`
 	// NOT a column -- a read-only query-time alias for the parent COHORT. Queries must
 	// supply it explicitly as `cohort_id AS cohort_id`. Do not add a gorm column tag.
-	CohortID              uint   `json:"cohort_id" gorm:"->" `
-	IsCancelled           bool   `json:"is_cancelled"`
-	RoomID                *uint  `json:"room_id"`
-	Reason                string `json:"reason"`
-	LinkedOverrideEventID *uint  `json:"linked_override_event_id"`
-	InstructorID          *uint  `json:"instructor_id"`
+	CohortID              uint    `json:"cohort_id" gorm:"->" `
+	IsCancelled           bool    `json:"is_cancelled"`
+	RoomID                *uint   `json:"room_id"`
+	Reason                *string `json:"reason"`
+	LinkedOverrideEventID *uint   `json:"linked_override_event_id"`
+	InstructorID          *uint   `json:"instructor_id"`
 
 	/* Foreign keys */
 	Event      *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
@@ -232,8 +232,8 @@ type ProgramClassEventAttendance struct {
 	UserID           uint       `json:"user_id" gorm:"not null; uniqueIndex:idx_event_user_date"`
 	Date             string     `json:"date" gorm:"not null; uniqueIndex:idx_event_user_date" validate:"required,datetime"`
 	AttendanceStatus Attendance `json:"attendance_status" gorm:"column:attendance_status"`
-	Note             string     `json:"note" gorm:"column:note"`
-	ReasonCategory   string     `json:"reason_category" gorm:"column:reason_category"`
+	Note             *string    `json:"note" gorm:"column:note"`
+	ReasonCategory   *string    `json:"reason_category" gorm:"column:reason_category"`
 	CheckInAt        *string    `json:"check_in_at" gorm:"column:check_in_at"`
 	CheckOutAt       *string    `json:"check_out_at" gorm:"column:check_out_at"`
 	MinutesAttended  *int       `json:"minutes_attended" gorm:"column:minutes_attended"`

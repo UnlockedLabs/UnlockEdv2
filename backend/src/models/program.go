@@ -143,9 +143,9 @@ type ProgramTypeInfo struct {
 
 type FacilitiesPrograms struct {
 	DatabaseFields
-	ProgramID    uint   `json:"program_id"`
-	FacilityID   uint   `json:"facility_id"`
-	ProgramOwner string `json:"program_owner" gorm:"size:255;column:program_owner" validate:"max=255"`
+	ProgramID    uint    `json:"program_id"`
+	FacilityID   uint    `json:"facility_id"`
+	ProgramOwner *string `json:"program_owner" gorm:"size:255;column:program_owner" validate:"max=255"`
 
 	Program  *Program  `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 	Facility *Facility `json:"-" gorm:"foreignKey:FacilityID;references:ID"`

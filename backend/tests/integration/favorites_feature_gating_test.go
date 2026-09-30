@@ -23,11 +23,11 @@ func TestUserFavorites_RespectSubFeatureAccess(t *testing.T) {
 
 	// The favorites queries join on currently_enabled = TRUE, so these have to be
 	// enabled or every branch comes back empty.
-	kiwix := &models.OpenContentProvider{Title: "Kiwix", Url: "http://kiwix-fav", CurrentlyEnabled: true}
+	kiwix := &models.OpenContentProvider{Title: models.StringPtr("Kiwix"), Url: "http://kiwix-fav", CurrentlyEnabled: true}
 	require.NoError(t, env.DB.Create(kiwix).Error)
-	youtube := &models.OpenContentProvider{Title: "YouTube", Url: "http://youtube-fav", CurrentlyEnabled: true}
+	youtube := &models.OpenContentProvider{Title: models.StringPtr("YouTube"), Url: "http://youtube-fav", CurrentlyEnabled: true}
 	require.NoError(t, env.DB.Create(youtube).Error)
-	linksProvider := &models.OpenContentProvider{Title: models.HelpfulLinks, Url: "helpful_links_fav", CurrentlyEnabled: true}
+	linksProvider := &models.OpenContentProvider{Title: models.StringPtr(models.HelpfulLinks), Url: "helpful_links_fav", CurrentlyEnabled: true}
 	require.NoError(t, env.DB.Create(linksProvider).Error)
 
 	library := &models.Library{OpenContentProviderID: kiwix.ID, Title: "Fav Library", Url: "/fav-library"}

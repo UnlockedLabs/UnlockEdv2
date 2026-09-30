@@ -2,7 +2,7 @@ import { PaginationMeta } from './server';
 
 export interface OpenContentProvider {
     id: number;
-    title: string;
+    title: string | null;
     url: string;
     thumbnail_url: string | null;
     currently_enabled: boolean;
@@ -12,12 +12,12 @@ export interface OpenContentProvider {
 export interface Video {
     id: number;
     title: string;
-    description: string;
+    description: string | null;
     channel_title: string;
     external_id: string;
     visibility_status: boolean;
     visible_facility_count?: number;
-    thumbnail_url: string;
+    thumbnail_url: string | null;
     open_content_provider_id: number;
     availability: 'available' | 'processing' | 'has_error';
     duration: number;
@@ -38,7 +38,7 @@ export interface VideoFavorites {
 export interface VideoDownloadAttempt {
     id: number;
     video_id: number;
-    error_message: string;
+    error_message: string | null;
 }
 
 export const MAX_DOWNLOAD_ATTEMPTS = 5;
@@ -74,7 +74,7 @@ export interface HelpfulLink {
     url: string;
     visibility_status: boolean;
     visible_facility_count?: number;
-    thumbnail_url: string;
+    thumbnail_url: string | null;
     open_content_provider_id: number;
     is_favorited: boolean;
     is_featured?: boolean;

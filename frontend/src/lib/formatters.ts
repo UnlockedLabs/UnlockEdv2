@@ -129,9 +129,10 @@ export function formatLastActive(dateStr?: string | null): string {
 }
 
 export function getVideoErrorMessage(video: Video): string | undefined {
-    return video.video_download_attempts.find(
-        (attempt) => attempt.error_message !== ''
-    )?.error_message;
+    return (
+        video.video_download_attempts.find((attempt) => !!attempt.error_message)
+            ?.error_message ?? undefined
+    );
 }
 
 export function videoIsAvailable(vid: Video): boolean {

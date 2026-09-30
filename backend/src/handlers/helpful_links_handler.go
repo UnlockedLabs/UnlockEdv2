@@ -70,8 +70,8 @@ func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, 
 		return newJSONReqBodyServiceError(err)
 	}
 	args := srv.facilityScopedQueryContext(r)
-	link.ThumbnailUrl = srv.getFavicon(link.Url)
-	log.infof("Adding helpful link icon %s", link.ThumbnailUrl)
+	link.ThumbnailUrl = models.NilIfBlank(srv.getFavicon(link.Url))
+	log.infof("Adding helpful link icon %s", models.FormatNullableString(link.ThumbnailUrl))
 	if err := srv.WithUserContext(r).AddHelpfulLink(&args, &link); err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -88,7 +88,7 @@ func (srv *Server) handleEditLink(w http.ResponseWriter, r *http.Request, log sL
 	if err != nil {
 		return newInvalidIdServiceError(err, "Invalid id")
 	}
-	link.ThumbnailUrl = srv.getFavicon(link.Url)
+	link.ThumbnailUrl = models.NilIfBlank(srv.getFavicon(link.Url))
 	if err = srv.WithUserContext(r).EditLink(uint(id), link); err != nil {
 		return newDatabaseServiceError(err)
 	}

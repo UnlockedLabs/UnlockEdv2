@@ -25,8 +25,8 @@ import (
 type DB struct{ *gorm.DB }
 
 var (
-	defaultOpenContentProviders = [2]models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
-		{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
+	defaultOpenContentProviders = [2]models.OpenContentProvider{{Title: models.StringPtr(models.Kiwix), Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.StringPtr(models.KiwixThumbnailURL), Description: models.StringPtr(models.Kiwix)},
+		{Title: models.StringPtr(models.Youtube), Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.StringPtr(models.YoutubeThumbnail), Description: models.StringPtr(models.YoutubeDescription)}}
 )
 
 // NewDB creates a DB wrapper around an existing GORM database connection.

@@ -246,7 +246,7 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status m
 		"enrollment_status": status,
 	}
 	if changeReason != nil {
-		updates["change_reason"] = *changeReason
+		updates["change_reason"] = models.NilIfBlank(*changeReason)
 	}
 	if ctx := db.Statement.Context; ctx != nil {
 		if userID, ok := ctx.Value(models.UserIDKey).(uint); ok {

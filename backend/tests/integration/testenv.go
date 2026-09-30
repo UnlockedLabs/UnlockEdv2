@@ -106,7 +106,7 @@ func (env *TestEnv) CreateTestUser(username string, role models.UserRole, facili
 		NameLast:   "User",
 		Role:       role,
 		Email:      username + "@example.com",
-		DocID:      residentId,
+		DocID:      models.NilIfBlank(residentId),
 		FacilityID: facilityId,
 	}
 
@@ -327,7 +327,7 @@ func (env *TestEnv) CreateTestEventOverride(eventID uint, date string, isCancell
 		Duration:      "2h",
 		OverrideRrule: rrule,
 		IsCancelled:   isCancelled,
-		Reason:        reason,
+		Reason:        models.NilIfBlank(reason),
 	}
 
 	if err := env.DB.Create(override).Error; err != nil {
@@ -343,7 +343,7 @@ func (env *TestEnv) CreateTestAttendance(eventID, userID uint, date time.Time, s
 		UserID:           userID,
 		Date:             date.Format("2006-01-02"),
 		AttendanceStatus: status,
-		Note:             reason,
+		Note:             models.NilIfBlank(reason),
 	}
 
 	if err := env.DB.Create(attendance).Error; err != nil {

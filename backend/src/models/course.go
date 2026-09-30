@@ -6,13 +6,13 @@ type Course struct {
 	DatabaseFields
 	ProviderPlatformID      uint       `gorm:"not null" json:"provider_platform_id"`
 	Name                    string     `gorm:"size:60" json:"name"`
-	Description             string     `gorm:"size:510" json:"description"`
+	Description             *string    `gorm:"size:510" json:"description"`
 	ExternalID              string     `gorm:"size:255" json:"external_id"` // kolibri: root, canvas: course_id
-	ThumbnailURL            string     `gorm:"size:255" json:"thumbnail_url"`
+	ThumbnailURL            *string    `gorm:"size:255" json:"thumbnail_url"`
 	Type                    CourseType `gorm:"size:255" json:"type"`
-	OutcomeTypes            string     `gorm:"size:255" json:"outcome_types"`
-	ExternalURL             string     `gorm:"size:255" json:"external_url"`
-	AltName                 string     `gorm:"size:255" json:"alt_name"`
+	OutcomeTypes            *string    `gorm:"size:255" json:"outcome_types"`
+	ExternalURL             *string    `gorm:"size:255" json:"external_url"`
+	AltName                 *string    `gorm:"size:255" json:"alt_name"`
 	TotalProgressMilestones uint       `json:"total_progress_milestones"`
 	StartDt                 *time.Time `gorm:"type:date" json:"start_dt"`
 	EndDt                   *time.Time `gorm:"type:date" json:"end_dt"`
@@ -38,7 +38,7 @@ func (Course) TableName() string {
 type UserEnrollment struct {
 	UserID     uint       `json:"user_id" gorm:"primaryKey;autoIncrement:false"`
 	CourseID   uint       `json:"course_id" gorm:"primaryKey;autoIncrement:false"`
-	ExternalID string     `json:"external_id" gorm:"size:64"`
+	ExternalID *string    `json:"external_id" gorm:"size:64"`
 	CreatedAt  *time.Time `json:"created_at"`
 	UpdatedAt  *time.Time `json:"updated_at"`
 	DeletedAt  *time.Time `json:"deleted_at"`

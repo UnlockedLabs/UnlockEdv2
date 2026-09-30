@@ -27,7 +27,7 @@ export interface ProgramClassEventAttendance {
     user_id: number;
     date: string;
     attendance_status: Attendance;
-    note: string;
+    note: string | null;
 }
 
 export interface ProgramClassEvent {
@@ -52,7 +52,7 @@ export interface ProgramClassEventOverride {
     room_id?: number;
     room_ref?: Room;
     is_cancelled: boolean;
-    reason: string;
+    reason: string | null;
     linked_override_event_id?: number;
     instructor_id?: number | null;
     instructor_ref?: User | null;

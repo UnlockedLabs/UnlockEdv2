@@ -65,7 +65,7 @@ func (srv *Server) createAndRegisterCanvasUserAccount(provider *models.ProviderP
 			log.WithFields(fields).Error("error unmarshaling json from canvas getting user logins")
 			return errors.New("unable to decode ID of login from canvas")
 		}
-		providerMapping.ExternalLoginID = fmt.Sprintf("%d", int(id))
+		providerMapping.ExternalLoginID = models.StringPtr(fmt.Sprintf("%d", int(id)))
 		return srv.Db.UpdateProviderUserMapping(&providerMapping)
 	}
 	return nil
@@ -102,7 +102,7 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 		log.Error("Error getting provider user mapping registerCanvasUserLogin")
 		return err
 	}
-	if providerMapping.ExternalLoginID != "" {
+	if providerMapping.ExternalLoginID != nil {
 		return errors.New("user already has login in canvas")
 	}
 	if provider.ExternalAuthProviderId == "" {
@@ -111,7 +111,7 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 	}
 	// user may already have an OIDC login in Canvas (e.g. when mapping an existing Canvas user)
 	if existingID := srv.getExistingCanvasOidcLoginID(provider, providerMapping.ExternalUserID); existingID != "" {
-		providerMapping.ExternalLoginID = existingID
+		providerMapping.ExternalLoginID = models.StringPtr(existingID)
 		providerMapping.AuthenticationProviderStatus = models.OpenIDConnect
 		return srv.Db.UpdateProviderUserMapping(providerMapping)
 	}
@@ -151,7 +151,7 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 		log.Errorf("Error parsing id from response registerCanvasUserLogin")
 		return errors.New("error creating login in canvas")
 	}
-	providerMapping.ExternalLoginID = strconv.Itoa(int(newId))
+	providerMapping.ExternalLoginID = models.StringPtr(strconv.Itoa(int(newId)))
 	providerMapping.AuthenticationProviderStatus = models.OpenIDConnect
 	if err = srv.Db.UpdateProviderUserMapping(providerMapping); err != nil {
 		log.Errorf("Error updating provider user mapping registerCanvasUserLogin")

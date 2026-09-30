@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/models"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -108,7 +109,7 @@ func (srv *Server) HandleCreateUserKratos(username, password string) error {
 		log.Errorf("Error creating identity: %v", resp.StatusCode)
 		return errors.New("error creating identity")
 	}
-	user.KratosID = created.GetId()
+	user.KratosID = models.StringPtr(created.GetId())
 	// persist the ID before setting the password: if anything below fails, the
 	// stored ID lets a password reset repair the identity instead of trying to
 	// create a second one with the same (unique) username identifier
@@ -119,7 +120,7 @@ func (srv *Server) HandleCreateUserKratos(username, password string) error {
 	}
 	claims := &Claims{
 		UserID:        user.ID,
-		KratosID:      user.KratosID,
+		KratosID:      models.FormatNullableString(user.KratosID),
 		PasswordReset: true,
 		FacilityID:    user.FacilityID,
 	}
@@ -211,17 +212,18 @@ func (srv *Server) updateFacilityInKratosIdentity(userID int, transFacilityID in
 		log.Errorf("error retrieving user with id %d: %v", userID, err)
 		return err
 	}
-	if user.KratosID == "" {
+	if user.KratosID == nil {
 		log.Errorf("user %d has no Kratos identity ID, skipping identity update", userID)
 		return nil
 	}
-	identity, resp, err := srv.OryClient.IdentityAPI.GetIdentity(ctx, user.KratosID).Execute()
+	kratosID := *user.KratosID
+	identity, resp, err := srv.OryClient.IdentityAPI.GetIdentity(ctx, kratosID).Execute()
 	if err != nil {
-		log.Errorf("error fetching identity using id %s: %v", user.KratosID, err)
+		log.Errorf("error fetching identity using id %s: %v", kratosID, err)
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Errorf("error fetching identity using id %s; status code: %s", user.KratosID, resp.Status)
+		log.Errorf("error fetching identity using id %s; status code: %s", kratosID, resp.Status)
 		return errors.New("error fetching identity")
 	}
 	traits := identity.GetTraits().(map[string]interface{})
@@ -229,7 +231,7 @@ func (srv *Server) updateFacilityInKratosIdentity(userID int, transFacilityID in
 	update := client.UpdateIdentityBody{
 		Traits: traits,
 	}
-	updated, resp, err := srv.OryClient.IdentityAPI.UpdateIdentity(ctx, user.KratosID).UpdateIdentityBody(update).Execute()
+	updated, resp, err := srv.OryClient.IdentityAPI.UpdateIdentity(ctx, kratosID).UpdateIdentityBody(update).Execute()
 	if err != nil {
 		log.Errorf("error updating identity with new facility id %d: %v", transFacilityID, err)
 		return err

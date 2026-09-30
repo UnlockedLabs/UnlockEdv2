@@ -130,7 +130,7 @@ func (suite *FacilityDeleteGuardTestSuite) TestDelete_BlockedByClass() {
 	// facility guard counts program_classes (the class tier), so a bare class is enough.
 	suite.env.DB.Create(&models.ProgramClass{
 		ProgramID: program.ID, FacilityID: facility.ID,
-		Name: "Class " + ts, Description: "x",
+		Name: "Class " + ts, Description: models.StringPtr("x"),
 	})
 
 	resp := NewRequest[models.FacilityBlockingChildren](suite.env.Client, suite.T(), http.MethodDelete,

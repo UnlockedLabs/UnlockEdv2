@@ -96,7 +96,7 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course
 		ExternalID:              id,
 		Name:                    name,
 		Type:                    "open_content",
-		OutcomeTypes:            "completion",
+		OutcomeTypes:            models.StringPtr("completion"),
 		TotalProgressMilestones: uint(totalResourceCount),
 	}
 
@@ -106,17 +106,17 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course
 			log.Printf("Failed to upload image %v", err)
 			imgUrl = ""
 		}
-		course.Description = description
-		course.ThumbnailURL = imgUrl
+		course.Description = models.NilIfBlank(description)
+		course.ThumbnailURL = models.NilIfBlank(imgUrl)
 		if externalUrl, err := url.JoinPath(kc.BaseURL, "en/learn/#/topics/t/", stripUuidForUrl(id), "/folders?last=HOME"); err == nil {
-			course.ExternalURL = externalUrl
+			course.ExternalURL = models.StringPtr(externalUrl)
 		}
 	} else {
-		course.Description = "Kolibri managed course"
+		course.Description = models.StringPtr("Kolibri managed course")
 		if externUrl, err := url.JoinPath(kc.BaseURL, "/en/learn/#/home/classes/", stripUuidForUrl(id)); err == nil {
-			course.ExternalURL = externUrl
+			course.ExternalURL = models.StringPtr(externUrl)
 		} else {
-			course.ExternalURL = kc.BaseURL + "/en/learn/#/home/classes/" + stripUuidForUrl(id)
+			course.ExternalURL = models.StringPtr(kc.BaseURL + "/en/learn/#/home/classes/" + stripUuidForUrl(id))
 		}
 	}
 	return &course

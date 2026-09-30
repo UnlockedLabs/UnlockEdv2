@@ -20,7 +20,7 @@ func TestVideoFacilityVisibility(t *testing.T) {
 	facilityB, err := env.CreateTestFacility("Video Facility B")
 	require.NoError(t, err)
 
-	youtube := &models.OpenContentProvider{Title: "YouTube", Url: "http://youtube"}
+	youtube := &models.OpenContentProvider{Title: models.StringPtr("YouTube"), Url: "http://youtube"}
 	require.NoError(t, env.DB.Create(youtube).Error)
 	video := &models.Video{OpenContentProviderID: youtube.ID, Title: "Test Video", Url: "/vid", ExternalID: "vid1"}
 	require.NoError(t, env.DB.Create(video).Error)
@@ -99,7 +99,7 @@ func TestHelpfulLinkFacilityVisibility(t *testing.T) {
 	facilityB, err := env.CreateTestFacility("Link Facility B")
 	require.NoError(t, err)
 
-	provider := &models.OpenContentProvider{Title: models.HelpfulLinks, Url: "helpful_links"}
+	provider := &models.OpenContentProvider{Title: models.StringPtr(models.HelpfulLinks), Url: "helpful_links"}
 	require.NoError(t, env.DB.Create(provider).Error)
 
 	deptAdmin, err := env.CreateTestUser("linkdept", models.DepartmentAdmin, facilityA.ID, "")

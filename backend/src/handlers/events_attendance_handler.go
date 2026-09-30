@@ -100,6 +100,8 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		return newDatabaseServiceError(err)
 	}
 	for i := range attendances {
+		attendances[i].Note = models.NilIfBlank(models.FormatNullableString(attendances[i].Note))
+		attendances[i].ReasonCategory = models.NilIfBlank(models.FormatNullableString(attendances[i].ReasonCategory))
 		if attendances[i].Date == "" {
 			attendances[i].Date = time.Now().Format("2006-01-02")
 		}
@@ -244,7 +246,7 @@ func isDateCancelled(overrides []models.ProgramClassEventOverride, eventDate str
 
 		if overrideDate == evtDate.Format(formatPattern) {
 			if override.IsCancelled {
-				if override.Reason == "rescheduled" {
+				if models.FormatNullableString(override.Reason) == "rescheduled" {
 					isRescheduled = true
 					break
 				}

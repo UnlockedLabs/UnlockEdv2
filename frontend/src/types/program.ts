@@ -158,7 +158,7 @@ export interface Class {
     program_id: number;
     facility_id: number;
     name: string;
-    description: string;
+    description: string | null;
     credit_hours: number | null;
     archived_at: string | null;
     created_at?: string;

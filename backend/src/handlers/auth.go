@@ -83,7 +83,7 @@ func claimsFromUser(user *models.User) *Claims {
 		UserID:     user.ID,
 		Role:       user.Role,
 		FacilityID: user.FacilityID,
-		KratosID:   user.KratosID,
+		KratosID:   models.FormatNullableString(user.KratosID),
 		Email:      user.Email,
 	}
 }

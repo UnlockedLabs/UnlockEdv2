@@ -400,7 +400,7 @@ func (srv *Server) syncKratosAdminDB(ctx context.Context) error {
 		if err != nil {
 			log.Fatal("this should never happen, we just created the user")
 		}
-		if user.KratosID != id {
+		if models.FormatNullableString(user.KratosID) != id {
 			if err := srv.Db.Exec("UPDATE users SET kratos_id = ? WHERE id = 1", id).Error; err != nil {
 				return err
 			}
@@ -416,9 +416,9 @@ func (srv *Server) setupDefaultAdminInKratos(ctx context.Context) error {
 		return srv.setupDefaultAdminInKratos(ctx)
 		// rerun after seeding the default user
 	}
-	if user.KratosID != "" {
+	if user.KratosID != nil {
 		// double check that the stored kratos ID is valid
-		if err := srv.validateUserIDKratos(user.KratosID); err != nil {
+		if err := srv.validateUserIDKratos(*user.KratosID); err != nil {
 			// if not, it's a freshly migrated database
 			// so we create the OIDC client if KOLIBRI_URL is set
 			// then create the default admin in kratos
