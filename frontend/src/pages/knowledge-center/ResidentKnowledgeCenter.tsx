@@ -224,7 +224,7 @@ export default function ResidentKnowledgeCenter() {
                 id: vid.id,
                 type: 'video' as const,
                 title: vid.title,
-                description: vid.description,
+                description: vid.description ?? '',
                 featured: !!vid.is_featured,
                 favorited: vid.is_favorited,
                 thumbnailUrl: `/api/photos/${vid.external_id}.jpg`,

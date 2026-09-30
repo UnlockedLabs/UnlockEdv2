@@ -51,8 +51,8 @@ export interface EnrollmentAttendance {
     event_id?: number;
     date?: string;
     attendance_status?: Attendance;
-    note?: string;
-    reason_category?: string;
+    note?: string | null;
+    reason_category?: string | null;
     check_in_at?: string;
     check_out_at?: string;
     minutes_attended?: number;
@@ -66,7 +66,7 @@ export interface ClassEnrollment {
     cohort_id: number;
     user_id: number;
     enrollment_status: EnrollmentStatus;
-    change_reason?: string;
+    change_reason?: string | null;
     name_full: string;
     doc_id: string;
     completion_dt?: string;

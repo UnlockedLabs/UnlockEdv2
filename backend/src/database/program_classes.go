@@ -924,7 +924,7 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 			Duration:      instance.Event.Duration,
 			RoomID:        instance.Event.RoomID,
 			IsCancelled:   true,
-			Reason:        req.Reason,
+			Reason:        models.StringPtr(req.Reason),
 		})
 
 		oldStatus := "Scheduled"

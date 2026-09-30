@@ -56,7 +56,7 @@ type ProgramClass struct {
 	ProgramID   uint       `json:"program_id" gorm:"not null"`
 	FacilityID  uint       `json:"facility_id" gorm:"not null"`
 	Name        string     `json:"name" gorm:"size:255" validate:"required,max=255"`
-	Description string     `json:"description"`
+	Description *string    `json:"description"`
 	CreditHours *int64     `json:"credit_hours"`
 	ArchivedAt  *time.Time `json:"archived_at"`
 
@@ -159,7 +159,7 @@ func (c *ProgramClassCohort) BeforeCreate(tx *gorm.DB) error {
 			ProgramID:   c.ProgramID,
 			FacilityID:  c.FacilityID,
 			Name:        programName,
-			Description: c.Description,
+			Description: NilIfBlank(c.Description),
 			CreditHours: c.CreditHours,
 			ArchivedAt:  c.ArchivedAt,
 			DatabaseFields: DatabaseFields{
@@ -183,7 +183,7 @@ type ProgramClassEnrollment struct {
 	ClassID           uint                    `json:"program_class_id" gorm:"not null"`
 	UserID            uint                    `json:"user_id" gorm:"not null"`
 	EnrollmentStatus  ProgramEnrollmentStatus `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
-	ChangeReason      string                  `json:"change_reason" gorm:"size:255" validate:"max=255"`
+	ChangeReason      *string                 `json:"change_reason" gorm:"size:255" validate:"max=255"`
 	EnrolledAt        *time.Time              `json:"enrolled_at"`
 	EnrollmentEndedAt *time.Time              `json:"enrollment_ended_at"`
 
@@ -387,7 +387,7 @@ func (pc *ProgramClassCohort) CannotUpdateClass() bool {
 func (pc *ProgramClassCohort) GetProgramOwnerOrEmpty() string {
 	facilityProg := pc.FacilityProg
 	if facilityProg != nil {
-		return facilityProg.ProgramOwner
+		return FormatNullableString(facilityProg.ProgramOwner)
 	}
 	return ""
 }

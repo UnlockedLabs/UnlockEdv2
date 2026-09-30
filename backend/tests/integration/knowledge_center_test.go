@@ -18,9 +18,9 @@ func TestKnowledgeCenterMetrics(t *testing.T) {
 	facility, err := env.CreateTestFacility("KC Facility")
 	require.NoError(t, err)
 
-	kiwix := &models.OpenContentProvider{Title: "Kiwix", Url: "http://kiwix"}
+	kiwix := &models.OpenContentProvider{Title: models.StringPtr("Kiwix"), Url: "http://kiwix"}
 	require.NoError(t, env.DB.Create(kiwix).Error)
-	youtube := &models.OpenContentProvider{Title: "YouTube", Url: "http://youtube"}
+	youtube := &models.OpenContentProvider{Title: models.StringPtr("YouTube"), Url: "http://youtube"}
 	require.NoError(t, env.DB.Create(youtube).Error)
 
 	careerLib := &models.Library{OpenContentProviderID: kiwix.ID, Title: "Career Library", Url: "/career"}

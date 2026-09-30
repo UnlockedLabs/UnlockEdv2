@@ -221,13 +221,13 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 		ProviderPlatformID:      srv.ProviderPlatformID,
 		ExternalID:              bsCourse.OrgUnitId,
 		Name:                    bsCourse.Name,
-		AltName:                 bsCourse.Code,
-		OutcomeTypes:            "completion",
-		ThumbnailURL:            imgPath,
+		AltName:                 models.NilIfBlank(bsCourse.Code),
+		OutcomeTypes:            models.StringPtr("completion"),
+		ThumbnailURL:            models.NilIfBlank(imgPath),
 		Type:                    "fixed_enrollment", //open to discussion
-		Description:             courseDescription,
+		Description:             models.NilIfBlank(courseDescription),
 		TotalProgressMilestones: uint(bsCourse.TotalContentCount),
-		ExternalURL:             srv.BaseURL + "/" + "d2l/le/sequenceLauncher/" + bsCourse.OrgUnitId + "/View", //WIP
+		ExternalURL:             models.StringPtr(srv.BaseURL + "/" + "d2l/le/sequenceLauncher/" + bsCourse.OrgUnitId + "/View"), //WIP
 	}
 	datePattern := "2006-01-02T15:04:05.000Z"
 	if bsCourse.StartDate != "" {

@@ -11,11 +11,11 @@ import (
 
 type OpenContentProvider struct {
 	DatabaseFields
-	Title            string `gorm:"size:255"  json:"title"`
-	Url              string `gorm:"size:255;not null" json:"url"`
-	ThumbnailUrl     string `json:"thumbnail_url"`
-	CurrentlyEnabled bool   `json:"currently_enabled"`
-	Description      string `json:"description"`
+	Title            *string `gorm:"size:255"  json:"title"`
+	Url              string  `gorm:"size:255;not null" json:"url"`
+	ThumbnailUrl     *string `json:"thumbnail_url"`
+	CurrentlyEnabled bool    `json:"currently_enabled"`
+	Description      *string `json:"description"`
 
 	Videos []Video        `gorm:"foreignKey:OpenContentProviderID" json:"-"`
 	Tasks  []RunnableTask `gorm:"foreignKey:OpenContentProviderID" json:"-"`
@@ -41,7 +41,7 @@ type OpenContentFavorite struct {
 	ContentID             uint      `gorm:"not null" json:"content_id"`
 	OpenContentProviderID uint      `gorm:"not null" json:"open_content_provider_id"`
 	OpenContentUrlID      *uint     `json:"open_content_url_id,omitempty"`
-	Name                  string    `json:"name,omitempty"`
+	Name                  *string   `json:"name,omitempty"`
 	FacilityID            *uint     `json:"facility_id"`
 	CreatedAt             time.Time `json:"created_at"`
 }
@@ -126,7 +126,7 @@ func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {
 	if err := cp.DatabaseFields.BeforeCreate(tx); err != nil {
 		return err
 	}
-	if cp.Title == Youtube && cp.Url == "" {
+	if FormatNullableString(cp.Title) == Youtube && cp.Url == "" {
 		cp.Url = YoutubeApi
 	}
 	if cp.Url != "" && !strings.HasPrefix(cp.Url, "http") {

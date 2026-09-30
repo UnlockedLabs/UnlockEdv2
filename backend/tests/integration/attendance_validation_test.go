@@ -71,7 +71,7 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 				UserID:           enrolledStudent.ID,
 				Date:             cancelledDate,
 				AttendanceStatus: models.Present,
-				Note:             "Test attendance",
+				Note:             models.StringPtr("Test attendance"),
 			},
 		}
 
@@ -93,7 +93,7 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 				UserID:           unenrolledStudent.ID,
 				Date:             validDate,
 				AttendanceStatus: models.Present,
-				Note:             "Test attendance",
+				Note:             models.StringPtr("Test attendance"),
 			},
 		}
 
@@ -115,7 +115,7 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 				UserID:           enrolledStudent.ID,
 				Date:             validDate,
 				AttendanceStatus: models.Present,
-				Note:             "Valid attendance",
+				Note:             models.StringPtr("Valid attendance"),
 			},
 		}
 
@@ -137,13 +137,13 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 				UserID:           enrolledStudent.ID,
 				Date:             validDate,
 				AttendanceStatus: models.Present,
-				Note:             "Enrolled student",
+				Note:             models.StringPtr("Enrolled student"),
 			},
 			{
 				UserID:           unenrolledStudent.ID,
 				Date:             validDate,
 				AttendanceStatus: models.Present,
-				Note:             "Unenrolled student",
+				Note:             models.StringPtr("Unenrolled student"),
 			},
 		}
 
@@ -169,7 +169,7 @@ func testDELETEAttendanceValidation(t *testing.T, env *TestEnv, admin *models.Us
 			UserID:           enrolledStudent.ID,
 			Date:             validDate,
 			AttendanceStatus: models.Present,
-			Note:             "To be deleted",
+			Note:             models.StringPtr("To be deleted"),
 		},
 	}
 	err := env.DB.LogUserAttendance(attendanceData, context.Background(), &admin.ID, class.ClassName)

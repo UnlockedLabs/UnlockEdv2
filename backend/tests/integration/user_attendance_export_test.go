@@ -72,7 +72,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		UserID:           student1.ID,
 		Date:             date1,
 		AttendanceStatus: models.Present,
-		Note:             "Great participation",
+		Note:             models.StringPtr("Great participation"),
 	}
 	require.NoError(t, env.DB.Create(&attendance1).Error)
 
@@ -81,7 +81,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		UserID:           student1.ID,
 		Date:             date2,
 		AttendanceStatus: models.Absent_Excused,
-		Note:             "Doctor appointment",
+		Note:             models.StringPtr("Doctor appointment"),
 	}
 	require.NoError(t, env.DB.Create(&attendance2).Error)
 
@@ -90,7 +90,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		UserID:           student1.ID,
 		Date:             date3,
 		AttendanceStatus: models.Absent_Unexcused,
-		Note:             "",
+		Note:             nil,
 	}
 	require.NoError(t, env.DB.Create(&attendance3).Error)
 
@@ -247,7 +247,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 			UserID:           studentEnrollmentDates.ID,
 			Date:             beforeEnrollment,
 			AttendanceStatus: models.Present,
-			Note:             "Before enrollment",
+			Note:             models.StringPtr("Before enrollment"),
 		}
 		require.NoError(t, env.DB.Create(&attendanceBefore).Error)
 
@@ -256,7 +256,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 			UserID:           studentEnrollmentDates.ID,
 			Date:             duringEnrollment,
 			AttendanceStatus: models.Present,
-			Note:             "During enrollment",
+			Note:             models.StringPtr("During enrollment"),
 		}
 		require.NoError(t, env.DB.Create(&attendanceDuring).Error)
 
@@ -265,7 +265,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 			UserID:           studentEnrollmentDates.ID,
 			Date:             afterEnrollment,
 			AttendanceStatus: models.Present,
-			Note:             "After enrollment",
+			Note:             models.StringPtr("After enrollment"),
 		}
 		require.NoError(t, env.DB.Create(&attendanceAfter).Error)
 
@@ -338,10 +338,10 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		date2 := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 
 		attendances := []models.ProgramClassEventAttendance{
-			{EventID: event4.ID, UserID: studentSorting.ID, Date: date2, AttendanceStatus: models.Present, Note: "Math 2"},
-			{EventID: event4.ID, UserID: studentSorting.ID, Date: date1, AttendanceStatus: models.Present, Note: "Math 1"},
-			{EventID: event3.ID, UserID: studentSorting.ID, Date: date2, AttendanceStatus: models.Present, Note: "Algebra 2"},
-			{EventID: event3.ID, UserID: studentSorting.ID, Date: date1, AttendanceStatus: models.Present, Note: "Algebra 1"},
+			{EventID: event4.ID, UserID: studentSorting.ID, Date: date2, AttendanceStatus: models.Present, Note: models.StringPtr("Math 2")},
+			{EventID: event4.ID, UserID: studentSorting.ID, Date: date1, AttendanceStatus: models.Present, Note: models.StringPtr("Math 1")},
+			{EventID: event3.ID, UserID: studentSorting.ID, Date: date2, AttendanceStatus: models.Present, Note: models.StringPtr("Algebra 2")},
+			{EventID: event3.ID, UserID: studentSorting.ID, Date: date1, AttendanceStatus: models.Present, Note: models.StringPtr("Algebra 1")},
 		}
 
 		for _, att := range attendances {

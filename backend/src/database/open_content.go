@@ -511,7 +511,7 @@ func (db *DB) BookmarkOpenContent(params *models.OpenContentParams) error {
 			UserID:                params.UserID,
 			ContentID:             params.ContentID,
 			OpenContentProviderID: params.OpenContentProviderID,
-			Name:                  params.Name,
+			Name:                  models.NilIfBlank(params.Name),
 			OpenContentUrlID:      &activity.OpenContentUrlID,
 		}
 		if err := db.Create(&newFav).Error; err != nil {

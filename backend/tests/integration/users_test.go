@@ -30,7 +30,7 @@ func TestCreateUserHandler(t *testing.T) {
 			NameLast:   "User",
 			Role:       models.Student,
 			Email:      "testuser@example.com",
-			DocID:      "123456789",
+			DocID:      models.StringPtr("123456789"),
 			FacilityID: facility.ID,
 		}
 
@@ -65,7 +65,7 @@ func TestCreateUserHandler(t *testing.T) {
 			NameLast:  "Facility",
 			Role:      models.Student,
 			Email:     "nofacuser@example.com",
-			DocID:     "987654321",
+			DocID:     models.StringPtr("987654321"),
 			// FacilityID intentionally omitted: a statewide admin has no ambient
 			// facility, so creation must be rejected rather than defaulting.
 		}
@@ -110,7 +110,7 @@ func TestCreateUserHandler(t *testing.T) {
 					NameLast:   "User",
 					Role:       tt.role,
 					Email:      tt.username + "@example.com",
-					DocID:      tt.docID,
+					DocID:      models.NilIfBlank(tt.docID),
 					FacilityID: facility.ID,
 				}
 
@@ -163,7 +163,7 @@ func TestUpdateUserHandler(t *testing.T) {
 			GetData()
 
 		require.Equal(t, "Renamed", got.NameFirst)
-		require.Equal(t, "RID-1000", got.DocID)
+		require.Equal(t, "RID-1000", models.FormatNullableString(got.DocID))
 	})
 
 	t.Run("legacy resident with a blank resident ID must supply one", func(t *testing.T) {
@@ -177,7 +177,7 @@ func TestUpdateUserHandler(t *testing.T) {
 			ExpectStatus(http.StatusOK).
 			GetData()
 
-		require.Equal(t, "RID-2000", got.DocID)
+		require.Equal(t, "RID-2000", models.FormatNullableString(got.DocID))
 	})
 
 	t.Run("admin with no resident ID can still be updated", func(t *testing.T) {

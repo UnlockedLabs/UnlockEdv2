@@ -403,7 +403,7 @@ func (yt *VideoService) incrementFailedAttempt(ctx context.Context, vid *models.
 	}
 	attempt := models.VideoDownloadAttempt{
 		VideoID:      vid.ID,
-		ErrorMessage: vidError,
+		ErrorMessage: models.NilIfBlank(vidError),
 	}
 	if vidError != "" {
 		vid.Availability = models.VideoHasError
@@ -434,11 +434,11 @@ func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl
 	}
 	vid := &models.Video{
 		Title:                 result.Info.Title,
-		Description:           stripUrlsFromDescription(result.Info.Description),
+		Description:           models.NilIfBlank(stripUrlsFromDescription(result.Info.Description)),
 		ChannelTitle:          &result.Info.Channel,
 		ExternalID:            externId,
 		Url:                   vidUrl,
-		ThumbnailUrl:          thumbnail,
+		ThumbnailUrl:          models.StringPtr(thumbnail),
 		Duration:              int(result.Info.Duration),
 		OpenContentProviderID: yt.OpenContentProviderID,
 	}

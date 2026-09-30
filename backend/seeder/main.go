@@ -172,7 +172,7 @@ func seedTestData(db *gorm.DB) {
 			enrollment := models.UserEnrollment{
 				CourseID:   prog.ID,
 				UserID:     user.ID,
-				ExternalID: fmt.Sprintf("%d", rand.Intn(1000)),
+				ExternalID: models.StringPtr(fmt.Sprintf("%d", rand.Intn(1000))),
 			}
 			enrollment.CreatedAt = &prog.CreatedAt
 			if err := db.Create(&enrollment).Error; err != nil {
@@ -489,7 +489,7 @@ func generateOpenContentFavorites(db *gorm.DB, users []models.User, libraries []
 					ContentID:             lib.ID,
 					OpenContentProviderID: lib.OpenContentProviderID,
 					OpenContentUrlID:      urlID,
-					Name:                  lib.Title,
+					Name:                  models.StringPtr(lib.Title),
 					CreatedAt:             time.Now().AddDate(0, 0, -rand.Intn(90)),
 				}
 			} else if len(videos) > 0 {
@@ -499,7 +499,7 @@ func generateOpenContentFavorites(db *gorm.DB, users []models.User, libraries []
 					ContentID:             vid.ID,
 					OpenContentProviderID: vid.OpenContentProviderID,
 					OpenContentUrlID:      nil, // videos never have one
-					Name:                  vid.Title,
+					Name:                  models.StringPtr(vid.Title),
 					CreatedAt:             time.Now().AddDate(0, 0, -rand.Intn(90)),
 				}
 			} else {
@@ -552,8 +552,8 @@ func generateFakeVideos(providerID uint, count int) []models.Video {
 			Availability:          models.VideoAvailable,
 			ChannelTitle:          &channel,
 			Duration:              rand.Intn(7200) + 60, // 1–120 mins
-			Description:           faker.Paragraph(),
-			ThumbnailUrl:          fmt.Sprintf("https://img.example.com/thumbs/%d.jpg", rand.Intn(999999)),
+			Description:           models.StringPtr(faker.Paragraph()),
+			ThumbnailUrl:          models.StringPtr(fmt.Sprintf("https://img.example.com/thumbs/%d.jpg", rand.Intn(999999))),
 			OpenContentProviderID: providerID,
 		}
 		videos = append(videos, video)
@@ -640,7 +640,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClassCohort, error) {
 			facilityProgram := models.FacilitiesPrograms{
 				ProgramID:    programs[i].ID,
 				FacilityID:   facilities[idx].ID,
-				ProgramOwner: faker.Name(),
+				ProgramOwner: models.StringPtr(faker.Name()),
 			}
 			if err := db.Create(&facilityProgram).Error; err != nil {
 				log.Printf("Failed to create facility program: %v", err)
@@ -664,7 +664,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClassCohort, error) {
 				// point: a 1:1 seed never exercises a single class-level rollup.
 				programClass := models.ProgramClass{
 					Name:        programs[i].Name,
-					Description: programClassDescriptions[programs[i].Name],
+					Description: models.NilIfBlank(programClassDescriptions[programs[i].Name]),
 					CreditHours: &creditHourOptions[rand.Intn(len(creditHourOptions))],
 					FacilityID:  facilities[idx].ID,
 					ProgramID:   programs[i].ID,
@@ -782,7 +782,7 @@ func generateFakeUsers(facilities []models.Facility) []models.User {
 			Email:      email,
 			Role:       "student",
 			FacilityID: facility.ID,
-			DocID:      strconv.Itoa(rand.Intn(100000)),
+			DocID:      models.StringPtr(strconv.Itoa(rand.Intn(100000))),
 		}
 		users = append(users, user)
 	}

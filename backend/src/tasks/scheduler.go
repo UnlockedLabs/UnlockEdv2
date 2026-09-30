@@ -101,10 +101,10 @@ func (s *Scheduler) generateOpenContentProviderTasks() ([]models.RunnableTask, e
 		return nil, err
 	}
 	vidProvider := slices.IndexFunc(providers, func(p models.OpenContentProvider) bool {
-		return p.Title == models.Youtube
+		return models.FormatNullableString(p.Title) == models.Youtube
 	})
 	libProvider := slices.IndexFunc(providers, func(p models.OpenContentProvider) bool {
-		return p.Title == models.Kiwix
+		return models.FormatNullableString(p.Title) == models.Kiwix
 	})
 	for _, jobType := range models.AllContentProviderJobs {
 		if jobType.IsLibraryJob() {

@@ -75,7 +75,7 @@ func (js *jasperService) generateUsageReportPDF(userID int) ([]byte, error) {
 
 	params := []jasper.Parameter{
 		{Key: "ResidentName", Value: fmt.Sprintf("%s %s", user.NameFirst, user.NameLast)},
-		{Key: "ResidentID", Value: user.DocID},
+		{Key: "ResidentID", Value: models.FormatNullableString(user.DocID)},
 		{Key: "FacilityName", Value: facilityName},
 		{Key: "GeneratedDate", Value: time.Now().Format("January 2, 2006")},
 		{Key: "DateRange", Value: fmt.Sprintf("%s - present", user.CreatedAt.Format("January 2, 2006"))},

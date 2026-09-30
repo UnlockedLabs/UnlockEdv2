@@ -132,7 +132,7 @@ export default function EventAttendance() {
                 name_first: item.name_first,
                 status: item.attendance_status ?? '',
                 note: item.note ?? '',
-                reason: toAttendanceReason(item.reason_category),
+                reason: toAttendanceReason(item.reason_category ?? undefined),
                 check_in_at:
                     item.check_in_at ?? (hasExisting ? '' : defaultCheckIn),
                 check_out_at: item.check_out_at ?? '',

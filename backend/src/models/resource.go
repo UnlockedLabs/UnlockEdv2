@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 type PaginatedResource[T any] struct {
@@ -75,6 +76,14 @@ func UpdateStruct(dst, src any) {
 }
 
 func StringPtr(s string) *string {
+	return &s
+}
+
+// NilIfBlank returns nil for empty or whitespace-only strings so they are stored as NULL.
+func NilIfBlank(s string) *string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
 	return &s
 }
 

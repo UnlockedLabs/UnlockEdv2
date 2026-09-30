@@ -51,8 +51,8 @@ func TestAttendanceReasons(t *testing.T) {
 				UserID:           student.ID,
 				Date:             date,
 				AttendanceStatus: models.Absent_Excused,
-				ReasonCategory:   "Medical",
-				Note:             "",
+				ReasonCategory:   models.StringPtr("Medical"),
+				Note:             nil,
 			},
 		}
 
@@ -70,8 +70,8 @@ func TestAttendanceReasons(t *testing.T) {
 		var stored models.ProgramClassEventAttendance
 		err := env.DB.Where("user_id = ? AND event_id = ? AND date = ?", student.ID, event.ID, date).First(&stored).Error
 		require.NoError(t, err)
-		require.Equal(t, "Medical", stored.ReasonCategory)
-		require.Equal(t, "", stored.Note)
+		require.Equal(t, "Medical", models.FormatNullableString(stored.ReasonCategory))
+		require.Nil(t, stored.Note)
 	})
 
 	t.Run("Save attendance with Other reason and Note", func(t *testing.T) {
@@ -80,8 +80,8 @@ func TestAttendanceReasons(t *testing.T) {
 				UserID:           student.ID,
 				Date:             date,
 				AttendanceStatus: models.Absent_Unexcused,
-				ReasonCategory:   "Other",
-				Note:             "Something specific",
+				ReasonCategory:   models.StringPtr("Other"),
+				Note:             models.StringPtr("Something specific"),
 			},
 		}
 
@@ -99,8 +99,8 @@ func TestAttendanceReasons(t *testing.T) {
 		var stored models.ProgramClassEventAttendance
 		err := env.DB.Where("user_id = ? AND event_id = ? AND date = ?", student.ID, event.ID, date).First(&stored).Error
 		require.NoError(t, err)
-		require.Equal(t, "Other", stored.ReasonCategory)
-		require.Equal(t, "Something specific", stored.Note)
+		require.Equal(t, "Other", models.FormatNullableString(stored.ReasonCategory))
+		require.Equal(t, "Something specific", models.FormatNullableString(stored.Note))
 	})
 
 	t.Run("Update to Present clears reason and note", func(t *testing.T) {
@@ -111,8 +111,8 @@ func TestAttendanceReasons(t *testing.T) {
 				UserID:           student.ID,
 				Date:             date,
 				AttendanceStatus: models.Present,
-				ReasonCategory:   "", // Frontend sends empty string
-				Note:             "",
+				ReasonCategory:   models.StringPtr(""), // Frontend sends empty string
+				Note:             models.StringPtr(""),
 			},
 		}
 
@@ -134,9 +134,9 @@ func TestAttendanceReasons(t *testing.T) {
 		// Note: Depending on how the update works, it might not clear fields if they are not specified,
 		// but the handler receives the whole struct.
 		// The `LogUserAttendance` uses `clause.OnConflict` with `DoUpdates`.
-		// If we send empty strings, they should be updated to empty strings.
-		require.Equal(t, "", stored.ReasonCategory)
-		require.Equal(t, "", stored.Note)
+		// Empty strings are stored as NULL.
+		require.Nil(t, stored.ReasonCategory)
+		require.Nil(t, stored.Note)
 	})
 
 	t.Run("Update from Present back to Absent saves reason", func(t *testing.T) {
@@ -145,8 +145,8 @@ func TestAttendanceReasons(t *testing.T) {
 				UserID:           student.ID,
 				Date:             date,
 				AttendanceStatus: models.Absent_Excused,
-				ReasonCategory:   "Disciplinary",
-				Note:             "",
+				ReasonCategory:   models.StringPtr("Disciplinary"),
+				Note:             nil,
 			},
 		}
 
@@ -165,6 +165,6 @@ func TestAttendanceReasons(t *testing.T) {
 		err := env.DB.Where("user_id = ? AND event_id = ? AND date = ?", student.ID, event.ID, date).First(&stored).Error
 		require.NoError(t, err)
 		require.Equal(t, models.Absent_Excused, stored.AttendanceStatus)
-		require.Equal(t, "Disciplinary", stored.ReasonCategory)
+		require.Equal(t, "Disciplinary", models.FormatNullableString(stored.ReasonCategory))
 	})
 }

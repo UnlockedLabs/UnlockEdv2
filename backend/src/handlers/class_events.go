@@ -337,7 +337,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 				Duration:      event.Duration,
 				OverrideRrule: originalRRule,
 				IsCancelled:   true,
-				Reason:        rescheduleReason,
+				Reason:        models.StringPtr(rescheduleReason),
 			},
 			{
 				EventID:       uint(eventId),
@@ -383,7 +383,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 		Duration:      overrideDuration,
 		OverrideRrule: overrideRRule,
 		IsCancelled:   req.IsCancelled,
-		Reason:        req.Reason,
+		Reason:        models.NilIfBlank(req.Reason),
 		RoomID:        req.RoomID,
 		InstructorID:  req.InstructorID,
 	}

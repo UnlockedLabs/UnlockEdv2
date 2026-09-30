@@ -186,7 +186,7 @@ func (db *DB) OpenContentTitleSearch(args *models.QueryContext) ([]models.OpenCo
             and fvs.content_id = v.id
             and fvs.facility_id = ?
         WHERE fvs.visibility_status = true
-				and to_tsvector('english', v.title || ' ' || v.description || ' ' || v.channel_title) @@ plainto_tsquery('english', ?)
+				and to_tsvector('english', concat_ws(' ', v.title, v.description, v.channel_title)) @@ plainto_tsquery('english', ?)
 		   UNION ALL
 		SELECT
 			'library' AS content_type,
@@ -207,7 +207,7 @@ func (db *DB) OpenContentTitleSearch(args *models.QueryContext) ([]models.OpenCo
 			and fvs.content_id = l.id
 			and fvs.facility_id = ?
 		WHERE fvs.visibility_status = true
-			and to_tsvector('english', l.title || ' ' || l.description) @@ plainto_tsquery('english', ?)`
+			and to_tsvector('english', concat_ws(' ', l.title, l.description)) @@ plainto_tsquery('english', ?)`
 
 	tx := db.WithContext(args.Ctx).Raw(searchQuery, args.FacilityID, args.Search, args.FacilityID, args.Search)
 	if err := tx.Scan(&items).Error; err != nil {
