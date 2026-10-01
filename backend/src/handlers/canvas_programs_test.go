@@ -625,3 +625,72 @@ func TestFilterCanvasPrograms(t *testing.T) {
 		assert.Len(t, out, 2) // the still-loading row has no type yet and is excluded
 	})
 }
+
+// Canvas rows are appended after the database rows and counted in meta.total,
+// so the page window arithmetic has to hold for every page or total/last_page
+// disagree between pages and page 1 overflows per_page.
+func TestCanvasPageSlice(t *testing.T) {
+	canvasRows := func(n int) []models.ProgramsOverviewTable {
+		rows := make([]models.ProgramsOverviewTable, n)
+		for i := range rows {
+			rows[i] = models.ProgramsOverviewTable{ProgramID: models.CanvasProgramIDOffset + uint(i)}
+		}
+		return rows
+	}
+	tests := []struct {
+		name          string
+		canvasCount   int
+		dbTotal       int64
+		page, perPage int
+		all           bool
+		wantIDs       []uint
+	}{
+		{"db total is an exact multiple of per_page, canvas spills to page 2", 1, 10, 1, 10, false, nil},
+		{"spilled canvas row lands on page 2", 1, 10, 2, 10, false, []uint{models.CanvasProgramIDOffset}},
+		{"partial last page has room for the canvas row", 1, 5, 1, 10, false, []uint{models.CanvasProgramIDOffset}},
+		{"canvas rows split across the page boundary", 3, 12, 2, 10, false, []uint{models.CanvasProgramIDOffset, models.CanvasProgramIDOffset + 1, models.CanvasProgramIDOffset + 2}},
+		{"page before any canvas position", 3, 25, 1, 10, false, nil},
+		{"page straddling the first canvas row", 3, 25, 3, 10, false, []uint{models.CanvasProgramIDOffset, models.CanvasProgramIDOffset + 1, models.CanvasProgramIDOffset + 2}},
+		{"page past every canvas row", 2, 5, 3, 5, false, nil},
+		{"no canvas rows", 0, 10, 1, 10, false, nil},
+		{"all skips pagination", 2, 10, 1, 10, true, []uint{models.CanvasProgramIDOffset, models.CanvasProgramIDOffset + 1}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := models.QueryContext{Page: tt.page, PerPage: tt.perPage, All: tt.all, Total: tt.dbTotal}
+			got := canvasPageSlice(canvasRows(tt.canvasCount), tt.dbTotal, &args)
+			gotIDs := make([]uint, 0, len(got))
+			for _, p := range got {
+				gotIDs = append(gotIDs, p.ProgramID)
+			}
+			assert.Equal(t, tt.wantIDs, nilIfEmpty(gotIDs))
+			if !tt.all {
+				assert.LessOrEqual(t, int64(len(got)), max(int64(tt.perPage)-(tt.dbTotal-int64(args.CalcOffset())), 0),
+					"page must not return more rows than per_page once the database rows are counted")
+			}
+		})
+	}
+}
+
+func nilIfEmpty(ids []uint) []uint {
+	if len(ids) == 0 {
+		return nil
+	}
+	return ids
+}
+
+// Canvas rows must be counted in meta.total on every page, otherwise total and
+// last_page change depending on which page the client asks for.
+func TestCanvasTotalIsPageIndependent(t *testing.T) {
+	const dbTotal, canvasCount, perPage = 10, 1, 10
+	var totals, lastPages []int64
+	for page := 1; page <= 2; page++ {
+		args := models.QueryContext{Page: page, PerPage: perPage, Total: dbTotal}
+		args.Total += canvasCount
+		meta := args.IntoMeta()
+		totals = append(totals, meta.Total)
+		lastPages = append(lastPages, int64(meta.LastPage))
+	}
+	assert.Equal(t, []int64{11, 11}, totals)
+	assert.Equal(t, []int64{2, 2}, lastPages)
+}

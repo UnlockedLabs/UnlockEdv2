@@ -304,6 +304,26 @@ func (srv *Server) restoreCanvasProgram(cacheKey string, previous *models.Progra
 	}
 }
 
+// canvasPageSlice returns the Canvas rows that belong on the requested page.
+// Canvas rows are synthetic (one per provider platform, not a `programs` row)
+// and have no position in the SQL sort order, so the combined list puts them
+// after every database row: a Canvas row at index i occupies combined-list
+// position dbTotal+i. A page keeps only the rows whose positions land inside
+// its own window, which is what makes meta.total and per_page agree on every
+// page.
+func canvasPageSlice(canvas []models.ProgramsOverviewTable, dbTotal int64, args *models.QueryContext) []models.ProgramsOverviewTable {
+	if args.All {
+		return canvas
+	}
+	count := int64(len(canvas))
+	start := min(max(int64(args.CalcOffset())-dbTotal, 0), count)
+	end := min(max(int64(args.CalcOffset()+args.PerPage)-dbTotal, 0), count)
+	if start >= end {
+		return nil
+	}
+	return canvas[start:end]
+}
+
 // filterCanvasPrograms applies the same search/filter predicates that
 // GetProgramsOverviewTable applies in SQL, in memory, to the synthetic
 // per-provider rows getCanvasProviderPrograms returns. Canvas rows have no
