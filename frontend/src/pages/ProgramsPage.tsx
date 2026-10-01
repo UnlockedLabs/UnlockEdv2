@@ -23,6 +23,7 @@ import {
 } from '@/types';
 import API from '@/api/api';
 import { toast } from 'sonner';
+import { NoDataDash } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -436,25 +437,22 @@ export default function ProgramsPage() {
             0
         );
 
-        const ratedPrograms = all.filter((p) => p.completion_rate !== null);
-        const completedEnrollmentsSum = ratedPrograms.reduce(
-            (sum, p) =>
-                sum +
-                (p.completion_rate! *
-                    (p.total_enrollments - (p.total_active_enrollments ?? 0))) /
-                    100,
+        // Sum the server's own numerator and denominator. Reconstructing them from
+        // completion_rate x (total_enrollments - total_active_enrollments) skews the
+        // result, because total_enrollments counts enrollments the rate excludes
+        // (Scheduled/Cancelled classes, and rows with no enrollment_ended_at).
+        const rateEligibleCompletions = all.reduce(
+            (sum, p) => sum + (p.rate_eligible_completions ?? 0),
             0
         );
-        const totalCompletedEnrollments = ratedPrograms.reduce(
-            (sum, p) =>
-                sum + (p.total_enrollments - (p.total_active_enrollments ?? 0)),
+        const rateEligibleEnrollments = all.reduce(
+            (sum, p) => sum + (p.rate_eligible_enrollments ?? 0),
             0
         );
         const completionRate =
-            totalCompletedEnrollments > 0
+            rateEligibleEnrollments > 0
                 ? Math.round(
-                      (completedEnrollmentsSum / totalCompletedEnrollments) *
-                          100
+                      (rateEligibleCompletions / rateEligibleEnrollments) * 100
                   )
                 : null;
 
@@ -534,9 +532,7 @@ export default function ProgramsPage() {
                                 stats.completionRate !== null ? (
                                     `${stats.completionRate}%`
                                 ) : (
-                                    <span className="inline-block translate-y-[35%]">
-                                        —
-                                    </span>
+                                    <NoDataDash />
                                 )
                             }
                             tooltip={
@@ -1891,9 +1887,7 @@ function ProgramsTable({
                                                     {completionRate !== null ? (
                                                         `${Math.round(completionRate)}%`
                                                     ) : (
-                                                        <span className="inline-block translate-y-[35%]">
-                                                            —
-                                                        </span>
+                                                        <NoDataDash />
                                                     )}
                                                 </div>
                                             </TooltipTrigger>
@@ -1919,9 +1913,7 @@ function ProgramsTable({
                                                     {attendanceRate !== null ? (
                                                         `${Math.round(attendanceRate)}%`
                                                     ) : (
-                                                        <span className="inline-block translate-y-[35%]">
-                                                            —
-                                                        </span>
+                                                        <NoDataDash />
                                                     )}
                                                 </div>
                                             </TooltipTrigger>

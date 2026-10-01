@@ -14,6 +14,7 @@ import {
     Trash2
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NoDataDash } from '@/components/shared';
 import API from '@/api/api';
 import {
     Cohort,
@@ -21,6 +22,7 @@ import {
     SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne,
+    classCountsTowardRates,
     externalSourceLabel
 } from '@/types';
 import { programTypeColors } from '@/pages/program-detail/constants';
@@ -308,10 +310,8 @@ export default function ProgramOverviewStatewide() {
                 const activeClasses = facilityClasses.filter(
                     (cls) => cls.status === SelectedClassStatus.Active
                 ).length;
-                const startedClasses = facilityClasses.filter(
-                    (cls) =>
-                        cls.status !== SelectedClassStatus.Scheduled &&
-                        cls.status !== SelectedClassStatus.Cancelled
+                const startedClasses = facilityClasses.filter((cls) =>
+                    classCountsTowardRates(cls.status)
                 );
                 const totalEnrolled = facilityClasses.reduce(
                     (sum, cls) => sum + (cls.enrolled ?? 0),
@@ -325,12 +325,14 @@ export default function ProgramOverviewStatewide() {
                     totalCapacity > 0
                         ? (totalEnrolled / totalCapacity) * 100
                         : 0;
+                // rate_eligible_* carry the server's enrollment_ended_at predicate,
+                // so a facility row uses the same rule as the program-level rate.
                 const completions = startedClasses.reduce(
-                    (sum, cls) => sum + (cls.completed ?? 0),
+                    (sum, cls) => sum + (cls.rate_eligible_completions ?? 0),
                     0
                 );
                 const historicalEnrollments = startedClasses.reduce(
-                    (sum, cls) => sum + (cls.historical_enrollments ?? 0),
+                    (sum, cls) => sum + (cls.rate_eligible_enrollments ?? 0),
                     0
                 );
                 const completionRate =
@@ -423,29 +425,14 @@ export default function ProgramOverviewStatewide() {
         const total = attendanceSamples.reduce((sum, rate) => sum + rate, 0);
         return Math.round(total / attendanceSamples.length);
     }, [classes]);
-    const computedCompletionRateFromClasses = useMemo(() => {
-        const startedClasses = classes.filter(
-            (cls) =>
-                cls.status !== SelectedClassStatus.Scheduled &&
-                cls.status !== SelectedClassStatus.Cancelled
-        );
-        const totalCompletions = startedClasses.reduce(
-            (sum, cls) => sum + (cls.completed ?? 0),
-            0
-        );
-        const totalHistoricalEnrollments = startedClasses.reduce(
-            (sum, cls) => sum + (cls.historical_enrollments ?? 0),
-            0
-        );
-        return totalHistoricalEnrollments > 0
-            ? Math.round((totalCompletions / totalHistoricalEnrollments) * 100)
-            : null;
-    }, [classes]);
+    // The server decides whether a completion rate exists at all; null means
+    // "no rate-eligible data", not "no answer". Recomputing it here from class
+    // rollups would override that deliberate null with a number built from a
+    // looser rule, which is the misleading value this page exists to avoid.
     const avgCompletionRate =
-        program?.completion_rate !== null &&
-        program?.completion_rate !== undefined
+        program?.completion_rate != null
             ? Math.round(program.completion_rate)
-            : computedCompletionRateFromClasses;
+            : null;
 
     const toggleSort = (column: typeof sortColumn) => {
         if (sortColumn === column) {
@@ -730,9 +717,7 @@ export default function ProgramOverviewStatewide() {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div className="text-3xl text-brand-dark mb-1 cursor-help w-fit">
-                                        <span className="inline-block translate-y-[35%]">
-                                            —
-                                        </span>
+                                        <NoDataDash />
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-brand-dark text-white max-w-xs">
@@ -758,9 +743,7 @@ export default function ProgramOverviewStatewide() {
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <div className="text-3xl text-brand-dark mb-1 cursor-help w-fit">
-                                            <span className="inline-block translate-y-[35%]">
-                                                —
-                                            </span>
+                                            <NoDataDash />
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent className="bg-brand-dark text-white max-w-xs">
@@ -1007,9 +990,7 @@ export default function ProgramOverviewStatewide() {
                                                             null ? (
                                                                 `${Math.round(stat.completionRate)}%`
                                                             ) : (
-                                                                <span className="inline-block translate-y-[35%]">
-                                                                    —
-                                                                </span>
+                                                                <NoDataDash />
                                                             )}
                                                         </span>
                                                     </TooltipTrigger>
@@ -1046,9 +1027,7 @@ export default function ProgramOverviewStatewide() {
                                                                 null ? (
                                                                     `${Math.round(stat.attendanceRate)}%`
                                                                 ) : (
-                                                                    <span className="inline-block translate-y-[35%]">
-                                                                        —
-                                                                    </span>
+                                                                    <NoDataDash />
                                                                 )}
                                                             </span>
                                                         </TooltipTrigger>

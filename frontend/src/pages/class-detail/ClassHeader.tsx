@@ -9,6 +9,7 @@ import {
     TooltipTrigger
 } from '@/components/ui/tooltip';
 import { Cohort } from '@/types/program';
+import { NoDataDash } from '@/components/shared';
 import { SelectedClassStatus } from '@/types/attendance';
 import {
     getClassSchedule,
@@ -352,9 +353,7 @@ export function StatCards({
                             <TooltipTrigger asChild>
                                 <div className="cursor-help">
                                     <div className="text-3xl text-brand-dark mb-2">
-                                        <span className="inline-block translate-y-[35%]">
-                                            —
-                                        </span>
+                                        <NoDataDash />
                                     </div>
                                     <div className="text-sm text-gray-600">
                                         No attendance recorded yet

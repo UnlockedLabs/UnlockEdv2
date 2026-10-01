@@ -14,6 +14,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NoDataDash } from '@/components/shared';
 import {
     AcademicCapIcon,
     WrenchScrewdriverIcon,
@@ -31,6 +32,7 @@ import {
     externalSourceLabel,
     ProgClassStatus,
     SelectedClassStatus,
+    classCountsTowardRates,
     ChangeLogEntry,
     ServerResponseMany,
     ServerResponseOne
@@ -1134,13 +1136,15 @@ function ClassRow({
                   ? 'text-brand-gold'
                   : 'text-gray-700'
             : 'text-gray-500';
-    const hasStarted =
-        cls.status !== SelectedClassStatus.Scheduled &&
-        cls.status !== SelectedClassStatus.Cancelled;
-    const completionBase = cls.historical_enrollments ?? 0;
+    const hasStarted = classCountsTowardRates(cls.status);
+    // rate_eligible_* carry the server's enrollment_ended_at predicate, so this
+    // cannot contradict the program-level rate shown in PerformanceTab.
+    const completionBase = cls.rate_eligible_enrollments ?? 0;
     const completionRate =
         hasStarted && completionBase > 0
-            ? Math.round((cls.completed / completionBase) * 100)
+            ? Math.round(
+                  ((cls.rate_eligible_completions ?? 0) / completionBase) * 100
+              )
             : null;
     const completionClass =
         completionRate !== null
@@ -1217,11 +1221,9 @@ function ClassRow({
                                 ) : (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <span
-                                                className={`inline-block translate-y-[35%] font-medium cursor-help ${attendanceClass}`}
-                                            >
-                                                —
-                                            </span>
+                                            <NoDataDash
+                                                className={`font-medium cursor-help ${attendanceClass}`}
+                                            />
                                         </TooltipTrigger>
                                         <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                             {cls.status ===
@@ -1247,11 +1249,9 @@ function ClassRow({
                                 ) : (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <span
-                                                className={`inline-block translate-y-[35%] font-medium cursor-help ${completionClass}`}
-                                            >
-                                                —
-                                            </span>
+                                            <NoDataDash
+                                                className={`font-medium cursor-help ${completionClass}`}
+                                            />
                                         </TooltipTrigger>
                                         <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                             {cls.status ===
@@ -1259,7 +1259,9 @@ function ClassRow({
                                                 ? `This class hasn't started yet — starts ${formatDate(cls.start_dt)}`
                                                 : cls.status ===
                                                     SelectedClassStatus.Cancelled
-                                                  ? 'This class was cancelled before any residents reached completion eligibility'
+                                                  ? cls.completed > 0
+                                                      ? `This class was cancelled; ${cls.completed} resident${cls.completed === 1 ? '' : 's'} completed it before cancellation, but a cancelled class doesn't count toward completion rates`
+                                                      : 'This class was cancelled before any residents reached completion eligibility'
                                                   : `No residents in this class have reached completion eligibility yet (${cls.enrolled} enrolled)`}
                                         </TooltipContent>
                                     </Tooltip>
@@ -1462,9 +1464,7 @@ function PerformanceTab({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <p className="text-3xl text-brand-dark mb-2 cursor-help w-fit">
-                                        <span className="inline-block translate-y-[35%]">
-                                            —
-                                        </span>
+                                        <NoDataDash />
                                     </p>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-brand-dark text-white max-w-xs">

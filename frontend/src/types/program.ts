@@ -126,6 +126,11 @@ export interface ProgramsOverviewTable {
     total_filled_seats: number;
     completion_rate: number | null;
     attendance_rate: number | null;
+    /** Numerator and denominator completion_rate was built from. Aggregate these
+     *  across programs rather than reconstructing a denominator from
+     *  total_enrollments, which counts enrollments the rate excludes. */
+    rate_eligible_completions: number | null;
+    rate_eligible_enrollments: number | null;
     program_types: string;
     credit_types: string;
     funding_type: string;
@@ -217,6 +222,11 @@ export interface Cohort {
     enrolled: number;
     completed: number;
     historical_enrollments?: number;
+    /** Rate-eligible counts apply the same enrollment_ended_at predicate as the
+     *  server's completion rate. Use these for any completion-rate arithmetic;
+     *  `completed` and `historical_enrollments` are raw counts. */
+    rate_eligible_completions?: number;
+    rate_eligible_enrollments?: number;
     capacity: number;
     credit_hours: number;
     archived_at: string | null;
