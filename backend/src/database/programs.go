@@ -46,8 +46,8 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 		COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) AS completions,
 		COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments,
 		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.user_id END) as active_residents,
-		COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END) * 100.0
-			/ NULLIF(COUNT(CASE WHEN pce.enrollment_status IN (` + terminalEnrollmentStatusSQLList() + `) AND pce.enrolled_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN 1 END), 0) AS completion_rate
+		COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL AND ` + rateEligibleClassStatusSQL + ` THEN 1 END) * 100.0
+			/ NULLIF(COUNT(CASE WHEN pce.enrollment_status IN (` + completedOutcomeStatusSQLList() + `) AND pce.enrollment_ended_at IS NOT NULL AND ` + rateEligibleClassStatusSQL + ` THEN 1 END), 0) AS completion_rate
 	`
 
 	tx := db.Table("program_class_enrollments pce").
@@ -716,6 +716,8 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_capacity AS total_capacity,
 			mr.total_filled_seats AS total_filled_seats,
 			time_filtered_rates.completion_rate AS completion_rate,
+			time_filtered_rates.rate_eligible_completions AS rate_eligible_completions,
+			time_filtered_rates.rate_eligible_enrollments AS rate_eligible_enrollments,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
 			pct.credit_types AS credit_types,
@@ -737,6 +739,8 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_capacity AS total_capacity,
 			mr.total_filled_seats AS total_filled_seats,
 			time_filtered_rates.completion_rate AS completion_rate,
+			time_filtered_rates.rate_eligible_completions AS rate_eligible_completions,
+			time_filtered_rates.rate_eligible_enrollments AS rate_eligible_enrollments,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
 			pct.credit_types AS credit_types,
@@ -812,15 +816,22 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 
 	partialAttendanceSQL := buildPartialAttendanceSQL(db.Name(), "pcea")
+
+	// DISTINCT on pce.id: the pcev/pcea joins below fan out one enrollment into many
+	// rows (one per event/attendance record), so a plain COUNT double-counts enrollments
+	// with more recorded attendance and skews the rate.
+	// Both halves are also projected as their own columns so a client aggregating
+	// across programs can weight by the real denominator instead of guessing one.
+	rateCompletionsSQL := `COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL AND ` + rateEligibleClassStatusSQL + ` ` + timeFilterCondition + ` THEN pce.id END)`
+	rateEligibleSQL := `COUNT(DISTINCT CASE WHEN pce.enrollment_status IN (` + completedOutcomeStatusSQLList() + `) AND pce.enrollment_ended_at IS NOT NULL AND ` + rateEligibleClassStatusSQL + ` THEN pce.id END)`
+
 	timeFilteredRatesSubquery := `
 		LEFT JOIN (
 			SELECT
 				p.id as program_id,
-				-- DISTINCT on pce.id: the pcev/pcea joins below fan out one enrollment into many
-				-- rows (one per event/attendance record), so a plain COUNT double-counts enrollments
-				-- with more recorded attendance and skews the rate.
-				COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') ` + timeFilterCondition + ` THEN pce.id END) * 100.0 /
-					NULLIF(COUNT(DISTINCT CASE WHEN pce.enrollment_status IN (` + terminalEnrollmentStatusSQLList() + `) AND pce.enrollment_ended_at IS NOT NULL AND pc.status NOT IN ('Scheduled', 'Cancelled') THEN pce.id END), 0) AS completion_rate,
+				` + rateCompletionsSQL + ` * 100.0 / NULLIF(` + rateEligibleSQL + `, 0) AS completion_rate,
+				` + rateCompletionsSQL + ` AS rate_eligible_completions,
+				` + rateEligibleSQL + ` AS rate_eligible_enrollments,
 				SUM(
 					CASE
 						WHEN pcea.attendance_status = 'present' ` + timeFilterCondition + ` THEN 1
@@ -953,7 +964,7 @@ func (db *DB) GetProgramCreatedAtAndBy(id int, args *models.QueryContext) (model
 
 func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSVData, error) {
 	var programCSVData []models.ProgramCSVData
-	statuses := models.TerminalEnrollmentStatuses
+	statuses := models.CompletedOutcomeStatuses
 
 	partialAttendanceSQL := buildPartialAttendanceSQL(db.Name(), "pca")
 	tx := db.WithContext(args.Ctx).Table("programs p").
@@ -1029,15 +1040,18 @@ func buildPartialAttendanceSQL(dialect, alias string) string {
 	return partialAttendanceSQL
 }
 
-// terminalEnrollmentStatusSQLList renders models.TerminalEnrollmentStatuses as a quoted,
-// comma-separated SQL list for inlining into a raw `IN (...)` clause. Keeping every
-// completion-rate query's terminal-status set in sync with the shared list here caught
-// a bug where one query's hand-copied literal list drifted from another's (a status
-// added to the enum wasn't added everywhere it was hardcoded).
-func terminalEnrollmentStatusSQLList() string {
-	quoted := make([]string, len(models.TerminalEnrollmentStatuses))
-	for i, status := range models.TerminalEnrollmentStatuses {
+// completedOutcomeStatusSQLList renders models.CompletedOutcomeStatuses as a quoted,
+// comma-separated SQL list for inlining into a raw `IN (...)` clause.
+func completedOutcomeStatusSQLList() string {
+	quoted := make([]string, len(models.CompletedOutcomeStatuses))
+	for i, status := range models.CompletedOutcomeStatuses {
 		quoted[i] = "'" + string(status) + "'"
 	}
 	return strings.Join(quoted, ", ")
 }
+
+// rateEligibleClassStatusSQL excludes classes that haven't started (Scheduled)
+// or never ran (Cancelled) from completion/attendance rate calculations, so a
+// class with no real data doesn't produce a misleading rate. Shared by every
+// completion-rate query so the eligibility rule can't drift between them.
+const rateEligibleClassStatusSQL = "pc.status NOT IN ('Scheduled', 'Cancelled')"

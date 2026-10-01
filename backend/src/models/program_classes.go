@@ -320,6 +320,14 @@ type ProgramClassDetail struct {
 	Room                  string   `json:"room"`
 	AttendanceRate        *float64 `json:"attendance_rate"`
 	Completed             int      `json:"completed"`
+
+	// Rate-eligible counts apply the same enrollment_ended_at predicate as the
+	// program-level completion rate in database/programs.go, so a client
+	// dividing these cannot contradict the server's own number. Completed and
+	// HistoricalEnrollments above are raw counts with other consumers and are
+	// deliberately left untightened.
+	RateEligibleCompletions int `json:"rate_eligible_completions"`
+	RateEligibleEnrollments int `json:"rate_eligible_enrollments"`
 }
 
 type ProgramEnrollmentStatus string
@@ -335,11 +343,12 @@ const (
 	EnrollmentIncompleteSegregated       ProgramEnrollmentStatus = "Incomplete: Segregated"
 )
 
-// TerminalEnrollmentStatuses are enrollment statuses with a resolved outcome
-// (successful or not). Completion-rate calculations across the codebase use
-// this as their denominator — keep it as the single source of truth rather
-// than repeating the status list at each call site.
-var TerminalEnrollmentStatuses = []ProgramEnrollmentStatus{
+// AllEnrollmentStatuses enumerates every value of ProgramEnrollmentStatus, so
+// derived status sets (see CompletedOutcomeStatuses) have one place to stay
+// in sync with the type's definition instead of hand-copying a subset of it.
+var AllEnrollmentStatuses = []ProgramEnrollmentStatus{
+	Enrolled,
+	EnrollmentCancelled,
 	EnrollmentCompleted,
 	EnrollmentIncompleteWithdrawn,
 	EnrollmentIncompleteDropped,
@@ -347,6 +356,23 @@ var TerminalEnrollmentStatuses = []ProgramEnrollmentStatus{
 	EnrollmentIncompleteTransfered,
 	EnrollmentIncompleteSegregated,
 }
+
+// CompletedOutcomeStatuses are the terminal statuses that represent a real
+// completion opportunity, and so are the correct denominator for every
+// completion rate and historical-enrollment count. A Cancelled enrollment is
+// terminal (IsTerminalEnrollment says so, because it still stamps
+// enrollment_ended_at) but never had an opportunity to complete, so counting
+// it in a denominator deflates the rate. Derived from IsTerminalEnrollment so
+// the two definitions cannot drift apart as they previously did.
+var CompletedOutcomeStatuses = func() []ProgramEnrollmentStatus {
+	statuses := make([]ProgramEnrollmentStatus, 0, len(AllEnrollmentStatuses))
+	for _, s := range AllEnrollmentStatuses {
+		if IsTerminalEnrollment(s) && s != EnrollmentCancelled {
+			statuses = append(statuses, s)
+		}
+	}
+	return statuses
+}()
 
 type ClassCompletion struct {
 	DatabaseFields

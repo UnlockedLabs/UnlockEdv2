@@ -1689,10 +1689,15 @@ func (srv *Server) computeCanvasCompletionRate(ctx context.Context, provider *mo
 	}
 	reader, err := srv.newLiveProgramProvider(provider)
 	if err != nil {
+		log.WithError(err).Warnf("canvas completion rate: cannot build provider client for provider %d", provider.ID)
 		return nil
 	}
 	listing, err := reader.ListCourses(ctx)
-	if err != nil || len(listing.Courses) == 0 {
+	if err != nil {
+		log.WithError(err).Warnf("canvas completion rate: ListCourses failed for provider %d", provider.ID)
+		return nil
+	}
+	if len(listing.Courses) == 0 {
 		return nil
 	}
 
@@ -1752,12 +1757,20 @@ func (srv *Server) computeCanvasCompletionRate(ctx context.Context, provider *mo
 	}
 
 	totalMapped, err := srv.Db.CountCanvasMappedEnrollees(provider.ID, allIDs)
-	if err != nil || totalMapped == 0 {
+	if err != nil {
+		log.WithError(err).Warnf("canvas completion rate: counting mapped enrollees failed for provider %d", provider.ID)
+		return nil
+	}
+	if totalMapped == 0 {
 		return nil
 	}
 	var completedMapped int64
 	if len(completedIDs) > 0 {
-		completedMapped, _ = srv.Db.CountCanvasMappedEnrollees(provider.ID, completedIDs)
+		completedMapped, err = srv.Db.CountCanvasMappedEnrollees(provider.ID, completedIDs)
+		if err != nil {
+			log.WithError(err).Warnf("canvas completion rate: counting completed mapped enrollees failed for provider %d", provider.ID)
+			return nil
+		}
 	}
 	rate := float64(completedMapped) / float64(totalMapped) * 100
 	return &rate
