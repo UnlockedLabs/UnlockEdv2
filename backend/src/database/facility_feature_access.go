@@ -65,6 +65,36 @@ func resolveFeatures(statewideDefaults []models.FeatureAccess, overrides map[mod
 	return states
 }
 
+// featureFlagIDsByName loads every feature_flags row (top-level and the sub-feature
+// shadow rows, EN-96) keyed by name, for translating a FeatureAccess into the id
+// facility_feature_flags.feature_flag_id now stores.
+func (db *DB) featureFlagIDsByName() (map[models.FeatureAccess]uint, error) {
+	var flags []models.FeatureFlags
+	if err := db.Model(&models.FeatureFlags{}).Find(&flags).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "feature_flags")
+	}
+	byName := make(map[models.FeatureAccess]uint, len(flags))
+	for _, f := range flags {
+		byName[f.Name] = f.ID
+	}
+	return byName, nil
+}
+
+// featureNamesByID is the reverse of featureFlagIDsByName, for translating
+// facility_feature_flags rows back into the FeatureAccess values the rest of this
+// package works in.
+func (db *DB) featureNamesByID() (map[uint]models.FeatureAccess, error) {
+	var flags []models.FeatureFlags
+	if err := db.Model(&models.FeatureFlags{}).Find(&flags).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "feature_flags")
+	}
+	byID := make(map[uint]models.FeatureAccess, len(flags))
+	for _, f := range flags {
+		byID[f.ID] = f.Name
+	}
+	return byID, nil
+}
+
 // facilityOverrides returns one facility's explicit settings. Presence of a key
 // means the facility has been explicitly set; the value is that setting.
 func (db *DB) facilityOverrides(facilityID uint) (map[models.FeatureAccess]bool, error) {
@@ -72,9 +102,13 @@ func (db *DB) facilityOverrides(facilityID uint) (map[models.FeatureAccess]bool,
 	if err := db.Model(&models.FacilityFeatureFlag{}).Where("facility_id = ?", facilityID).Find(&overrides).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "facility_feature_flags")
 	}
+	names, err := db.featureNamesByID()
+	if err != nil {
+		return nil, err
+	}
 	set := make(map[models.FeatureAccess]bool, len(overrides))
 	for _, o := range overrides {
-		set[o.Feature] = o.Enabled
+		set[names[o.FeatureFlagID]] = o.Enabled
 	}
 	return set, nil
 }
@@ -103,11 +137,15 @@ func (db *DB) GetFacilityFeatureOverview(args *models.QueryContext, statewideDef
 		if err := db.Model(&models.FacilityFeatureFlag{}).Where("facility_id IN ?", facilityIDs).Find(&overrides).Error; err != nil {
 			return nil, newGetRecordsDBError(err, "facility_feature_flags")
 		}
+		names, err := db.featureNamesByID()
+		if err != nil {
+			return nil, err
+		}
 		for _, o := range overrides {
 			if overridesByFacility[o.FacilityID] == nil {
 				overridesByFacility[o.FacilityID] = map[models.FeatureAccess]bool{}
 			}
-			overridesByFacility[o.FacilityID][o.Feature] = o.Enabled
+			overridesByFacility[o.FacilityID][names[o.FeatureFlagID]] = o.Enabled
 		}
 	}
 
@@ -165,13 +203,17 @@ func (db *DB) UpsertFacilityFeatureFlag(args *models.QueryContext, facilityID ui
 			}
 		}
 	}
-	row := models.FacilityFeatureFlag{FacilityID: facilityID, Feature: feature, Enabled: enabled}
+	ids, err := db.featureFlagIDsByName()
+	if err != nil {
+		return err
+	}
+	row := models.FacilityFeatureFlag{FacilityID: facilityID, FeatureFlagID: ids[feature], Enabled: enabled}
 	if args.UserID != 0 {
 		uid := args.UserID
 		row.UpdateUserID = &uid
 	}
 	if err := db.WithContext(args.Ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "facility_id"}, {Name: "feature"}},
+		Columns:   []clause.Column{{Name: "facility_id"}, {Name: "feature_flag_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"enabled", "update_user_id", "updated_at"}),
 	}).Create(&row).Error; err != nil {
 		return newCreateDBError(err, "facility_feature_flags")
@@ -219,14 +261,19 @@ func (db *DB) ApplyFacilityFeaturesToAll(args *models.QueryContext, sourceFacili
 		uid = &u
 	}
 
+	ids, err := db.featureFlagIDsByName()
+	if err != nil {
+		return err
+	}
+
 	rows := make([]models.FacilityFeatureFlag, 0, len(facilityIDs)*len(models.AllFeatures))
 	for _, fid := range facilityIDs {
 		for _, feature := range models.AllFeatures {
 			rows = append(rows, models.FacilityFeatureFlag{
-				FacilityID:   fid,
-				Feature:      feature,
-				Enabled:      effectiveSet[feature],
-				UpdateUserID: uid,
+				FacilityID:    fid,
+				FeatureFlagID: ids[feature],
+				Enabled:       effectiveSet[feature],
+				UpdateUserID:  uid,
 			})
 		}
 	}
@@ -236,7 +283,7 @@ func (db *DB) ApplyFacilityFeaturesToAll(args *models.QueryContext, sourceFacili
 
 	return db.WithContext(args.Ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "facility_id"}, {Name: "feature"}},
+			Columns:   []clause.Column{{Name: "facility_id"}, {Name: "feature_flag_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"enabled", "update_user_id", "updated_at"}),
 		}).Create(&rows).Error; err != nil {
 			return newCreateDBError(err, "facility_feature_flags")
