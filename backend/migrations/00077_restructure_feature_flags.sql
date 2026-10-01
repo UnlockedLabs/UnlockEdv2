@@ -2,8 +2,9 @@
 --
 -- a. facility_feature_flags was missing create_user_id, and linked to a feature by the raw
 --    `feature` enum instead of a real FK id. It now carries feature_flag_id -> feature_flags(id).
--- b. feature_flags.enabled is dropped -- nothing edits it after the initial seed insert, so
---    the "enabled by default" behavior moves to a hardcoded map in Go (models.DefaultEnabled).
+-- b. feature_flags.enabled and page_feature_flags.enabled are both dropped -- nothing edits
+--    either after their initial seed insert, so the "enabled by default" behavior for every
+--    feature (top-level and sub) moves to one hardcoded map in Go (models.DefaultEnabled).
 --
 -- Wrinkle the ticket doesn't mention: facility_feature_flags.feature also stores per-facility
 -- overrides for sub/page features (request_content, upload_video, ...), which live in the
@@ -49,6 +50,7 @@ CREATE INDEX idx_facility_feature_flags_feature_flag_id ON public.facility_featu
 CREATE INDEX idx_facility_feature_flags_create_user_id ON public.facility_feature_flags(create_user_id);
 
 ALTER TABLE public.feature_flags DROP COLUMN enabled;
+ALTER TABLE public.page_feature_flags DROP COLUMN enabled;
 
 -- +goose StatementEnd
 
@@ -60,6 +62,8 @@ UPDATE public.feature_flags SET enabled = TRUE
  WHERE name IN ('open_content', 'provider_platforms', 'program_management');
 UPDATE public.feature_flags SET enabled = FALSE
  WHERE name IN ('learning_record', 'ai_tutor');
+
+ALTER TABLE public.page_feature_flags ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE;
 
 DROP INDEX IF EXISTS public.idx_facility_feature_flags_create_user_id;
 DROP INDEX IF EXISTS public.idx_facility_feature_flags_feature_flag_id;

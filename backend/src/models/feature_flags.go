@@ -24,7 +24,6 @@ type (
 		DatabaseFields
 		FeatureFlagID uint          `json:"feature_flag_id" gorm:"not null;index"`
 		PageFeature   FeatureAccess `json:"page_feature" gorm:"not null;type:feature"`
-		Enabled       bool          `json:"enabled" gorm:"not null"`
 	}
 
 	// FacilityFeatureFlag is a per-facility override of a statewide feature default.
@@ -70,15 +69,20 @@ var SubFeatureParent = map[FeatureAccess]FeatureAccess{
 	ResidentProgramsAccess: ProgramAccess,
 }
 
-// DefaultEnabled is the statewide default for each top-level feature, replacing the
-// dropped feature_flags.enabled column (nothing ever edited it after the initial seed).
-// Sub-feature defaults are unaffected -- they still come from page_feature_flags.enabled.
+// DefaultEnabled is the statewide default for every feature (top-level and sub),
+// replacing both the dropped feature_flags.enabled and page_feature_flags.enabled
+// columns -- nothing ever edited either after their initial seed insert.
 var DefaultEnabled = map[FeatureAccess]bool{
 	OpenContentAccess:    true,
 	ProviderAccess:       true,
 	ProgramAccess:        true,
 	LearningRecordAccess: false,
 	AiTutorAccess:        false,
+
+	RequestContentAccess:   true,
+	HelpfulLinksAccess:     true,
+	UploadVideoAccess:      true,
+	ResidentProgramsAccess: true,
 }
 
 func Feature(kinds ...FeatureAccess) []FeatureAccess {
