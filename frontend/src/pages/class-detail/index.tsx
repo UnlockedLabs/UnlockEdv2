@@ -80,7 +80,7 @@ export default function ClassDetailPage() {
     );
 
     const { data: rateResp } = useSWR<
-        ServerResponseOne<{ attendance_rate: number }>
+        ServerResponseOne<{ attendance_rate: number | null }>
     >(
         !isCanvasClass && class_id
             ? `/api/program-classes/${class_id}/attendance-rate`
@@ -106,7 +106,7 @@ export default function ClassDetailPage() {
     const canDelete = deleteCheckResp?.data?.can_delete ?? false;
     const deleteBlockers = deleteCheckResp?.data?.blockers;
     const deleteBlockerReason = getDeleteBlockerReason(deleteBlockers);
-    const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
+    const attendanceRate = rateResp?.data?.attendance_rate ?? null;
     const atRiskCount = flagsResp?.meta?.total ?? 0;
     const flaggedUserIds = useMemo(() => {
         const ids = new Set<number>();

@@ -356,10 +356,12 @@ func (suite *ProgramsStatsTestSuite) TestFetchEnrollmentMetrics_CompletionRateCa
 
 	metrics, err := suite.env.DB.FetchEnrollmentMetrics(int(program.ID), facility.ID)
 	assert.NoError(suite.T(), err)
-	assert.LessOrEqual(suite.T(), metrics.CompletionRate, float64(100),
-		"completion rate must never exceed 100%")
-	assert.Equal(suite.T(), float64(100), metrics.CompletionRate,
-		"1 completed-with-enrolled_at / 1 terminal-with-enrolled_at should be 100%")
+	if assert.NotNil(suite.T(), metrics.CompletionRate) {
+		assert.LessOrEqual(suite.T(), *metrics.CompletionRate, float64(100),
+			"completion rate must never exceed 100%")
+		assert.Equal(suite.T(), float64(100), *metrics.CompletionRate,
+			"1 completed-with-enrolled_at / 1 terminal-with-enrolled_at should be 100%")
+	}
 }
 
 func TestProgramsStatsTestSuite(t *testing.T) {

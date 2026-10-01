@@ -90,8 +90,8 @@ export interface ProgramOverview extends Program {
     active_enrollments: number;
     completions: number;
     total_enrollments: number;
-    completion_rate: number;
-    attendance_rate: number;
+    completion_rate: number | null;
+    attendance_rate: number | null;
     active_class_facility_ids: number[];
     source?: string;
     loading?: boolean;
@@ -121,10 +121,16 @@ export interface ProgramsOverviewTable {
     total_active_enrollments: number;
     total_classes: number;
     total_active_classes: number;
+    total_cancelled_classes: number;
     total_capacity: number;
     total_filled_seats: number;
-    completion_rate: number;
-    attendance_rate: number;
+    completion_rate: number | null;
+    attendance_rate: number | null;
+    /** Numerator and denominator completion_rate was built from. Aggregate these
+     *  across programs rather than reconstructing a denominator from
+     *  total_enrollments, which counts enrollments the rate excludes. */
+    rate_eligible_completions: number | null;
+    rate_eligible_enrollments: number | null;
     program_types: string;
     credit_types: string;
     funding_type: string;
@@ -216,6 +222,11 @@ export interface Cohort {
     enrolled: number;
     completed: number;
     historical_enrollments?: number;
+    /** Rate-eligible counts apply the same enrollment_ended_at predicate as the
+     *  server's completion rate. Use these for any completion-rate arithmetic;
+     *  `completed` and `historical_enrollments` are raw counts. */
+    rate_eligible_completions?: number;
+    rate_eligible_enrollments?: number;
     capacity: number;
     credit_hours: number;
     archived_at: string | null;
@@ -225,7 +236,7 @@ export interface Cohort {
     program: Program;
     schedule?: string;
     room?: string;
-    attendance_rate?: number;
+    attendance_rate?: number | null;
     is_canvas?: boolean;
     source?: string;
     /** True for a placeholder row standing in for a provider still being read. */

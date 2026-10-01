@@ -179,29 +179,35 @@ type ProgramsOverviewTable struct {
 	TotalActiveEnrollments *int64   `json:"total_active_enrollments"`
 	TotalClasses           *int64   `json:"total_classes"`
 	TotalActiveClasses     *int64   `json:"total_active_classes"`
+	TotalCancelledClasses  *int64   `json:"total_cancelled_classes"`
 	TotalCapacity          *int64   `json:"total_capacity"`
 	TotalFilledSeats       *int64   `json:"total_filled_seats"`
 	CompletionRate         *float64 `json:"completion_rate"`
 	AttendanceRate         *float64 `json:"attendance_rate"`
-	Types                  string   `json:"program_types" gorm:"column:program_types"`
-	CreditTypes            string   `json:"credit_types"`
-	FundingType            string   `json:"funding_type"`
-	Status                 bool     `json:"status"`
-	Source                 string   `json:"source"`
-	Loading                bool     `json:"loading,omitempty"`
+	// The numerator and denominator CompletionRate was built from, so a client
+	// aggregating across programs can weight by the real rate-eligible
+	// population instead of reconstructing one from TotalEnrollments.
+	RateEligibleCompletions *int64 `json:"rate_eligible_completions"`
+	RateEligibleEnrollments *int64 `json:"rate_eligible_enrollments"`
+	Types                   string `json:"program_types" gorm:"column:program_types"`
+	CreditTypes             string `json:"credit_types"`
+	FundingType             string `json:"funding_type"`
+	Status                  bool   `json:"status"`
+	Source                  string `json:"source"`
+	Loading                 bool   `json:"loading,omitempty"`
 }
 
 type ProgramOverviewResponse struct {
 	Program                `gorm:"-"`
-	ActiveResidents        int     `json:"active_residents"`
-	ActiveEnrollments      int     `json:"active_enrollments"`
-	Completions            int     `json:"completions"`
-	TotalEnrollments       int     `json:"total_enrollments"`
-	CompletionRate         float64 `json:"completion_rate"`
-	AttendanceRate         float64 `json:"attendance_rate"`
-	ActiveClassFacilityIDs []int   `json:"active_class_facility_ids" gorm:"-"`
-	Source                 string  `json:"source,omitempty" gorm:"-"`
-	Loading                bool    `json:"loading,omitempty"`
+	ActiveResidents        int      `json:"active_residents"`
+	ActiveEnrollments      int      `json:"active_enrollments"`
+	Completions            int      `json:"completions"`
+	TotalEnrollments       int      `json:"total_enrollments"`
+	CompletionRate         *float64 `json:"completion_rate"`
+	AttendanceRate         *float64 `json:"attendance_rate"`
+	ActiveClassFacilityIDs []int    `json:"active_class_facility_ids" gorm:"-"`
+	Source                 string   `json:"source,omitempty" gorm:"-"`
+	Loading                bool     `json:"loading,omitempty"`
 }
 
 type ProgramCSVData struct {

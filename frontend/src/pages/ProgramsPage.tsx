@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
@@ -23,6 +23,7 @@ import {
 } from '@/types';
 import API from '@/api/api';
 import { toast } from 'sonner';
+import { NoDataDash } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -436,26 +437,24 @@ export default function ProgramsPage() {
             0
         );
 
-        const completedEnrollmentsSum = all.reduce(
-            (sum, p) =>
-                sum +
-                ((p.completion_rate ?? 0) *
-                    (p.total_enrollments - (p.total_active_enrollments ?? 0))) /
-                    100,
+        // Sum the server's own numerator and denominator. Reconstructing them from
+        // completion_rate x (total_enrollments - total_active_enrollments) skews the
+        // result, because total_enrollments counts enrollments the rate excludes
+        // (Scheduled/Cancelled classes, and rows with no enrollment_ended_at).
+        const rateEligibleCompletions = all.reduce(
+            (sum, p) => sum + (p.rate_eligible_completions ?? 0),
             0
         );
-        const totalCompletedEnrollments = all.reduce(
-            (sum, p) =>
-                sum + (p.total_enrollments - (p.total_active_enrollments ?? 0)),
+        const rateEligibleEnrollments = all.reduce(
+            (sum, p) => sum + (p.rate_eligible_enrollments ?? 0),
             0
         );
         const completionRate =
-            totalCompletedEnrollments > 0
+            rateEligibleEnrollments > 0
                 ? Math.round(
-                      (completedEnrollmentsSum / totalCompletedEnrollments) *
-                          100
+                      (rateEligibleCompletions / rateEligibleEnrollments) * 100
                   )
-                : 0;
+                : null;
 
         return {
             activePrograms: active.length,
@@ -529,11 +528,19 @@ export default function ProgramsPage() {
                         />
                         <StatCard
                             label="Completion Rate"
-                            value={`${stats.completionRate}%`}
+                            value={
+                                stats.completionRate !== null ? (
+                                    `${stats.completionRate}%`
+                                ) : (
+                                    <NoDataDash />
+                                )
+                            }
                             tooltip={
-                                isDeptAdminUser
-                                    ? 'The percentage of residents who have completed a class across all facilities'
-                                    : 'The percentage of residents who have completed a class at this facility'
+                                stats.completionRate !== null
+                                    ? isDeptAdminUser
+                                        ? 'The percentage of residents who have completed a class across all facilities'
+                                        : 'The percentage of residents who have completed a class at this facility'
+                                    : 'No residents have reached completion eligibility yet'
                             }
                         />
                     </div>
@@ -1264,7 +1271,7 @@ function StatCard({
     tooltip
 }: {
     label: string;
-    value: string | number;
+    value: ReactNode;
     tooltip?: string;
 }) {
     const cardContent = (
@@ -1422,7 +1429,10 @@ function ProgramCard({
                                 value: `${program.total_enrollments ?? 0} total enrollment${(program.total_enrollments ?? 0) !== 1 ? 's' : ''}`
                             },
                             {
-                                value: `${Math.round(program.completion_rate ?? 0)}% completion rate`
+                                value:
+                                    program.completion_rate !== null
+                                        ? `${Math.round(program.completion_rate)}% completion rate`
+                                        : '— completion rate'
                             }
                         ]}
                     />
@@ -1646,12 +1656,8 @@ function ProgramsTable({
                             const utilizationRate = getUtilizationRate(program);
                             const historicalEnrollments =
                                 getHistoricalEnrollments(program);
-                            const completionRate = Math.round(
-                                program.completion_rate ?? 0
-                            );
-                            const attendanceRate = Math.round(
-                                program.attendance_rate ?? 0
-                            );
+                            const completionRate = program.completion_rate;
+                            const attendanceRate = program.attendance_rate;
 
                             return (
                                 <TableRow
@@ -1876,17 +1882,25 @@ function ProgramsTable({
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div
-                                                    className={`text-sm font-medium cursor-help w-fit ${getPercentageColorClass(completionRate)}`}
+                                                    className={`text-sm font-medium cursor-help w-fit ${completionRate !== null ? getPercentageColorClass(completionRate) : 'text-gray-500'}`}
                                                 >
-                                                    {completionRate}%
+                                                    {completionRate !== null ? (
+                                                        `${Math.round(completionRate)}%`
+                                                    ) : (
+                                                        <NoDataDash />
+                                                    )}
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                                Percentage of residents who
-                                                successfully completed the
-                                                program out of all who have
-                                                finished (not including current
-                                                enrollments)
+                                                {completionRate !== null
+                                                    ? 'Percentage of residents who successfully completed the program out of all who have finished (not including current enrollments)'
+                                                    : (program.total_classes ??
+                                                            0) === 0
+                                                      ? (program.total_cancelled_classes ??
+                                                            0) > 0
+                                                          ? 'This program has no active or completed classes to calculate a completion rate from'
+                                                          : 'No classes have been created for this program yet'
+                                                      : 'No residents have reached completion eligibility yet'}
                                             </TooltipContent>
                                         </Tooltip>
                                     </TableCell>
@@ -1894,15 +1908,25 @@ function ProgramsTable({
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div
-                                                    className={`text-sm font-medium cursor-help w-fit ${getPercentageColorClass(attendanceRate)}`}
+                                                    className={`text-sm font-medium cursor-help w-fit ${attendanceRate !== null ? getPercentageColorClass(attendanceRate) : 'text-gray-500'}`}
                                                 >
-                                                    {attendanceRate}%
+                                                    {attendanceRate !== null ? (
+                                                        `${Math.round(attendanceRate)}%`
+                                                    ) : (
+                                                        <NoDataDash />
+                                                    )}
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                                Average attendance rate across
-                                                all active classes in this
-                                                program
+                                                {attendanceRate !== null
+                                                    ? 'Average attendance rate across all active classes in this program'
+                                                    : (program.total_classes ??
+                                                            0) === 0
+                                                      ? (program.total_cancelled_classes ??
+                                                            0) > 0
+                                                          ? 'This program has no active classes to calculate an attendance rate from'
+                                                          : 'No classes have been created for this program yet'
+                                                      : 'No classes have started taking attendance yet'}
                                             </TooltipContent>
                                         </Tooltip>
                                     </TableCell>

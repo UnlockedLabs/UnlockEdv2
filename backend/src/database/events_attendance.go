@@ -612,8 +612,8 @@ func (db *DB) CreateAttendanceAuditTrail(ctx context.Context, att *models.Progra
 	return nil
 }
 
-func (db *DB) GetCumulativeAttendanceRateForClass(ctx context.Context, classID int) (float64, error) {
-	var attendanceRate float64
+func (db *DB) GetCumulativeAttendanceRateForClass(ctx context.Context, classID int) (*float64, error) {
+	var attendanceRate *float64
 	today := time.Now().Format("2006-01-02")
 	sql := `
 	WITH attendance_credits AS (
@@ -632,14 +632,13 @@ func (db *DB) GetCumulativeAttendanceRateForClass(ctx context.Context, classID i
 		INNER JOIN program_class_events pce ON pce.id = pcea.event_id
 		WHERE pce.cohort_id = ? AND pcea.date <= ? AND pcea.deleted_at IS NULL
 	)
-	SELECT COALESCE(
+	SELECT
 		(SELECT SUM(credit) FROM attendance_credits) * 100.0 /
-		NULLIF((SELECT COUNT(*) FROM attendance_credits), 0),
-		0
-	) as attendance_percentage`
+		NULLIF((SELECT COUNT(*) FROM attendance_credits), 0)
+	as attendance_percentage`
 
 	if err := db.WithContext(ctx).Raw(sql, classID, today).Scan(&attendanceRate).Error; err != nil {
-		return 0, newNotFoundDBError(err, "program_class_event_attendance")
+		return nil, newNotFoundDBError(err, "program_class_event_attendance")
 	}
 	return attendanceRate, nil
 }
