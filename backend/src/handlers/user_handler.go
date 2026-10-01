@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"slices"
@@ -18,7 +19,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	log "github.com/sirupsen/logrus"
 	"unicode/utf8"
 )
 

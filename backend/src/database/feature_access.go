@@ -26,7 +26,7 @@ func (db *DB) GetFeatureAccess() ([]models.FeatureAccess, error) {
 		}
 		features = append(features, flag.Name)
 		for _, pageFeature := range flag.PageFeatures {
-			if pageFeature.Enabled {
+			if models.DefaultEnabled[pageFeature.PageFeature] {
 				features = append(features, pageFeature.PageFeature)
 			}
 		}
@@ -57,7 +57,6 @@ func (db *DB) seedTestFeatureFlags() {
 		if err := db.Create(&models.PageFeatureFlags{
 			FeatureFlagID: ids[parent],
 			PageFeature:   sub,
-			Enabled:       true,
 		}).Error; err != nil {
 			logrus.Fatalf("Failed to create page feature flag: %v", err)
 		}
