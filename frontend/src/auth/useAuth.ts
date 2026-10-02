@@ -15,7 +15,12 @@ import {
 import API from '@/api/api';
 import { tabSessionManager } from '@/session/tabSession';
 import { resetAnalytics } from '@/lib/events';
-import { isSessionStorageAvailable } from '@/lib/safeSessionStorage';
+import {
+    getSessionItem,
+    isSessionStorageAvailable,
+    removeSessionItem,
+    setSessionItem
+} from '@/lib/safeSessionStorage';
 
 interface AuthContextType {
     user: User | undefined;
@@ -83,18 +88,51 @@ export const initFlow = async (flow: string): Promise<AuthFlow> => {
             credentials: 'include'
         });
         if (resp.status !== 200) {
-            return redirectTo(INIT_KRATOS_LOGIN_FLOW);
+            return renewLoginFlow();
         }
         const jsonResp = (await resp.json()) as OryFlow;
+        const flowExpired = getSessionItem(FLOW_EXPIRED_KEY) !== null;
+        removeSessionItem(FLOW_EXPIRED_KEY);
+        removeSessionItem(FLOW_RETRIES_KEY);
         return {
             flow_id: jsonResp.id,
             challenge: jsonResp.oauth2_login_challenge,
-            csrf_token: jsonResp.ui.nodes[0].attributes.value
+            csrf_token: jsonResp.ui.nodes[0].attributes.value,
+            flow_expired: flowExpired
         };
     } catch {
-        return redirectTo(INIT_KRATOS_LOGIN_FLOW);
+        return renewLoginFlow();
     }
 };
+
+const FLOW_EXPIRED_KEY = 'login_flow_expired';
+const FLOW_RETRIES_KEY = 'login_flow_retries';
+const MAX_FLOW_RETRIES = 3;
+
+/**
+ * Replaces a stale login flow (expired, unknown, or from an old bookmark) by
+ * sending the browser back to Kratos for a fresh one. The retry count lives in
+ * sessionStorage so it survives the redirect; once it runs out we stop and let
+ * the user retry by hand instead of bouncing between Kratos and /login forever
+ * (EN-118).
+ */
+export function renewLoginFlow(challenge?: string): AuthFlow {
+    const retries = Number(getSessionItem(FLOW_RETRIES_KEY) ?? 0);
+    if (retries >= MAX_FLOW_RETRIES) {
+        return { flow_id: '', csrf_token: '', flow_error: true };
+    }
+    setSessionItem(FLOW_RETRIES_KEY, String(retries + 1));
+    setSessionItem(FLOW_EXPIRED_KEY, '1');
+    const url = challenge
+        ? `${INIT_KRATOS_LOGIN_FLOW}?login_challenge=${encodeURIComponent(challenge)}`
+        : INIT_KRATOS_LOGIN_FLOW;
+    return redirectTo(url);
+}
+
+export function retryLoginFlow(): void {
+    removeSessionItem(FLOW_RETRIES_KEY);
+    window.location.href = INIT_KRATOS_LOGIN_FLOW;
+}
 
 export const hasFeature = (user: User, ...axx: FeatureAccess[]): boolean => {
     return axx.every((ax) => user.feature_access?.includes(ax) ?? false);
@@ -139,11 +177,15 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
         return json<AuthFlow>(redirectTo(INIT_KRATOS_LOGIN_FLOW));
     }
     const attributes = await initFlow(flow);
+    if (attributes.redirect_to || attributes.flow_error) {
+        return json<AuthFlow>(attributes);
+    }
     if (!tabSessionManager.hasLocalSession()) {
         return json<AuthFlow>({
             flow_id: attributes.flow_id,
             challenge: attributes.challenge,
-            csrf_token: attributes.csrf_token
+            csrf_token: attributes.csrf_token,
+            flow_expired: attributes.flow_expired
         });
     }
     try {
