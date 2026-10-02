@@ -179,6 +179,10 @@ export interface AuthFlow {
     identifier?: string;
     /** sessionStorage is unusable, so this tab can never hold a session (EN-80). */
     storage_blocked?: boolean;
+    /** A stale flow was just replaced with a fresh one (EN-118). */
+    flow_expired?: boolean;
+    /** Getting a fresh flow kept failing, so we stopped retrying (EN-118). */
+    flow_error?: boolean;
 }
 
 export interface AuthResponse {
