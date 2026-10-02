@@ -244,7 +244,9 @@ export function identifyUser(
         // they are invisible to event-property filters (the pilot dashboard's
         // facility filter silently matches nothing) and they are last-write-wins,
         // so an admin switching facilities retroactively re-attributes their
-        // whole history. On the event, they record where the action happened.
+        // whole history. On the event, they record the actor's facility at the
+        // time; where a program/class action was aimed is `program_facility`
+        // (see programFacilityProps).
         posthog.register(facilityProps);
     } catch {
         /* noop */
