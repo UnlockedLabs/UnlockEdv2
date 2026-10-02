@@ -6,7 +6,12 @@ import { toast } from 'sonner';
 import useSWR from 'swr';
 import type { Class as ProgramClassSummary } from '@/types/program';
 import API from '@/api/api';
-import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
+import {
+    ANALYTICS_EVENTS,
+    captureEvent,
+    flowTimerSeconds,
+    programFacilityProps
+} from '@/lib/events';
 import { useFlowTimer } from '@/lib/useFlowTimer';
 import { useAuth } from '@/auth/useAuth';
 import {
@@ -190,7 +195,8 @@ export function ClassManagementFormInner({
 
     const [instructors, setInstructors] = useState<Instructor[]>([]);
     const startMsRef = useFlowTimer(
-        isNewClass ? ANALYTICS_EVENTS.ClassCreationStarted : null
+        isNewClass ? ANALYTICS_EVENTS.ClassCreationStarted : null,
+        programFacilityProps(resolvedFacilityId)
     );
 
     useEffect(() => {
@@ -596,7 +602,8 @@ export function ClassManagementFormInner({
         );
         if (isNewClass) {
             captureEvent(ANALYTICS_EVENTS.ClassCreationCompleted, {
-                duration_seconds: flowTimerSeconds(startMsRef.current)
+                duration_seconds: flowTimerSeconds(startMsRef.current),
+                ...programFacilityProps(resolvedFacilityId)
             });
             if (onCreated) {
                 onCreated();
