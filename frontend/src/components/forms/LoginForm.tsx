@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { markFirstLoginTourPending } from '@/contexts/firstLoginTour';
+import { renewLoginFlow, retryLoginFlow } from '@/auth/useAuth';
 
 function formatCountdown(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
@@ -32,6 +33,7 @@ function formatCountdown(seconds: number): string {
 export default function LoginForm() {
     const loaderData = useLoaderData() as AuthFlow;
     const storageBlocked = loaderData.storage_blocked === true;
+    const [flowError, setFlowError] = useState(loaderData.flow_error === true);
     const [processing, setProcessing] = useState(false);
     const [user, setUser] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState(false);
@@ -69,7 +71,7 @@ export default function LoginForm() {
     }, [isLockedOut]);
 
     const onSubmit: SubmitHandler<LoginInput> = async (data) => {
-        if (storageBlocked) return;
+        if (storageBlocked || flowError) return;
         if (user) {
             data.identifier = user;
         }
@@ -93,6 +95,15 @@ export default function LoginForm() {
             // alive inside the authenticated shell, where nothing but a browser
             // reload could clear it (ID-846).
             window.location.href = resp.data.redirect_to;
+            return;
+        } else if (resp.status === 410) {
+            const next = renewLoginFlow(loaderData.challenge);
+            if (next.redirect_to) {
+                window.location.href = next.redirect_to;
+                return;
+            }
+            setFlowError(true);
+            setProcessing(false);
             return;
         } else if (resp.status && resp.status === 429) {
             const retryAfterHeader = resp.headers?.['retry-after'];
@@ -216,6 +227,33 @@ export default function LoginForm() {
                     </p>
                 )}
 
+                {loaderData.flow_expired && !errorMessage && (
+                    <p
+                        role="status"
+                        className="mt-3 text-sm text-muted-foreground"
+                    >
+                        Your session expired. Please sign in again.
+                    </p>
+                )}
+
+                {flowError && (
+                    <div role="alert" className="mt-3 text-sm text-destructive">
+                        <p>
+                            Something went wrong loading the sign in page.
+                            Please try again.
+                        </p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={retryLoginFlow}
+                        >
+                            Retry
+                        </Button>
+                    </div>
+                )}
+
                 {storageBlocked && (
                     <p role="alert" className="mt-3 text-sm text-destructive">
                         This browser is blocking site data for UnlockEd, so you
@@ -227,7 +265,7 @@ export default function LoginForm() {
                 <div className="flex items-center justify-end mt-6">
                     <Button
                         type="submit"
-                        disabled={processing || storageBlocked}
+                        disabled={processing || storageBlocked || flowError}
                         className="btn-gold"
                     >
                         {processing ? (

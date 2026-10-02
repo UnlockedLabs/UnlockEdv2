@@ -111,6 +111,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	// Safe to log whole: LoginRequest.MarshalJSON redacts the password and CSRF
 	// token. Keep it that way -- these lines go to the deployment logs.
 	log.add("form", form)
+	if form.FlowID == "" {
+		return NewServiceError(errLoginFlowExpired, http.StatusGone, "Login session expired")
+	}
 	// create json body to send to kratos for processing login
 	jsonBody, err := buildKratosLoginForm(form)
 	if err != nil {
@@ -133,6 +136,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	// set the cookies from kratos to authenticate the client
 	setLoginCookies(resp, w)
 	redirect, err := getKratosRedirect(resp)
+	if errors.Is(err, errLoginFlowExpired) {
+		// not the user's fault, so it doesn't count toward a lockout
+		log.infof("Login flow %s expired or invalid for user %d", form.FlowID, user.ID)
+		return NewServiceError(err, http.StatusGone, "Login session expired")
+	}
 	if err != nil {
 		updateErr := s.Db.UpdateFailedLogin(user.ID)
 		log.infof("Failed login attempt for %d at %s", user.ID, time.Now())
@@ -184,6 +192,8 @@ func buildKratosLoginForm(form LoginRequest) ([]byte, error) {
 	return json.Marshal(body)
 }
 
+var errLoginFlowExpired = errors.New("login flow expired or invalid")
+
 func getKratosRedirect(resp *http.Response) (map[string]any, error) {
 	respBody := map[string]any{}
 	decoded := map[string]any{}
@@ -193,6 +203,12 @@ func getKratosRedirect(resp *http.Response) (map[string]any, error) {
 			log.Error("Error closing response body")
 		}
 	}()
+	// kratos rejects a submit against a dead flow with 410 (expired), 404
+	// (unknown flow id) or 403 (csrf cookie gone, e.g. a stale tab or bookmark)
+	switch resp.StatusCode {
+	case http.StatusGone, http.StatusNotFound, http.StatusForbidden:
+		return nil, errLoginFlowExpired
+	}
 	if err = json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
 		return nil, err
 	}
