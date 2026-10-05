@@ -14,6 +14,7 @@ import {
     Trash2
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NoDataDash } from '@/components/shared';
 import API from '@/api/api';
 import {
     Cohort,
@@ -21,6 +22,7 @@ import {
     SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne,
+    classCountsTowardRates,
     externalSourceLabel
 } from '@/types';
 import { programTypeColors } from '@/pages/program-detail/constants';
@@ -127,8 +129,8 @@ interface FacilityStat {
     historicalEnrollments: number;
     totalCapacity: number;
     utilization: number;
-    completionRate: number;
-    attendanceRate: number;
+    completionRate: number | null;
+    attendanceRate: number | null;
 }
 
 export default function ProgramOverviewStatewide() {
@@ -305,12 +307,12 @@ export default function ProgramOverviewStatewide() {
                 const facilityClasses = classes.filter(
                     (cls) => cls.facility_id === facility.id
                 );
-                const completedClasses = facilityClasses.filter(
-                    (cls) => cls.status === SelectedClassStatus.Completed
-                );
                 const activeClasses = facilityClasses.filter(
                     (cls) => cls.status === SelectedClassStatus.Active
                 ).length;
+                const startedClasses = facilityClasses.filter((cls) =>
+                    classCountsTowardRates(cls.status)
+                );
                 const totalEnrolled = facilityClasses.reduce(
                     (sum, cls) => sum + (cls.enrolled ?? 0),
                     0
@@ -323,20 +325,20 @@ export default function ProgramOverviewStatewide() {
                     totalCapacity > 0
                         ? (totalEnrolled / totalCapacity) * 100
                         : 0;
-                const completions = completedClasses.reduce(
-                    (sum, cls) => sum + (cls.completed ?? 0),
+                // rate_eligible_* carry the server's enrollment_ended_at predicate,
+                // so a facility row uses the same rule as the program-level rate.
+                const completions = startedClasses.reduce(
+                    (sum, cls) => sum + (cls.rate_eligible_completions ?? 0),
                     0
                 );
-                const historicalEnrollments = completedClasses.reduce(
-                    (sum, cls) =>
-                        sum +
-                        (cls.historical_enrollments ?? cls.completed ?? 0),
+                const historicalEnrollments = startedClasses.reduce(
+                    (sum, cls) => sum + (cls.rate_eligible_enrollments ?? 0),
                     0
                 );
                 const completionRate =
                     historicalEnrollments > 0
                         ? (completions / historicalEnrollments) * 100
-                        : 0;
+                        : null;
                 const attendanceSamples = facilityClasses
                     .map((cls) =>
                         typeof cls.attendance_rate === 'number'
@@ -350,7 +352,7 @@ export default function ProgramOverviewStatewide() {
                               (sum, rate) => sum + rate,
                               0
                           ) / attendanceSamples.length
-                        : 0;
+                        : null;
 
                 return {
                     facilityId: facility.id,
@@ -389,8 +391,8 @@ export default function ProgramOverviewStatewide() {
                     bVal = b.totalEnrolled;
                     break;
                 case 'completion':
-                    aVal = a.completionRate;
-                    bVal = b.completionRate;
+                    aVal = a.completionRate ?? -1;
+                    bVal = b.completionRate ?? -1;
                     break;
                 default:
                     return 0;
@@ -411,45 +413,26 @@ export default function ProgramOverviewStatewide() {
     const totalClasses = classes.length;
     const totalEnrolled = classes.reduce((sum, cls) => sum + cls.enrolled, 0);
     const totalCapacity = classes.reduce((sum, cls) => sum + cls.capacity, 0);
-    const avgAttendanceRate = Math.round(
-        (() => {
-            const attendanceSamples = classes
-                .map((cls) =>
-                    typeof cls.attendance_rate === 'number'
-                        ? cls.attendance_rate
-                        : null
-                )
-                .filter((rate): rate is number => rate !== null);
-            if (attendanceSamples.length === 0) return 0;
-            const total = attendanceSamples.reduce(
-                (sum, rate) => sum + rate,
-                0
-            );
-            return total / attendanceSamples.length;
-        })()
-    );
-    const computedCompletionRate = useMemo(() => {
-        const completedClasses = classes.filter(
-            (cls) => cls.status === SelectedClassStatus.Completed
-        );
-        const totalCompletions = completedClasses.reduce(
-            (sum, cls) => sum + (cls.completed ?? 0),
-            0
-        );
-        const totalHistoricalEnrollments = completedClasses.reduce(
-            (sum, cls) =>
-                sum + (cls.historical_enrollments ?? cls.completed ?? 0),
-            0
-        );
-        return totalHistoricalEnrollments > 0
-            ? (totalCompletions / totalHistoricalEnrollments) * 100
-            : 0;
+    const avgAttendanceRate = useMemo(() => {
+        const attendanceSamples = classes
+            .map((cls) =>
+                typeof cls.attendance_rate === 'number'
+                    ? cls.attendance_rate
+                    : null
+            )
+            .filter((rate): rate is number => rate !== null);
+        if (attendanceSamples.length === 0) return null;
+        const total = attendanceSamples.reduce((sum, rate) => sum + rate, 0);
+        return Math.round(total / attendanceSamples.length);
     }, [classes]);
-    const avgCompletionRate = Math.round(
-        program?.completion_rate && program.completion_rate > 0
-            ? program.completion_rate
-            : computedCompletionRate
-    );
+    // The server decides whether a completion rate exists at all; null means
+    // "no rate-eligible data", not "no answer". Recomputing it here from class
+    // rollups would override that deliberate null with a number built from a
+    // looser rule, which is the misleading value this page exists to avoid.
+    const avgCompletionRate =
+        program?.completion_rate != null
+            ? Math.round(program.completion_rate)
+            : null;
 
     const toggleSort = (column: typeof sortColumn) => {
         if (sortColumn === column) {
@@ -726,9 +709,23 @@ export default function ProgramOverviewStatewide() {
                         <div className="text-sm text-gray-600 mb-2">
                             Avg Completion Rate
                         </div>
-                        <div className="text-3xl text-brand-dark mb-1">
-                            {avgCompletionRate}%
-                        </div>
+                        {avgCompletionRate !== null ? (
+                            <div className="text-3xl text-brand-dark mb-1">
+                                {avgCompletionRate}%
+                            </div>
+                        ) : (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="text-3xl text-brand-dark mb-1 cursor-help w-fit">
+                                        <NoDataDash />
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                    No residents have reached completion
+                                    eligibility yet
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
                         <div className="text-xs text-gray-500">
                             of historical residents
                         </div>
@@ -738,9 +735,24 @@ export default function ProgramOverviewStatewide() {
                             <div className="text-sm text-gray-600 mb-2">
                                 Avg Attendance Rate
                             </div>
-                            <div className="text-3xl text-brand-dark mb-1">
-                                {avgAttendanceRate}%
-                            </div>
+                            {avgAttendanceRate !== null ? (
+                                <div className="text-3xl text-brand-dark mb-1">
+                                    {avgAttendanceRate}%
+                                </div>
+                            ) : (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="text-3xl text-brand-dark mb-1 cursor-help w-fit">
+                                            <NoDataDash />
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                        {totalClasses === 0
+                                            ? 'No classes have been created for this program yet'
+                                            : 'No classes have started taking attendance yet'}
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
                             <div className="text-xs text-gray-500">
                                 across all classes
                             </div>
@@ -962,28 +974,34 @@ export default function ProgramOverviewStatewide() {
                                                     <TooltipTrigger asChild>
                                                         <span
                                                             className={`text-sm font-medium cursor-help ${
-                                                                stat.completionRate >=
-                                                                75
-                                                                    ? 'text-green-700'
+                                                                stat.completionRate ===
+                                                                null
+                                                                    ? 'text-gray-500'
                                                                     : stat.completionRate >=
-                                                                        50
-                                                                      ? 'text-yellow-700'
-                                                                      : 'text-red-700'
+                                                                        75
+                                                                      ? 'text-green-700'
+                                                                      : stat.completionRate >=
+                                                                          50
+                                                                        ? 'text-yellow-700'
+                                                                        : 'text-red-700'
                                                             }`}
                                                         >
-                                                            {Math.round(
-                                                                stat.completionRate
+                                                            {stat.completionRate !==
+                                                            null ? (
+                                                                `${Math.round(stat.completionRate)}%`
+                                                            ) : (
+                                                                <NoDataDash />
                                                             )}
-                                                            %
                                                         </span>
                                                     </TooltipTrigger>
                                                     <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                                        Percentage of residents
-                                                        who successfully
-                                                        completed the program
-                                                        out of all who have
-                                                        finished (not including
-                                                        current enrollments)
+                                                        {stat.completionRate !==
+                                                        null
+                                                            ? 'Percentage of residents who successfully completed the program out of all who have finished (not including current enrollments)'
+                                                            : stat.totalClasses ===
+                                                                0
+                                                              ? 'No classes at this facility yet'
+                                                              : 'No residents have reached completion eligibility yet'}
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TableCell>
@@ -993,26 +1011,34 @@ export default function ProgramOverviewStatewide() {
                                                         <TooltipTrigger asChild>
                                                             <span
                                                                 className={`text-sm font-medium cursor-help ${
-                                                                    stat.attendanceRate >=
-                                                                    85
-                                                                        ? 'text-green-700'
+                                                                    stat.attendanceRate ===
+                                                                    null
+                                                                        ? 'text-gray-500'
                                                                         : stat.attendanceRate >=
-                                                                            70
-                                                                          ? 'text-yellow-700'
-                                                                          : 'text-red-700'
+                                                                            85
+                                                                          ? 'text-green-700'
+                                                                          : stat.attendanceRate >=
+                                                                              70
+                                                                            ? 'text-yellow-700'
+                                                                            : 'text-red-700'
                                                                 }`}
                                                             >
-                                                                {Math.round(
-                                                                    stat.attendanceRate
+                                                                {stat.attendanceRate !==
+                                                                null ? (
+                                                                    `${Math.round(stat.attendanceRate)}%`
+                                                                ) : (
+                                                                    <NoDataDash />
                                                                 )}
-                                                                %
                                                             </span>
                                                         </TooltipTrigger>
                                                         <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                                            Average attendance
-                                                            rate across all
-                                                            active classes in
-                                                            this program
+                                                            {stat.attendanceRate !==
+                                                            null
+                                                                ? 'Average attendance rate across all active classes in this program'
+                                                                : stat.totalClasses ===
+                                                                    0
+                                                                  ? 'No classes at this facility yet'
+                                                                  : 'No classes have started taking attendance yet'}
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TableCell>

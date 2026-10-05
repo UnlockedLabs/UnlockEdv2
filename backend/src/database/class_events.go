@@ -1201,7 +1201,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 	if len(events) == 0 {
-		return nil, newGetRecordsDBError(gorm.ErrRecordNotFound, "program_class_events")
+		return []models.ClassEventInstance{}, nil
 	}
 
 	type parsedEvent struct {

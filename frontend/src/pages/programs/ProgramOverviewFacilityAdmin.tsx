@@ -14,6 +14,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NoDataDash } from '@/components/shared';
 import {
     AcademicCapIcon,
     WrenchScrewdriverIcon,
@@ -31,11 +32,16 @@ import {
     externalSourceLabel,
     ProgClassStatus,
     SelectedClassStatus,
+    classCountsTowardRates,
     ChangeLogEntry,
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
-import { getInstructorName, getStatusColor } from '@/lib/formatters';
+import {
+    formatDate,
+    getInstructorName,
+    getStatusColor
+} from '@/lib/formatters';
 import { programTypeColors } from '@/pages/program-detail/constants';
 import { cn } from '@/lib/utils';
 import { formatHistoryEntry } from '@/components/history/formatHistoryEntry';
@@ -213,7 +219,7 @@ export default function ProgramOverviewFacilityAdmin() {
         totalCapacity > 0
             ? Math.round((totalEnrolled / totalCapacity) * 100)
             : 0;
-    const backendCompletionRate = program?.completion_rate ?? 0;
+    const backendCompletionRate = program?.completion_rate ?? null;
 
     async function handleArchiveCheck() {
         if (!program || archiveCheckLoading) return;
@@ -1130,11 +1136,15 @@ function ClassRow({
                   ? 'text-brand-gold'
                   : 'text-gray-700'
             : 'text-gray-500';
-    const showCompletion = cls.status === SelectedClassStatus.Completed;
-    const completionBase = cls.historical_enrollments ?? 0;
+    const hasStarted = classCountsTowardRates(cls.status);
+    // rate_eligible_* carry the server's enrollment_ended_at predicate, so this
+    // cannot contradict the program-level rate shown in PerformanceTab.
+    const completionBase = cls.rate_eligible_enrollments ?? 0;
     const completionRate =
-        showCompletion && completionBase > 0
-            ? Math.round((cls.completed / completionBase) * 100)
+        hasStarted && completionBase > 0
+            ? Math.round(
+                  ((cls.rate_eligible_completions ?? 0) / completionBase) * 100
+              )
             : null;
     const completionClass =
         completionRate !== null
@@ -1202,27 +1212,60 @@ function ClassRow({
                                 <span className="text-gray-600">
                                     Attendance:
                                 </span>
-                                <span
-                                    className={`font-medium ${attendanceClass}`}
-                                >
-                                    {attendanceRate !== null
-                                        ? `${attendanceRate}%`
-                                        : '—'}
-                                </span>
+                                {attendanceRate !== null ? (
+                                    <span
+                                        className={`font-medium ${attendanceClass}`}
+                                    >
+                                        {attendanceRate}%
+                                    </span>
+                                ) : (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <NoDataDash
+                                                className={`font-medium cursor-help ${attendanceClass}`}
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                            {cls.status ===
+                                            SelectedClassStatus.Scheduled
+                                                ? `No attendance yet — starts ${formatDate(cls.start_dt)}`
+                                                : 'No attendance has been recorded for this class yet'}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
                             </div>
                         )}
-                        {showCompletion && (
+                        {!isCanvas && (
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-600">
                                     Completion:
                                 </span>
-                                <span
-                                    className={`font-medium ${completionClass}`}
-                                >
-                                    {completionRate !== null
-                                        ? `${completionRate}%`
-                                        : '—'}
-                                </span>
+                                {completionRate !== null ? (
+                                    <span
+                                        className={`font-medium ${completionClass}`}
+                                    >
+                                        {completionRate}%
+                                    </span>
+                                ) : (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <NoDataDash
+                                                className={`font-medium cursor-help ${completionClass}`}
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                            {cls.status ===
+                                            SelectedClassStatus.Scheduled
+                                                ? `This class hasn't started yet — starts ${formatDate(cls.start_dt)}`
+                                                : cls.status ===
+                                                    SelectedClassStatus.Cancelled
+                                                  ? cls.completed > 0
+                                                      ? `This class was cancelled; ${cls.completed} resident${cls.completed === 1 ? '' : 's'} completed it before cancellation, but a cancelled class doesn't count toward completion rates`
+                                                      : 'This class was cancelled before any residents reached completion eligibility'
+                                                  : `No residents in this class have reached completion eligibility yet (${cls.enrolled} enrolled)`}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1345,7 +1388,7 @@ function PerformanceTab({
     totalCapacity: number;
     activeClassCount: number;
     totalClassCount: number;
-    completionRate: number;
+    completionRate: number | null;
 }) {
     const capacityPct =
         totalCapacity > 0
@@ -1403,15 +1446,33 @@ function PerformanceTab({
                         <p className="text-sm text-gray-600 mb-2">
                             Completion Rate
                         </p>
-                        <p className="text-3xl text-brand-dark mb-2">
-                            {Math.round(completionRate)}%
-                        </p>
-                        <Progress
-                            value={completionRate}
-                            className="h-2"
-                            indicatorClassName="bg-brand"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">&nbsp;</p>
+                        {completionRate !== null ? (
+                            <>
+                                <p className="text-3xl text-brand-dark mb-2">
+                                    {Math.round(completionRate)}%
+                                </p>
+                                <Progress
+                                    value={completionRate}
+                                    className="h-2"
+                                    indicatorClassName="bg-brand"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    &nbsp;
+                                </p>
+                            </>
+                        ) : (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <p className="text-3xl text-brand-dark mb-2 cursor-help w-fit">
+                                        <NoDataDash />
+                                    </p>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                    No residents have reached completion
+                                    eligibility yet
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
                     </div>
                 </div>
             </CardContent>

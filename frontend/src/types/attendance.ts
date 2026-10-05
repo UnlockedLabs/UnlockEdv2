@@ -28,6 +28,13 @@ export enum SelectedClassStatus {
     Cancelled = 'Cancelled'
 }
 
+// Mirrors backend/src/database/programs.go's rateEligibleClassStatusSQL: a
+// class that hasn't started (Scheduled) or never ran (Cancelled) produces no
+// real completion/attendance data, so it's excluded from rate calculations.
+export const classCountsTowardRates = (status: SelectedClassStatus): boolean =>
+    status !== SelectedClassStatus.Scheduled &&
+    status !== SelectedClassStatus.Cancelled;
+
 export enum EnrollmentStatus {
     Enrolled = 'Enrolled',
     Cancelled = 'Cancelled',
