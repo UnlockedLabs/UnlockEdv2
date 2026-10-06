@@ -9,6 +9,10 @@
     </head>
     <body>
         <div id="root"></div>
+        <!-- Runtime config (site name, PostHog key) — a K8s ConfigMap in prod,
+             the Vite dev plugin locally. Non-module so it runs synchronously,
+             before main.tsx, guaranteeing window.__CONFIG__ is set in time. -->
+        <script src="/config.js"></script>
         <script type="module" src="/src/main.tsx"></script>
     </body>
 </html>
