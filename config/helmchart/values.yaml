@@ -13,6 +13,15 @@ imagePullSecrets: [ecr-secret]
 
 appHost: example.com
 
+# Runtime config for the frontend (EN-176) — replace per deployment so one
+# frontend image works on every site. posthogKey must stay unset/blank
+# (not phc_-prefixed) for any deployment that shouldn't report analytics.
+frontendConfig:
+  state: example
+  deployment: production
+  posthogKey: ""
+  posthogHost: https://us.i.posthog.com
+
 ingress:
   enabled: true
   hosts:
