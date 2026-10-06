@@ -9,6 +9,14 @@ data:
        server_name  example.com;
        gzip on;
 
+       # Runtime config (EN-176) must never be served stale — nginx sets no
+       # cache headers anywhere else here, so without this a browser's
+       # heuristic caching could still hold onto an old site name/PostHog key
+       # for hours after the ConfigMap changes, defeating the point of it.
+       location = /config.js {
+           add_header Cache-Control "no-store";
+       }
+
        location / {
            root   /usr/share/nginx/html;
            index  index.html index.htm;
