@@ -2,10 +2,6 @@ import { declareAuthenticatedRoutes } from '@/auth/declareAuthenticatedRoutes';
 import { AdminRoles, AllRoles } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
 import Error from '@/pages/Error';
-import KnowledgeCenterManagement from '@/pages/knowledge-center/KnowledgeCenterManagement';
-import ResidentKnowledgeCenter from '@/pages/knowledge-center/ResidentKnowledgeCenter';
-import LibraryViewer from '@/pages/knowledge-center/LibraryViewer';
-import VideoViewer from '@/pages/knowledge-center/VideoViewer';
 import type { RouteObject } from 'react-router-dom';
 
 export const KnowledgeCenterAdminRoutes: RouteObject =
@@ -13,7 +9,10 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
         [
             {
                 path: 'knowledge-center-management',
-                element: <KnowledgeCenterManagement />,
+                lazy: () =>
+                    import('@/features/open-content').then((m) => ({
+                        Component: m.KnowledgeCenterManagement
+                    })),
                 handle: { title: 'Knowledge Center' }
             }
         ],
@@ -25,17 +24,26 @@ export const KnowledgeCenterRoutes: RouteObject = declareAuthenticatedRoutes(
     [
         {
             path: 'knowledge-center',
-            element: <ResidentKnowledgeCenter />,
+            lazy: () =>
+                import('@/features/open-content').then((m) => ({
+                    Component: m.ResidentKnowledgeCenter
+                })),
             handle: { title: 'Knowledge Center' }
         },
         {
             path: 'viewer/libraries/:id',
-            element: <LibraryViewer />,
+            lazy: () =>
+                import('@/features/open-content').then((m) => ({
+                    Component: m.LibraryViewer
+                })),
             errorElement: <Error />
         },
         {
             path: 'viewer/videos/:id',
-            element: <VideoViewer />,
+            lazy: () =>
+                import('@/features/open-content').then((m) => ({
+                    Component: m.VideoViewer
+                })),
             errorElement: <Error />
         }
     ],

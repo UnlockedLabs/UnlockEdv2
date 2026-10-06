@@ -2,15 +2,15 @@ import { declareAuthenticatedRoutes } from '@/auth/declareAuthenticatedRoutes';
 import { AdminRoles } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
 import Error from '@/pages/Error';
-import ProviderPlatformManagement from '@/pages/admin/ProviderPlatformManagement';
-import ProviderPlatformDetail from '@/pages/admin/ProviderPlatformDetail';
-import ProviderUserManagement from '@/pages/admin/ProviderUserManagement';
 
 const providerAdminRoutes = declareAuthenticatedRoutes(
     [
         {
             path: 'provider-users/:id',
-            element: <ProviderUserManagement />,
+            lazy: () =>
+                import('@/features/provider-platforms').then((m) => ({
+                    Component: m.ProviderUserManagement
+                })),
             errorElement: <Error />,
             handle: { title: 'Learning Platform Users' }
         }
@@ -23,13 +23,19 @@ const providerDeptAdminRoutes = declareAuthenticatedRoutes(
     [
         {
             path: 'learning-platforms',
-            element: <ProviderPlatformManagement />,
+            lazy: () =>
+                import('@/features/provider-platforms').then((m) => ({
+                    Component: m.ProviderPlatformManagement
+                })),
             errorElement: <Error />,
             handle: { title: 'Learning Platforms' }
         },
         {
             path: 'learning-platforms/:id',
-            element: <ProviderPlatformDetail />,
+            lazy: () =>
+                import('@/features/provider-platforms').then((m) => ({
+                    Component: m.ProviderPlatformDetail
+                })),
             errorElement: <Error />,
             handle: { title: 'Learning Platform' }
         }

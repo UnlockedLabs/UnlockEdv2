@@ -9,26 +9,15 @@ import {
     getProgramTitle
 } from '@/loaders/routeLoaders';
 import Error from '@/pages/Error';
-import ResidentOverview from '@/pages/learning/ResidentOverview';
-import ResidentSchedule from '@/pages/learning/ResidentSchedule';
-import ClassesPage from '@/pages/ClassesPage';
-import ProgramsPage from '@/pages/ProgramsPage';
-import ProgramManagementForm from '@/pages/programs/ProgramManagementForm';
-import ProgramOverviewDashboard from '@/pages/programs/ProgramOverviewDashboard';
-import ClassManagementForm from '@/pages/programs/ClassManagementForm';
-import ProgramClassManagement from '@/pages/programs/ProgramClassManagement';
-import ClassDetailPage from '@/pages/class-detail';
-import ClassEnrollmentDetails from '@/pages/programs/ClassEnrollmentDetails';
-import ClassEvents from '@/pages/programs/ClassEvents';
-import AddClassEnrollments from '@/pages/programs/AddClassEnrollments';
-import EventAttendance from '@/pages/event-attendance';
-import Schedule from '@/pages/Schedule';
 
 export const ProgramRoutes = declareAuthenticatedRoutes(
     [
         {
             path: 'resident-programs',
-            element: <ResidentOverview />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ResidentOverview
+                })),
             loader: getProgramData,
             handle: {
                 title: 'My Programs',
@@ -37,7 +26,10 @@ export const ProgramRoutes = declareAuthenticatedRoutes(
         },
         {
             path: 'resident-schedule',
-            element: <ResidentSchedule />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ResidentSchedule
+                })),
             handle: {
                 title: 'Schedule',
                 path: ['resident-schedule']
@@ -56,7 +48,10 @@ export const DeptAdminProgramRoutes = declareAuthenticatedRoutes(
         {
             path: 'programs/detail/:program_id?',
             loader: getProgramData,
-            element: <ProgramManagementForm />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ProgramManagementForm
+                })),
             handle: {
                 title: 'Program Details',
                 path: ['programs', 'detail']
@@ -71,7 +66,10 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
     [
         {
             path: 'classes',
-            element: <ClassesPage />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ClassesPage
+                })),
             handle: {
                 title: 'Classes',
                 path: ['classes']
@@ -80,7 +78,10 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
         {
             path: 'programs',
             id: 'programs-facilities',
-            element: <ProgramsPage />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ProgramsPage
+                })),
             loader: getFilterDropdowns,
             handle: {
                 title: 'Programs',
@@ -90,20 +91,29 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
         {
             path: 'programs/:program_id',
             loader: getProgramData,
-            element: <ProgramOverviewDashboard />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ProgramOverviewDashboard
+                })),
             handle: { title: 'Program Details' }
         },
         {
             path: 'programs/:id/classes/:class_id?',
             loader: getProgramTitle,
-            element: <ClassManagementForm />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ClassManagementForm
+                })),
             handle: {
                 title: (data: TitleHandler) => data.title
             }
         },
         {
             path: 'program-classes/:class_id/detail',
-            element: <ClassDetailPage />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ClassDetailPage
+                })),
             handle: {
                 title: 'Class Details',
                 path: ['classes']
@@ -111,13 +121,19 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
         },
         {
             path: 'program-classes',
-            element: <ProgramClassManagement />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.ProgramClassManagement
+                })),
             handle: { title: 'Class Management' },
             children: [
                 {
                     path: ':class_id/enrollments',
                     loader: getClassTitle,
-                    element: <ClassEnrollmentDetails />,
+                    lazy: () =>
+                        import('@/features/programs').then((m) => ({
+                            Component: m.ClassEnrollmentDetails
+                        })),
                     errorElement: <Error />,
                     handle: {
                         title: (data: TitleHandler) => data.title
@@ -126,7 +142,10 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
                 {
                     path: ':class_id/attendance',
                     loader: getClassTitle,
-                    element: <ClassEvents />,
+                    lazy: () =>
+                        import('@/features/programs').then((m) => ({
+                            Component: m.ClassEvents
+                        })),
                     errorElement: <Error />,
                     handle: {
                         title: (data: TitleHandler) => data.title
@@ -135,7 +154,10 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
                 {
                     path: ':class_id/schedule',
                     loader: getClassTitle,
-                    element: <Schedule />,
+                    lazy: () =>
+                        import('@/features/programs').then((m) => ({
+                            Component: m.Schedule
+                        })),
                     handle: {
                         title: (data: TitleHandler) => data.title
                     }
@@ -145,13 +167,19 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
         {
             path: 'program-classes/:class_id/enrollments/add',
             loader: getProgramTitle,
-            element: <AddClassEnrollments />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.AddClassEnrollments
+                })),
             handle: { title: 'Add Resident' }
         },
         {
             path: 'program-classes/:class_id/events/:event_id/attendance/:date',
             loader: getClassTitle,
-            element: <EventAttendance />,
+            lazy: () =>
+                import('@/features/programs').then((m) => ({
+                    Component: m.EventAttendance
+                })),
             handle: { title: 'Take Attendance' }
         }
     ],
