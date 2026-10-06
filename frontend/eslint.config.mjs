@@ -5,6 +5,16 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
+// EN-201: one folder per frontend feature, each isolated from the others.
+// Shared code belongs in components/ or lib/, not in another feature's folder.
+const FEATURES = [
+    'open-content',
+    'provider-platforms',
+    'programs',
+    'learning-record',
+    'ai-tutor'
+];
+
 export default tseslint.config(
     {
         ignores: [
@@ -46,5 +56,25 @@ export default tseslint.config(
         rules: {
             'react-refresh/only-export-components': 'off'
         }
-    }
+    },
+    ...FEATURES.map((feature) => ({
+        files: [`src/features/${feature}/**/*.{ts,tsx}`],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: FEATURES.filter((other) => other !== feature).map(
+                        (other) => ({
+                            group: [
+                                `@/features/${other}`,
+                                `@/features/${other}/*`
+                            ],
+                            message:
+                                'Features may not import from other features directly. Share code through components/ or lib/ instead.'
+                        })
+                    )
+                }
+            ]
+        }
+    }))
 );
