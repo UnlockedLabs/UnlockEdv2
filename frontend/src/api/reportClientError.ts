@@ -135,6 +135,26 @@ export function reportClientError(error: unknown, source: string): void {
 }
 
 /**
+ * A route's lazy-loaded chunk 404s if the user had the tab open across a
+ * deploy — the content hash it asks for no longer exists on the server. The
+ * router's generic errorElement can't tell that apart from a real crash, and
+ * its only recovery link does a client-side nav that keeps the same stale
+ * module graph in memory, so every other lazy route fails the same way for
+ * the rest of the tab's life. A hard reload is the actual fix. Guarded to
+ * fire once per tab session so a persistently broken chunk degrades to the
+ * ordinary error page instead of reload-looping.
+ */
+function installChunkLoadRecovery(): void {
+    window.addEventListener('vite:preloadError', (event) => {
+        reportClientError(event, 'vite:preloadError');
+        const key = 'chunk-reload-attempted';
+        if (sessionStorage.getItem(key)) return;
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+    });
+}
+
+/**
  * Catch what the error boundary cannot see: throws outside React's tree and
  * un-`catch`ed promise rejections (the LR entry page's hydrate effect being the one
  * that matters — it strands the page on "Loading your editor…" with no trace).
@@ -149,4 +169,5 @@ export function installGlobalErrorReporting(): void {
             reportClientError(event.reason, 'unhandledrejection');
         }
     );
+    installChunkLoadRecovery();
 }
