@@ -14,6 +14,13 @@ spec:
     metadata:
       labels:
         app: frontend
+      annotations:
+        # frontend-config is subPath-mounted, which Kubernetes never updates
+        # in place on a running pod — without this, a ConfigMap-only change
+        # (e.g. helm upgrade --set frontendConfig.posthogKey=...) updates the
+        # object but the Deployment spec is unchanged, so nothing rolls out
+        # and the old config.js keeps being served indefinitely.
+        checksum/frontend-config: {{ include (print $.Template.BasePath "/frontend-config.yml") . | sha256sum }}
     spec:
       containers:
         - args: ["-g daemon off;"]
