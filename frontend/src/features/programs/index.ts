@@ -1,0 +1,14 @@
+export { default as ResidentOverview } from '@/pages/learning/ResidentOverview';
+export { default as ResidentSchedule } from '@/pages/learning/ResidentSchedule';
+export { default as ClassesPage } from '@/pages/ClassesPage';
+export { default as ProgramsPage } from '@/pages/ProgramsPage';
+export { default as ProgramManagementForm } from '@/pages/programs/ProgramManagementForm';
+export { default as ProgramOverviewDashboard } from '@/pages/programs/ProgramOverviewDashboard';
+export { default as ClassManagementForm } from '@/pages/programs/ClassManagementForm';
+export { default as ProgramClassManagement } from '@/pages/programs/ProgramClassManagement';
+export { default as ClassDetailPage } from '@/pages/class-detail';
+export { default as ClassEnrollmentDetails } from '@/pages/programs/ClassEnrollmentDetails';
+export { default as ClassEvents } from '@/pages/programs/ClassEvents';
+export { default as AddClassEnrollments } from '@/pages/programs/AddClassEnrollments';
+export { default as EventAttendance } from '@/pages/event-attendance';
+export { default as Schedule } from '@/pages/Schedule';
