@@ -89,6 +89,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		log.error("Parsing form failed, using urlform")
 	}
+	// checked before the user lookup so the response doesn't reveal whether the username exists
+	if form.FlowID == "" {
+		return NewServiceError(errLoginFlowExpired, http.StatusGone, "Login session expired")
+	}
 	user, err := s.Db.GetUserByUsername(form.Username)
 	if err != nil {
 		return newUnauthorizedServiceError()
@@ -111,9 +115,6 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	// Safe to log whole: LoginRequest.MarshalJSON redacts the password and CSRF
 	// token. Keep it that way -- these lines go to the deployment logs.
 	log.add("form", form)
-	if form.FlowID == "" {
-		return NewServiceError(errLoginFlowExpired, http.StatusGone, "Login session expired")
-	}
 	// create json body to send to kratos for processing login
 	jsonBody, err := buildKratosLoginForm(form)
 	if err != nil {
