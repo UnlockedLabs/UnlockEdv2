@@ -1089,11 +1089,11 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 		return newDatabaseServiceError(err)
 	}
 	type successEntry struct {
-		UserID       uint   `json:"user_id"`
-		Username     string `json:"username"`
-		Name         string `json:"name"`
+		UserID       uint    `json:"user_id"`
+		Username     string  `json:"username"`
+		Name         string  `json:"name"`
 		DocID        *string `json:"doc_id"`
-		TempPassword string `json:"temp_password"`
+		TempPassword string  `json:"temp_password"`
 	}
 	type failedEntry struct {
 		UserID   uint   `json:"user_id"`
