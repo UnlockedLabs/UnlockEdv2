@@ -54,14 +54,17 @@ export type AnalyticsProps = Record<string, AnalyticsValue>;
  */
 function deploymentProps(): AnalyticsProps {
     return {
-        deployment: import.meta.env.VITE_DEPLOYMENT,
+        deployment: window.__CONFIG__?.deployment,
         state: stateTag()
     };
 }
 
 /** Deployment identity, or `unknown` if a deployment shipped without one. */
 function stateTag(): string {
-    return import.meta.env.VITE_STATE || 'unknown';
+    // `||`, not `??`: an explicit blank state in config.js must also fall
+    // through to 'unknown', not just a missing/failed config.js.
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    return window.__CONFIG__?.state || 'unknown';
 }
 
 /**
@@ -115,23 +118,26 @@ export function programFacilityProps(
  * Initialize PostHog, or deliberately don't. Never throws.
  *
  * Analytics is enabled only when the key looks like a real PostHog project key
- * (they are always `phc_`-prefixed) AND a deployment is named. That single rule:
- *   - rejects the CI `placeholder_for_other_deployments` value used by builds
- *     that shouldn't report,
- *   - rejects the `.env.example` sample value,
- *   - fails closed on forks, where the repo secret resolves to an empty string,
+ * (they are always `phc_`-prefixed) AND a deployment is named. Both come from
+ * window.__CONFIG__ (EN-176) — a site's `frontendConfig.posthogKey`/
+ * `.deployment` values in production, `.env`'s `VITE_PUBLIC_POSTHOG_KEY`/
+ * `VITE_DEPLOYMENT` locally. That single rule:
+ *   - keeps analytics off for any site whose `frontendConfig.posthogKey` is
+ *     blank or not `phc_`-prefixed (the default, until a site opts in),
+ *   - keeps it off if `/config.js` fails to load at all (window.__CONFIG__
+ *     stays undefined),
  *   - and keeps a developer who pastes a real key into `.env` from silently
  *     sending until they also set VITE_DEPLOYMENT, at which point their events
  *     are tagged and filterable rather than anonymous noise.
  */
 export function initAnalytics(): void {
     try {
-        const key = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
-        if (!key?.startsWith('phc_') || !import.meta.env.VITE_DEPLOYMENT) {
+        const key = window.__CONFIG__?.posthogKey;
+        if (!key?.startsWith('phc_') || !window.__CONFIG__?.deployment) {
             return;
         }
         posthog.init(key, {
-            api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+            api_host: window.__CONFIG__?.posthogHost,
             defaults: '2026-01-30',
             capture_exceptions: true,
             // Autocapture stays on for the ambient click signal, but its element
