@@ -3,11 +3,8 @@ on:
   push:
     branches:
       - main
-      - demov2
-      - stlouis
-      - maine
-      - alaska
-      - mocode
+    tags:
+      - 'v*'
 
 permissions:
   id-token: write
@@ -28,15 +25,23 @@ jobs:
 
       - id: check-changes
         run: |
-          BASE="${{ github.event.before }}"
-          echo "$BASE"
-          git fetch origin "$BASE"
           paths=("frontend/" "backend/" "provider-middleware/")
           changes=""
-          for path in "${paths[@]}"; do
-            count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
-            changes+="${path}:${count},"
-          done
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            # Release tags have no meaningful "before" commit to diff against —
+            # build and tag every image.
+            for path in "${paths[@]}"; do
+              changes+="${path}:1,"
+            done
+          else
+            BASE="${{ github.event.before }}"
+            echo "$BASE"
+            git fetch origin "$BASE"
+            for path in "${paths[@]}"; do
+              count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
+              changes+="${path}:${count},"
+            done
+          fi
           changes="${changes%,}"
           echo "changes=${changes}" >> $GITHUB_OUTPUT
 
@@ -66,18 +71,14 @@ jobs:
 
       - name: Set Image Version
         run: |
-          if [[ "${GITHUB_REF}" == "refs/heads/demov2" ]]; then
-            echo "IMAGE_VERSION=demo" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF}" == "refs/heads/stlouis" ]]; then
-            echo "IMAGE_VERSION=stlouis" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF}" == "refs/heads/maine" ]]; then
-            echo "IMAGE_VERSION=maine" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF}" == "refs/heads/alaska" ]]; then
-            echo "IMAGE_VERSION=alaska" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF}" == "refs/heads/mocode" ]]; then
-            echo "IMAGE_VERSION=mocode" >> $GITHUB_ENV
+          # main also gets :latest so the existing staging restart flow keeps working.
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            echo "IMAGE_VERSION=${TAG#v}" >> $GITHUB_ENV
+            echo "EXTRA_TAG=" >> $GITHUB_ENV
           else
-            echo "IMAGE_VERSION=latest" >> $GITHUB_ENV
+            echo "IMAGE_VERSION=sha-${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+            echo "EXTRA_TAG=latest" >> $GITHUB_ENV
           fi
 
       - name: Configure AWS credentials
@@ -112,17 +113,23 @@ jobs:
                   # Site name and PostHog key are read at runtime from each
                   # deployment's /config.js (EN-176) instead of baked in here —
                   # one image now works on every site.
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION} --push frontend/.
+                  TAGS=(-t "${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION}")
+                  [[ -n "$EXTRA_TAG" ]] && TAGS+=(-t "${{ steps.login-ecr.outputs.registry }}/frontend:${EXTRA_TAG}")
+                  docker buildx build --platform linux/amd64 "${TAGS[@]}" --push frontend/.
                   deployments+=("frontend")
                   ;;
                 "backend/")
                   echo "Building backend image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:${IMAGE_VERSION} --push -f backend/Dockerfile .
+                  TAGS=(-t "${{ steps.login-ecr.outputs.registry }}/unlockedv2:${IMAGE_VERSION}")
+                  [[ -n "$EXTRA_TAG" ]] && TAGS+=(-t "${{ steps.login-ecr.outputs.registry }}/unlockedv2:${EXTRA_TAG}")
+                  docker buildx build --platform linux/amd64 "${TAGS[@]}" --push -f backend/Dockerfile .
                   deployments+=("server")
                   ;;
                 "provider-middleware/")
                   echo "Building middleware image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION} --push -f provider-middleware/Dockerfile .
+                  TAGS=(-t "${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION}")
+                  [[ -n "$EXTRA_TAG" ]] && TAGS+=(-t "${{ steps.login-ecr.outputs.registry }}/provider_middleware:${EXTRA_TAG}")
+                  docker buildx build --platform linux/amd64 "${TAGS[@]}" --push -f provider-middleware/Dockerfile .
                   deployments+=("provider-service")
                   ;;
               esac
@@ -155,10 +162,8 @@ jobs:
 
           if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
             NAMESPACE="staging"
-          elif [[ "${GITHUB_REF}" == "refs/heads/demov2" ]]; then
-            NAMESPACE="demo"
           else
-            echo "Skipping deployment restarts for branch ${GITHUB_REF}"
+            echo "Skipping deployment restarts for ${GITHUB_REF}"
             exit 0
           fi
           # this command runs the rollout.sh executable file
