@@ -60,6 +60,8 @@ jobs:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: setup-env
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
     outputs:
       deployments: ${{ steps.build-images.outputs.deployments }}
     env:
