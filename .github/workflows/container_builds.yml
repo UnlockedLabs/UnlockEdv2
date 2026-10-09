@@ -14,36 +14,10 @@ jobs:
   setup-env:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     runs-on: ubuntu-latest
-    outputs:
-      changes: ${{ steps.check-changes.outputs.changes }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 3
-
-      - id: check-changes
-        run: |
-          paths=("frontend/" "backend/" "provider-middleware/")
-          changes=""
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            # Release tags have no meaningful "before" commit to diff against —
-            # build and tag every image.
-            for path in "${paths[@]}"; do
-              changes+="${path}:1,"
-            done
-          else
-            BASE="${{ github.event.before }}"
-            echo "$BASE"
-            git fetch origin "$BASE"
-            for path in "${paths[@]}"; do
-              count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
-              changes+="${path}:${count},"
-            done
-          fi
-          changes="${changes%,}"
-          echo "changes=${changes}" >> $GITHUB_OUTPUT
 
       - name: Check duplicate migration files
         run: |
@@ -62,10 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
+      queue: max
     outputs:
       deployments: ${{ steps.build-images.outputs.deployments }}
-    env:
-      CHANGES: ${{ needs.setup-env.outputs.changes }}
 
     steps:
       - name: Checkout code
@@ -76,6 +49,10 @@ jobs:
           # main also gets :latest so the existing staging restart flow keeps working.
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
+            if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::tag '$TAG' is not a vMAJOR.MINOR.PATCH release tag — refusing to build release images"
+              exit 1
+            fi
             echo "IMAGE_VERSION=${TAG#v}" >> $GITHUB_ENV
             echo "EXTRA_TAG=" >> $GITHUB_ENV
           else
@@ -99,45 +76,48 @@ jobs:
 
       - id: build-images
         run: |
-          echo "CHANGES: $CHANGES"
-          deployments=()
-          IFS=',' read -ra entries <<< "$CHANGES"
-          for entry in "${entries[@]}"; do
-            if [ -z "$entry" ]; then
-              continue
-            fi
-            path=$(echo "$entry" | cut -d':' -f1)
-            count=$(echo "$entry" | cut -d':' -f2)
-            if [[ $count -ne 0 ]]; then
-              case $path in
-                "frontend/")
-                  echo "Building frontend image"
-                  # Site name and PostHog key are read at runtime from each
-                  # deployment's /config.js (EN-176) instead of baked in here —
-                  # one image now works on every site.
-                  TAGS=(-t "${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION}")
-                  [[ -n "$EXTRA_TAG" ]] && TAGS+=(-t "${{ steps.login-ecr.outputs.registry }}/frontend:${EXTRA_TAG}")
-                  docker buildx build --platform linux/amd64 "${TAGS[@]}" --push frontend/.
-                  deployments+=("frontend")
-                  ;;
-                "backend/")
-                  echo "Building backend image"
-                  TAGS=(-t "${{ steps.login-ecr.outputs.registry }}/unlockedv2:${IMAGE_VERSION}")
-                  [[ -n "$EXTRA_TAG" ]] && TAGS+=(-t "${{ steps.login-ecr.outputs.registry }}/unlockedv2:${EXTRA_TAG}")
-                  docker buildx build --platform linux/amd64 "${TAGS[@]}" --push -f backend/Dockerfile .
-                  deployments+=("server")
-                  ;;
-                "provider-middleware/")
-                  echo "Building middleware image"
-                  TAGS=(-t "${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION}")
-                  [[ -n "$EXTRA_TAG" ]] && TAGS+=(-t "${{ steps.login-ecr.outputs.registry }}/provider_middleware:${EXTRA_TAG}")
-                  docker buildx build --platform linux/amd64 "${TAGS[@]}" --push -f provider-middleware/Dockerfile .
-                  deployments+=("provider-service")
-                  ;;
-              esac
-            fi
-          done
-          echo "deployments=${deployments[*]}" >> $GITHUB_OUTPUT
+          # Every push builds and tags all three images — a partial set (gated
+          # on which folder changed) can't be pinned per-site, can't tell you
+          # what staging actually tested, and drops a build's changes entirely
+          # if a later push's run replaces it in the concurrency queue.
+          REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          LABELS=(
+            --label "org.opencontainers.image.revision=$GITHUB_SHA"
+            --label "org.opencontainers.image.version=$IMAGE_VERSION"
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY"
+          )
+
+          echo "Building frontend image"
+          # Site name and PostHog key are read at runtime from each
+          # deployment's /config.js (EN-176) instead of baked in here —
+          # one image now works on every site.
+          TAGS=(-t "$REGISTRY/frontend:${IMAGE_VERSION}")
+          if [[ -n "$EXTRA_TAG" ]]; then
+            TAGS+=(-t "$REGISTRY/frontend:${EXTRA_TAG}")
+          fi
+          docker buildx build --platform linux/amd64 \
+            --cache-from type=gha,scope=frontend --cache-to type=gha,scope=frontend,mode=max \
+            "${LABELS[@]}" "${TAGS[@]}" --push frontend/.
+
+          echo "Building backend image"
+          TAGS=(-t "$REGISTRY/unlockedv2:${IMAGE_VERSION}")
+          if [[ -n "$EXTRA_TAG" ]]; then
+            TAGS+=(-t "$REGISTRY/unlockedv2:${EXTRA_TAG}")
+          fi
+          docker buildx build --platform linux/amd64 \
+            --cache-from type=gha,scope=backend --cache-to type=gha,scope=backend,mode=max \
+            "${LABELS[@]}" "${TAGS[@]}" --push -f backend/Dockerfile .
+
+          echo "Building middleware image"
+          TAGS=(-t "$REGISTRY/provider_middleware:${IMAGE_VERSION}")
+          if [[ -n "$EXTRA_TAG" ]]; then
+            TAGS+=(-t "$REGISTRY/provider_middleware:${EXTRA_TAG}")
+          fi
+          docker buildx build --platform linux/amd64 \
+            --cache-from type=gha,scope=middleware --cache-to type=gha,scope=middleware,mode=max \
+            "${LABELS[@]}" "${TAGS[@]}" --push -f provider-middleware/Dockerfile .
+
+          echo "deployments=frontend server provider-service" >> $GITHUB_OUTPUT
 
   restart-deployments:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
