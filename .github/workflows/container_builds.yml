@@ -74,6 +74,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Expose GitHub runtime for the build cache
+        uses: crazy-max/ghaction-github-runtime@v3
+
       - id: build-images
         run: |
           # Every push builds and tags all three images — a partial set (gated
