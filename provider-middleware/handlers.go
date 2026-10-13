@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-contracts/jobs"
 	"net/http"
 	"time"
 
@@ -29,19 +29,19 @@ func (sh *ServiceHandler) initSubscription() error {
 		topic string
 		fn    func(ctx context.Context, msg *nats.Msg)
 	}{
-		{models.GetCoursesJob.PubName(), sh.handleCourses},
-		{models.GetMilestonesJob.PubName(), sh.handleMilestonesForCourseUser},
-		{models.GetActivityJob.PubName(), sh.handleAcitivityForCourse},
-		{models.ScrapeKiwixJob.PubName(), sh.handleScrapeLibraries},
-		{models.AddVideosJob.PubName(), sh.handleAddVideos},
-		{models.RetryVideoDownloadsJob.PubName(), sh.handleRetryFailedVideos},
-		{models.RetryManualDownloadJob.PubName(), sh.handleManualRetryDownload},
-		{models.SyncVideoMetadataJob.PubName(), sh.handleSyncVideoMetadata},
-		{models.ActivateScheduledClassesJob.PubName(), sh.handleActivateScheduledClasses},
+		{jobs.GetCourses.PubName(), sh.handleCourses},
+		{jobs.GetMilestones.PubName(), sh.handleMilestonesForCourseUser},
+		{jobs.GetActivity.PubName(), sh.handleAcitivityForCourse},
+		{jobs.ScrapeKiwix.PubName(), sh.handleScrapeLibraries},
+		{jobs.AddVideos.PubName(), sh.handleAddVideos},
+		{jobs.RetryVideoDownloads.PubName(), sh.handleRetryFailedVideos},
+		{jobs.RetryManualDownload.PubName(), sh.handleManualRetryDownload},
+		{jobs.SyncVideoMetadata.PubName(), sh.handleSyncVideoMetadata},
+		{jobs.ActivateScheduledClasses.PubName(), sh.handleActivateScheduledClasses},
 	}
 	for _, sub := range subscriptions {
 		timeout := CANCEL_TIMEOUT
-		if sub.topic == models.RetryVideoDownloadsJob.PubName() {
+		if sub.topic == jobs.RetryVideoDownloads.PubName() {
 			timeout = VIDEO_CANCEL_TIMEOUT
 		}
 		_, err := sh.nats.QueueSubscribe(sub.topic, "middleware", func(msg *nats.Msg) {

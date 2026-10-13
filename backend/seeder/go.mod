@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/UnlockedLabs/unlocked-contracts v0.1.0 // indirect
 	github.com/adrg/strutil v0.3.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.14 // indirect

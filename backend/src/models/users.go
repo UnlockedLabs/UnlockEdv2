@@ -7,22 +7,23 @@ import (
 	"slices"
 	"time"
 
+	"github.com/UnlockedLabs/unlocked-contracts/users"
 	"gorm.io/gorm"
 )
 
-type UserRole string
+type UserRole = users.Role
 
 type contextKey string
 
 const (
 	UserIDKey       contextKey = "user_id"
-	SystemAdmin     UserRole   = "system_admin"
-	FacilityAdmin   UserRole   = "facility_admin"
-	DepartmentAdmin UserRole   = "department_admin"
-	Student         UserRole   = "student"
+	SystemAdmin                = users.SystemAdmin
+	FacilityAdmin              = users.FacilityAdmin
+	DepartmentAdmin            = users.DepartmentAdmin
+	Student                    = users.Student
 )
 
-var AdminRoles = []UserRole{SystemAdmin, FacilityAdmin, DepartmentAdmin}
+var AdminRoles = users.AdminRoles
 
 type DatabaseFields struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`

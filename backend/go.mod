@@ -27,6 +27,7 @@ require (
 )
 
 require (
+	github.com/UnlockedLabs/unlocked-contracts v0.1.0
 	github.com/adrg/strutil v0.3.1
 	github.com/xuri/excelize/v2 v2.11.0
 )

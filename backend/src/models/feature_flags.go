@@ -4,11 +4,12 @@ import (
 	"slices"
 	"time"
 
+	"github.com/UnlockedLabs/unlocked-contracts/features"
 	"gorm.io/gorm"
 )
 
 type (
-	FeatureAccess string
+	FeatureAccess = features.Access
 
 	FeatureFlags struct {
 		DatabaseFields
@@ -41,20 +42,20 @@ type (
 )
 
 const (
-	OpenContentAccess    FeatureAccess = "open_content"
-	ProviderAccess       FeatureAccess = "provider_platforms"
-	ProgramAccess        FeatureAccess = "program_management"
-	LearningRecordAccess FeatureAccess = "learning_record"
-	AiTutorAccess        FeatureAccess = "ai_tutor"
+	OpenContentAccess    = features.OpenContent
+	ProviderAccess       = features.ProviderPlatforms
+	ProgramAccess        = features.ProgramManagement
+	LearningRecordAccess = features.LearningRecord
+	AiTutorAccess        = features.AITutor
 
 	// these are the page/sub level features
-	RequestContentAccess   FeatureAccess = "request_content"
-	HelpfulLinksAccess     FeatureAccess = "helpful_links"
-	UploadVideoAccess      FeatureAccess = "upload_video"
-	ResidentProgramsAccess FeatureAccess = "resident_programs"
+	RequestContentAccess   = features.RequestContent
+	HelpfulLinksAccess     = features.HelpfulLinks
+	UploadVideoAccess      = features.UploadVideo
+	ResidentProgramsAccess = features.ResidentPrograms
 )
 
-var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, AiTutorAccess, RequestContentAccess, HelpfulLinksAccess, UploadVideoAccess, ResidentProgramsAccess}
+var AllFeatures = features.All
 
 // TopLevelFeatures are the features shown as their own card/pill on the Feature Control
 // page. Page-level (sub-)features are nested under their parent below.
