@@ -7,6 +7,8 @@ import globals from 'globals';
 
 // EN-201: one folder per frontend feature, each isolated from the others.
 // Shared code belongs in components/ or lib/, not in another feature's folder.
+// Adding a new src/features/<name>/ directory? Add its name here too, or the
+// cross-feature-import rule below silently won't cover it in either direction.
 const FEATURES = [
     'open-content',
     'provider-platforms',
