@@ -140,16 +140,20 @@ export function reportClientError(error: unknown, source: string): void {
  * router's generic errorElement can't tell that apart from a real crash, and
  * its only recovery link does a client-side nav that keeps the same stale
  * module graph in memory, so every other lazy route fails the same way for
- * the rest of the tab's life. A hard reload is the actual fix. Guarded to
- * fire once per tab session so a persistently broken chunk degrades to the
- * ordinary error page instead of reload-looping.
+ * the rest of the tab's life. A hard reload is the actual fix. Guarded by a
+ * timestamp rather than a one-time flag: a persistently broken chunk still
+ * degrades to the ordinary error page instead of reload-looping, but a tab
+ * left open across two separate deploys days apart can recover from both.
  */
+const CHUNK_RELOAD_GUARD_WINDOW_MS = 30_000;
+
 function installChunkLoadRecovery(): void {
     window.addEventListener('vite:preloadError', (event) => {
-        reportClientError(event, 'vite:preloadError');
-        const key = 'chunk-reload-attempted';
-        if (sessionStorage.getItem(key)) return;
-        sessionStorage.setItem(key, '1');
+        reportClientError(event.payload, 'vite:preloadError');
+        const key = 'chunk-reload-attempted-at';
+        const lastAttempt = Number(sessionStorage.getItem(key) ?? 0);
+        if (Date.now() - lastAttempt < CHUNK_RELOAD_GUARD_WINDOW_MS) return;
+        sessionStorage.setItem(key, String(Date.now()));
         window.location.reload();
     });
 }
