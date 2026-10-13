@@ -10,7 +10,7 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
             {
                 path: 'knowledge-center-management',
                 lazy: () =>
-                    import('@/features/open-content').then((m) => ({
+                    import('@/features/open-content/admin').then((m) => ({
                         Component: m.KnowledgeCenterManagement
                     })),
                 handle: { title: 'Knowledge Center' }
@@ -25,7 +25,7 @@ export const KnowledgeCenterRoutes: RouteObject = declareAuthenticatedRoutes(
         {
             path: 'knowledge-center',
             lazy: () =>
-                import('@/features/open-content').then((m) => ({
+                import('@/features/open-content/resident').then((m) => ({
                     Component: m.ResidentKnowledgeCenter
                 })),
             handle: { title: 'Knowledge Center' }
@@ -33,7 +33,7 @@ export const KnowledgeCenterRoutes: RouteObject = declareAuthenticatedRoutes(
         {
             path: 'viewer/libraries/:id',
             lazy: () =>
-                import('@/features/open-content').then((m) => ({
+                import('@/features/open-content/resident').then((m) => ({
                     Component: m.LibraryViewer
                 })),
             errorElement: <Error />
@@ -41,7 +41,7 @@ export const KnowledgeCenterRoutes: RouteObject = declareAuthenticatedRoutes(
         {
             path: 'viewer/videos/:id',
             lazy: () =>
-                import('@/features/open-content').then((m) => ({
+                import('@/features/open-content/resident').then((m) => ({
                     Component: m.VideoViewer
                 })),
             errorElement: <Error />
