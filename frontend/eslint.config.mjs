@@ -12,7 +12,8 @@ export default tseslint.config(
             'vite.config.ts',
             'postcss.config.cjs',
             'tailwind.config.cjs',
-            'dist/**'
+            'dist/**',
+            'public/**'
         ]
     },
     {
