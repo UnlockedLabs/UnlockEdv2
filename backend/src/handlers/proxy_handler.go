@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"crypto/tls"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"net/http/httputil"
 	"net/url"

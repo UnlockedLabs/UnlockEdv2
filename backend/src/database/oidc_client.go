@@ -1,6 +1,6 @@
 package database
 
-import "UnlockEdv2/src/models"
+import "github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 func (db *DB) GetClientForProvider(provID uint) (*models.OidcClient, error) {
 	client := models.OidcClient{}

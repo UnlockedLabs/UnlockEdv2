@@ -7,7 +7,7 @@ if ! command -v gh &> /dev/null; then
 fi
 
 PR_NUMBER="${1:?Usage: $0 <pr-number>}"
-REPO="UnlockedLabs/UnlockEdv2"
+REPO="UnlockedLabs/unlocked-core"
 WORKFLOW_NAME="migration_check.yml"
 
 echo "📦 Checking out PR #$PR_NUMBER..."

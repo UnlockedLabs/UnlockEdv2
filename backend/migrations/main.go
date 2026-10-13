@@ -1,12 +1,12 @@
 package main
 
 import (
-	"UnlockEdv2/src/database"
 	"context"
 	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"log"
 	"os"
 

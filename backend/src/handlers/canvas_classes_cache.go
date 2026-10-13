@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"time"
 
 	log "github.com/sirupsen/logrus"

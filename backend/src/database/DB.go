@@ -1,11 +1,11 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"os"
 	"strconv"
 	"sync"

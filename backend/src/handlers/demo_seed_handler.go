@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"net/http"
 )
 

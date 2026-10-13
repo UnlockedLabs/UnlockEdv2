@@ -1,12 +1,12 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"log"
 	"mime/multipart"
 	"net/http"

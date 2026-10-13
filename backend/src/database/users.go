@@ -1,10 +1,10 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"slices"
 	"strconv"
 	"strings"

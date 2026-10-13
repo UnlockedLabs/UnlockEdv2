@@ -13,6 +13,14 @@ jobs:
         with:
           go-version: "1.26.6"
 
+      - name: Build every module without go.work
+        env:
+          GOWORK: "off"
+        run: |
+          for m in backend backend/migrations backend/seeder provider-middleware; do
+            (cd "$m" && go build -o /dev/null ./...)
+          done
+
       - name: Test
         run: |
           cd backend

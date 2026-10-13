@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"UnlockEdv2/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 )
 
 func TestSanitizeFilename(t *testing.T) {

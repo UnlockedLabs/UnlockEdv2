@@ -1,12 +1,12 @@
 package integration
 
 import (
-	"UnlockEdv2/src"
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/handlers"
-	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"log"
 	"net"
 	"net/http/httptest"

@@ -1,8 +1,8 @@
 package main
 
 import (
-	server "UnlockEdv2/src/handlers"
 	"context"
+	server "github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"os"
 	"os/signal"
 	"syscall"

@@ -1,8 +1,8 @@
 package tasks
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"slices"
 
 	"github.com/nats-io/nats.go"

@@ -1,12 +1,12 @@
 package jasper
 
 import (
-	"UnlockEdv2/src"
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"os"
 	"os/exec"
 	"path/filepath"

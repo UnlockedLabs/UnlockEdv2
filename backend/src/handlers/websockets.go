@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
 	"context"
 	"encoding/json"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"net/http"
 	"sync"
 	"time"

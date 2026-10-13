@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"UnlockEdv2/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func TestAuditFieldPopulation(t *testing.T) {

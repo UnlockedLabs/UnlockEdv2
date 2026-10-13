@@ -1,9 +1,9 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"time"
 
 	log "github.com/sirupsen/logrus"

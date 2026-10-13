@@ -1,8 +1,8 @@
 package integration
 
 import (
-	"UnlockEdv2/src/models"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"testing"
 	"time"
 

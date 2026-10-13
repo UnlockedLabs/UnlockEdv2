@@ -1,7 +1,7 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"time"
 
 	log "github.com/sirupsen/logrus"

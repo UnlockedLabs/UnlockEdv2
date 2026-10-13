@@ -1,10 +1,10 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"time"
 
 	"github.com/nats-io/nats.go"

@@ -1,10 +1,10 @@
 package src
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"io"
 	"strings"
 )

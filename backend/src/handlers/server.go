@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	database "UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
-	"UnlockEdv2/src/tasks"
 	"context"
 	"encoding/json"
+	database "github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 	"net/http"
 	"os"
 	"reflect"

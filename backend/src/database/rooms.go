@@ -1,9 +1,9 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"errors"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"sort"
 	"time"
 

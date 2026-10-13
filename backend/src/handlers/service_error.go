@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
 	"errors"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"net/http"
 )
 

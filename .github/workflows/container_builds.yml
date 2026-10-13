@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   setup-env:
-    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
+    if: github.repository == 'UnlockedLabs/unlocked-core' || github.repository == 'PThorpe92/UnlockEdv2'
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +31,7 @@ jobs:
           fi
 
   build-and-push:
-    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
+    if: github.repository == 'UnlockedLabs/unlocked-core' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: setup-env
     runs-on: ubuntu-latest
     concurrency:
@@ -123,7 +123,7 @@ jobs:
           echo "deployments=frontend server provider-service" >> $GITHUB_OUTPUT
 
   restart-deployments:
-    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
+    if: github.repository == 'UnlockedLabs/unlocked-core' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: build-and-push
     runs-on: ubuntu-latest
 

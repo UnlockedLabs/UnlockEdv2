@@ -1,8 +1,8 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (db *DB) GetRunnableTask(ctx context.Context, jobType models.JobType) (*models.RunnableTask, error) {

@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"net/url"
 	"strconv"

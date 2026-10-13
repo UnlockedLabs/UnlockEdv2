@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

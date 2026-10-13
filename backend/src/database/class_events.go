@@ -1,10 +1,10 @@
 package database
 
 import (
-	"UnlockEdv2/src"
-	"UnlockEdv2/src/models"
 	"cmp"
 	"errors"
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"regexp"
 	"slices"
 	"sort"

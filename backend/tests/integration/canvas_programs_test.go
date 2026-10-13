@@ -1,7 +1,7 @@
 package integration
 
 import (
-	"UnlockEdv2/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"testing"
 )
 

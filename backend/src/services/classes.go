@@ -1,9 +1,9 @@
 package services
 
 import (
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"sort"
 	"strings"
 	"time"

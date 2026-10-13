@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/jasper"
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/jasper"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"strings"
 	"time"

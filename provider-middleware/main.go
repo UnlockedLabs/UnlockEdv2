@@ -1,9 +1,9 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"os"
 	"sync"

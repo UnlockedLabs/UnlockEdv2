@@ -1,7 +1,7 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (db *DB) GetClassDashboardMetrics(ctx *models.QueryContext, facilityID *uint) (models.ClassDashboardMetrics, error) {

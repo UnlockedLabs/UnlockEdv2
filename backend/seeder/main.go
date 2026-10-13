@@ -1,11 +1,11 @@
 package main
 
 import (
-	"UnlockEdv2/src/handlers"
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"log"
 	"math/rand"
 	"os"

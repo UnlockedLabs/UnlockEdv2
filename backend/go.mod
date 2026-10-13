@@ -1,4 +1,4 @@
-module UnlockEdv2
+module github.com/UnlockedLabs/unlocked-core/backend
 
 go 1.26.6
 
