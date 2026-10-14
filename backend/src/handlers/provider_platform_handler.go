@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"golang.org/x/oauth2"
 )

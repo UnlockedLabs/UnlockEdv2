@@ -1,10 +1,11 @@
 package database
 
 import (
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"math/rand"
 	"slices"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/google/uuid"
 	// "github.com/sirupsen/logrus"

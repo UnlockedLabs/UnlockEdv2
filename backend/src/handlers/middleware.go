@@ -6,14 +6,15 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"os"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 )

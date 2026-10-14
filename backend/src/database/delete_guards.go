@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 

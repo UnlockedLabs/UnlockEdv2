@@ -3,10 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 var (

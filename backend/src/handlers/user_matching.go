@@ -3,13 +3,14 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"github.com/UnlockedLabs/unlocked-core/backend/src"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/adrg/strutil"
 	"github.com/adrg/strutil/metrics"

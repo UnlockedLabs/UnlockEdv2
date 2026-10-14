@@ -3,9 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	database "github.com/UnlockedLabs/unlocked-core/backend/src/database"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 	"net/http"
 	"os"
 	"reflect"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	database "github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"

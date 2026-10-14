@@ -2,11 +2,12 @@ package integration
 
 import (
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
-	"net/http"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 )

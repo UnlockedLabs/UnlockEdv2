@@ -2,10 +2,11 @@ package database
 
 import (
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"math"
 	"sort"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 // REMOVE ME

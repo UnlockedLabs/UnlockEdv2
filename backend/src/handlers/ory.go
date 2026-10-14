@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"os"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	client "github.com/ory/kratos-client-go"
 

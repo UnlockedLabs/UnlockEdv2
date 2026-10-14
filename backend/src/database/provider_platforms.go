@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+
 	"github.com/UnlockedLabs/unlocked-core/backend/src"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 

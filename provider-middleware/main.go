@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"

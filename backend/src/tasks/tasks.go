@@ -2,8 +2,9 @@ package tasks
 
 import (
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/nats-io/nats.go"

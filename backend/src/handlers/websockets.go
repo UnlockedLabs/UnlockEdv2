@@ -3,10 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 
 	"github.com/coder/websocket"
 	log "github.com/sirupsen/logrus"

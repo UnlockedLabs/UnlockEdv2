@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 	"unicode"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/glebarez/sqlite"
 	"github.com/go-playground/validator/v10"

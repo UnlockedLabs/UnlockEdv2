@@ -1,8 +1,9 @@
 package integration
 
 import (
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"testing"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/require"
 )

@@ -3,12 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/teambition/rrule-go"
 )

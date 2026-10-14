@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"math"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 var rosterStatusFilterMap = map[string]string{

@@ -4,9 +4,10 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"io"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 // oncreate gorm function

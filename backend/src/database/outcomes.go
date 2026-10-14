@@ -1,8 +1,9 @@
 package database
 
 import (
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"slices"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (db *DB) GetOutcomesForUser(args *models.QueryContext, outcomeType models.OutcomeType) ([]models.Outcome, error) {

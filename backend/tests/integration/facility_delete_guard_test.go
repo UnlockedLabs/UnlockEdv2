@@ -2,11 +2,12 @@ package integration
 
 import (
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/suite"
 )

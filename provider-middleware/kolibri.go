@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"

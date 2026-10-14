@@ -1,9 +1,10 @@
 package integration
 
 import (
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"testing"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func TestAttendanceReportToCSV(t *testing.T) {

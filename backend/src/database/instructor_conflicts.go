@@ -2,9 +2,10 @@ package database
 
 import (
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"sort"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"

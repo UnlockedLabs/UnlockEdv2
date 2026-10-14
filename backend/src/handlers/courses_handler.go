@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"strconv"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (srv *Server) registerCoursesRoutes() []routeDef {

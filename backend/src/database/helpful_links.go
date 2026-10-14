@@ -2,8 +2,9 @@ package database
 
 import (
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 type HelpfulLinkResp struct {

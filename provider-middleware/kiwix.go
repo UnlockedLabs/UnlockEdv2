@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"gorm.io/gorm"
 )

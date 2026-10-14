@@ -6,9 +6,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"log"
 	"os"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"

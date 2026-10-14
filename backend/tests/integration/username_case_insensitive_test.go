@@ -2,8 +2,9 @@ package integration
 
 import (
 	"errors"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"testing"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"

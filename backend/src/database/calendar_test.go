@@ -1,9 +1,10 @@
 package database
 
 import (
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"testing"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/teambition/rrule-go"

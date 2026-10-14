@@ -2,10 +2,11 @@ package integration
 
 import (
 	"encoding/json"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"testing"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/require"
 )

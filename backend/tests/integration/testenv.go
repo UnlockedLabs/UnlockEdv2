@@ -3,15 +3,16 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"log"
 	"net"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 type TestEnv struct {

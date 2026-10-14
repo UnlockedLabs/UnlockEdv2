@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 // A live provider is one whose courses are read over HTTP on request and projected

@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/UnlockedLabs/unlocked-contracts/jobs"
 	"net/http"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-contracts/jobs"
 
 	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"

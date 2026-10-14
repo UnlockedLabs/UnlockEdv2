@@ -1,8 +1,9 @@
 package integration
 
 import (
-	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"testing"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 )
 
 func TestNextPageURL(t *testing.T) {

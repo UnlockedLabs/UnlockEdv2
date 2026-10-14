@@ -3,9 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"math"
+
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
-	"math"
 )
 
 type UsersService struct {

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"html"
 	"io"
 	"mime/multipart"
@@ -13,6 +12,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 type Feed struct {

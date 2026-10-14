@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	server "github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"os"
 	"os/signal"
 	"syscall"
+
+	server "github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"

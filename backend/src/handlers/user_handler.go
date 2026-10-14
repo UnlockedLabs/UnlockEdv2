@@ -6,12 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/jasper"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"slices"
@@ -20,6 +14,13 @@ import (
 	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/jasper"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
+	log "github.com/sirupsen/logrus"
 )
 
 // maxDocIDLen matches the users.doc_id column (VARCHAR(32), migration 00042).

@@ -3,8 +3,9 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"net/http"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 )
 
 type serviceError struct {

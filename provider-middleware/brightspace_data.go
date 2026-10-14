@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/gocarina/gocsv"
 	"github.com/microcosm-cc/bluemonday"

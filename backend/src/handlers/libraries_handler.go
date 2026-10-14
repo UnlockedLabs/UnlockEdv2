@@ -5,8 +5,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,6 +12,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
 )
 
 func (srv *Server) registerLibraryRoutes() []routeDef {
