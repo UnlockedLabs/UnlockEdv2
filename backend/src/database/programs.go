@@ -1,12 +1,13 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

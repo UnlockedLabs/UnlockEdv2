@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"

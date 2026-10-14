@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"

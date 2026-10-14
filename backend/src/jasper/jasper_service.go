@@ -1,9 +1,6 @@
 package jasper
 
 import (
-	"UnlockEdv2/src"
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -12,6 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/evertonvps/go-jasper"
 	"github.com/google/uuid"

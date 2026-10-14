@@ -1,9 +1,6 @@
 package handlers
 
 import (
-	database "UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
-	"UnlockEdv2/src/tasks"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	database "github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"

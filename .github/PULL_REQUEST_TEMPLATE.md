@@ -29,4 +29,4 @@ Please include additional context or information that the reviewer needs to unde
 - What areas to focus on
 - What decisions were considered and decided against.
 
-If any core features or components were removed with this PR, please note them here so that they can be added to the wiki (see [Deprecated features and Components](https://github.com/UnlockedLabs/UnlockEdv2/wiki/Deprecated-Features-and-Components)).
+If any core features or components were removed with this PR, please note them here so that they can be added to the wiki (see [Deprecated features and Components](https://github.com/UnlockedLabs/unlocked-core/wiki/Deprecated-Features-and-Components)).

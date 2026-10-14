@@ -5,6 +5,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/UnlockedLabs/unlocked-contracts/jobs"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -19,7 +20,7 @@ type (
 
 		Tasks []RunnableTask `gorm:"foreignKey:JobID;references:ID" json:"-"`
 	}
-	JobType   string
+	JobType   = jobs.Type
 	JobStatus string
 )
 
@@ -89,16 +90,16 @@ const (
 	OpenContentJob      = 2
 	SystemJob           = 3
 
-	GetMilestonesJob JobType = "get_milestones"
-	GetCoursesJob    JobType = "get_courses"
-	GetActivityJob   JobType = "get_activity"
+	GetMilestonesJob = jobs.GetMilestones
+	GetCoursesJob    = jobs.GetCourses
+	GetActivityJob   = jobs.GetActivity
 
-	ScrapeKiwixJob              JobType   = "scrape_kiwix"
-	RetryVideoDownloadsJob      JobType   = "retry_video_downloads"
-	RetryManualDownloadJob      JobType   = "retry_manual_download"
-	SyncVideoMetadataJob        JobType   = "sync_video_metadata"
-	AddVideosJob                JobType   = "add_videos"
-	ActivateScheduledClassesJob JobType   = "activate_scheduled_classes"
+	ScrapeKiwixJob                        = jobs.ScrapeKiwix
+	RetryVideoDownloadsJob                = jobs.RetryVideoDownloads
+	RetryManualDownloadJob                = jobs.RetryManualDownload
+	SyncVideoMetadataJob                  = jobs.SyncVideoMetadata
+	AddVideosJob                          = jobs.AddVideos
+	ActivateScheduledClassesJob           = jobs.ActivateScheduledClasses
 	EveryDaytimeHour            string    = "0 6-20 * * *"
 	EverySundayAt8PM            string    = "0 20 * * 6"
 	EveryMorningAt5AM           string    = "0 5 * * *"
@@ -109,23 +110,3 @@ const (
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
 var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
 var AllSystemJobs = []JobType{ActivateScheduledClassesJob}
-
-func (jt JobType) IsVideoJob() bool {
-	switch jt {
-	case RetryVideoDownloadsJob, SyncVideoMetadataJob:
-		return true
-	}
-	return false
-}
-
-func (jt JobType) IsLibraryJob() bool {
-	switch jt {
-	case ScrapeKiwixJob:
-		return true
-	}
-	return false
-}
-
-func (jt JobType) PubName() string {
-	return "tasks." + string(jt)
-}

@@ -1,9 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
-	"UnlockEdv2/src/services"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,6 +12,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
 
 	log "github.com/sirupsen/logrus"
 )

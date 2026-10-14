@@ -1,7 +1,6 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"

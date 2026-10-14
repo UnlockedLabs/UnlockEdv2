@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 )

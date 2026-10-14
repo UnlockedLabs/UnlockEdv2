@@ -1,11 +1,12 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"errors"
 	"fmt"
 	"sort"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"

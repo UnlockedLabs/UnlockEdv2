@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"UnlockEdv2/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/require"
 )

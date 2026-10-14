@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,6 +9,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"golang.org/x/oauth2"
 )

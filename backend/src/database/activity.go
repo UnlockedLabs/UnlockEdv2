@@ -1,11 +1,12 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"fmt"
 	"math"
 	"sort"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 // REMOVE ME

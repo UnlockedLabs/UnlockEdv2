@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	"UnlockEdv2/src"
-	"UnlockEdv2/src/models"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 )

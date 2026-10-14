@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src"
-	"UnlockEdv2/src/models"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -12,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (srv *Server) registerProgramsRoutes() []routeDef {

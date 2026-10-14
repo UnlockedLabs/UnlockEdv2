@@ -1,11 +1,12 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"fmt"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 type UserCatalogJoin struct {

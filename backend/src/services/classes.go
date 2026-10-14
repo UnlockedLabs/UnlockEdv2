@@ -1,12 +1,13 @@
 package services
 
 import (
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/teambition/rrule-go"
 )

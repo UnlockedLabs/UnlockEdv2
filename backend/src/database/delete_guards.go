@@ -1,8 +1,9 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"database/sql"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 // ClassBlockingChildren counts every type of child record attached to a class

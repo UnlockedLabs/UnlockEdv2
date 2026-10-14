@@ -1,12 +1,13 @@
 package src
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 // oncreate gorm function

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"archive/zip"
 	"bytes"
 	"encoding/json"
@@ -12,6 +11,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/gocarina/gocsv"
 	"github.com/microcosm-cc/bluemonday"

@@ -1,11 +1,12 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"fmt"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"context"
 

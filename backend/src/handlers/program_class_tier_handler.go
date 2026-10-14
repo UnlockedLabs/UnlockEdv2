@@ -1,12 +1,13 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 var (

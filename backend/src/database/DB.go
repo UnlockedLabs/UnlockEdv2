@@ -1,7 +1,6 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -11,6 +10,8 @@ import (
 	"sync"
 	"time"
 	"unicode"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/glebarez/sqlite"
 	"github.com/go-playground/validator/v10"

@@ -1,11 +1,12 @@
 package integration
 
 import (
-	"UnlockEdv2/src/models"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/require"
 )

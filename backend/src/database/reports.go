@@ -1,11 +1,12 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 var rosterStatusFilterMap = map[string]string{

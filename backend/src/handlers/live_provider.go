@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src"
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,6 +8,9 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 // A live provider is one whose courses are read over HTTP on request and projected

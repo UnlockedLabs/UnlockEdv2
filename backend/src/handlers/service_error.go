@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 )
 
 type serviceError struct {

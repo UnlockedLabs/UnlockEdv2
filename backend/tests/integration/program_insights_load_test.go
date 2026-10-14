@@ -1,11 +1,12 @@
 package integration
 
 import (
-	"UnlockEdv2/src/handlers"
-	"UnlockEdv2/src/models"
 	"net/http"
 	"strconv"
 	"testing"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/require"
 )

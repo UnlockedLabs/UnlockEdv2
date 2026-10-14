@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -9,6 +8,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/assert"
 )

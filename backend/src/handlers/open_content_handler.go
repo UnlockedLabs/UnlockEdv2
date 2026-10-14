@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
 	"html"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (srv *Server) registerOpenContentRoutes() []routeDef {

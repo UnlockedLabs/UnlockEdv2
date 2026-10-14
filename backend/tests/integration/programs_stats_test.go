@@ -1,11 +1,12 @@
 package integration
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

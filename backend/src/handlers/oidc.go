@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (srv *Server) registerOidcRoutes() []routeDef {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"UnlockEdv2/src/database"
 	"context"
 	"database/sql"
 	"errors"
@@ -9,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"

@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (srv *Server) registerLearningRecordRoutes() []routeDef {

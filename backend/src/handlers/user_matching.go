@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src"
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -10,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/adrg/strutil"
 	"github.com/adrg/strutil/metrics"

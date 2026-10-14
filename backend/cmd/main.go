@@ -1,11 +1,12 @@
 package main
 
 import (
-	server "UnlockEdv2/src/handlers"
 	"context"
 	"os"
 	"os/signal"
 	"syscall"
+
+	server "github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"

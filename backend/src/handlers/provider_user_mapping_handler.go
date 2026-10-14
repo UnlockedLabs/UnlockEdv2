@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (srv *Server) registerProviderMappingRoutes() []routeDef {

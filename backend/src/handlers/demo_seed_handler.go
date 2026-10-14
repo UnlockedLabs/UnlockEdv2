@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
 	"net/http"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 )
 
 func (srv *Server) registerDemoSeedRoutes() []routeDef {

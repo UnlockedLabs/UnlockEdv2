@@ -1,8 +1,9 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"fmt"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"

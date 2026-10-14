@@ -1,8 +1,6 @@
 package main
 
 import (
-	"UnlockEdv2/src/handlers"
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"

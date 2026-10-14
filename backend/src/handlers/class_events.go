@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
-	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
 )
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {

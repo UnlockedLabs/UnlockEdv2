@@ -1,7 +1,6 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -16,6 +15,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"

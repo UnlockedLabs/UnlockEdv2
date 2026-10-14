@@ -1,15 +1,16 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
-	"UnlockEdv2/src/services"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"slices"
 	"strconv"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
 
 	logrus "github.com/sirupsen/logrus"
 )

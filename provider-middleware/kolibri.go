@@ -1,13 +1,14 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"

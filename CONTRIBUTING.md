@@ -14,7 +14,7 @@ There are many ways you can contribute to UnlockEdv2:
 
 ## Code of Conduct
 
-We hope that all contributors introduce themselves in the [Discussions](https://github.com/UnlockedLabs/UnlockEdv2/discussions) section, as we would love to know who is interested in joining our community.We also ask that all community members and contributors keep an open mind and respect the input, perspectives and contributions of others in the community. We are dedicated to providing a welcoming and inclusive environment for all, and we ask that you do the same. Please have a look at our mission statement on our [Website](https://www.unlockedlabs.org/mission).
+We hope that all contributors introduce themselves in the [Discussions](https://github.com/UnlockedLabs/unlocked-core/discussions) section, as we would love to know who is interested in joining our community.We also ask that all community members and contributors keep an open mind and respect the input, perspectives and contributions of others in the community. We are dedicated to providing a welcoming and inclusive environment for all, and we ask that you do the same. Please have a look at our mission statement on our [Website](https://www.unlockedlabs.org/mission).
 
 ## How to Contribute
 
@@ -102,4 +102,4 @@ This is made much more simple if you focus on issues marked `good first issue` o
 
 ## Contact
 
-If you have any questions or need further assistance, please feel free to contact the project maintainers by opening a [Discussion](https://github.com/UnlockedLabs/UnlockEdv2/discussions). Or by visiting our [Website](https://www.unlockedlabs.org/contact).
+If you have any questions or need further assistance, please feel free to contact the project maintainers by opening a [Discussion](https://github.com/UnlockedLabs/unlocked-core/discussions). Or by visiting our [Website](https://www.unlockedlabs.org/contact).

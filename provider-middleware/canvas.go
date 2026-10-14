@@ -1,7 +1,6 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 )

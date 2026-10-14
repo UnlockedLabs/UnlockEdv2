@@ -1,13 +1,14 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"gorm.io/gorm"
 )

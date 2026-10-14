@@ -1,9 +1,10 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"sort"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"gorm.io/gorm"
 )

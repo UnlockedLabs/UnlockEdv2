@@ -1,13 +1,14 @@
 package src
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 )

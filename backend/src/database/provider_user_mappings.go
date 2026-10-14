@@ -1,8 +1,9 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"gorm.io/gorm"
 )

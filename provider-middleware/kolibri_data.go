@@ -1,7 +1,6 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -13,6 +12,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 type KolibriResponse[T any] struct {

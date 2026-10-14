@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/jasper"
-	"UnlockEdv2/src/models"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -11,6 +9,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/jasper"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"

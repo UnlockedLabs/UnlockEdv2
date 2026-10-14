@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	client "github.com/ory/kratos-client-go"
 

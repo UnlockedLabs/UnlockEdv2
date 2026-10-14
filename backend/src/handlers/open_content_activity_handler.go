@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"net/http"
 	"strconv"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 )
 
 func (srv *Server) registerOpenContentActivityRoutes() []routeDef {

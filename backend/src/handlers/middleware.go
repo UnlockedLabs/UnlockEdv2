@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"context"
 	"crypto/rand"
 	"crypto/subtle"
@@ -14,6 +12,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 )
