@@ -9,6 +9,7 @@ import {
     getProgramTitle
 } from '@/loaders/routeLoaders';
 import Error from '@/pages/Error';
+import Schedule from '@/pages/Schedule';
 
 export const ProgramRoutes = declareAuthenticatedRoutes(
     [
@@ -157,11 +158,11 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
                     // Schedule.tsx isn't owned by programs — app-routes.tsx also
                     // renders it eagerly for the core /schedule admin route, so it
                     // stays out of the programs barrel until that ownership question
-                    // is settled.
-                    lazy: () =>
-                        import('@/pages/Schedule').then((m) => ({
-                            Component: m.default
-                        })),
+                    // is settled. Kept as a plain element rather than lazy: it's
+                    // already statically imported by app-routes.tsx, so a dynamic
+                    // import here can't split it into its own chunk anyway (Vite
+                    // warns on exactly this at build time).
+                    element: <Schedule />,
                     handle: {
                         title: (data: TitleHandler) => data.title
                     }
