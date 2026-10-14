@@ -12,8 +12,24 @@ linters:
       # everything outside core is allowed (standard library, third-party,
       # unlocked-contracts), all of core is denied, and the allow list is the
       # only exceptions: the module seam, the module's own packages and other
-      # modules' api packages. Add a rule here for every new module.
+      # modules' api packages. Add a rule here for every new module, and add
+      # its api package to the core rule.
       rules:
+        # Core asks a module through its api package and never reaches into
+        # its internals (EN-186: ask, don't reach in).
+        core:
+          list-mode: lax
+          files: ["$all", "!**/src/modules/**"]
+          deny:
+            - pkg: github.com/UnlockedLabs/unlocked-core/backend/src/modules/
+              desc: core asks a feature module through its api package, never its internals (EN-186)
+          allow:
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/module
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/programs/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/learningrecord/api
         opencontent:
           list-mode: lax
           files: ["**/src/modules/opencontent/**"]
