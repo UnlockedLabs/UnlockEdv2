@@ -1,4 +1,5 @@
 // @ts-check
+import { readdirSync } from 'node:fs';
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -7,15 +8,13 @@ import globals from 'globals';
 
 // EN-201: one folder per frontend feature, each isolated from the others.
 // Shared code belongs in components/ or lib/, not in another feature's folder.
-// Adding a new src/features/<name>/ directory? Add its name here too, or the
-// cross-feature-import rule below silently won't cover it in either direction.
-const FEATURES = [
-    'open-content',
-    'provider-platforms',
-    'programs',
-    'learning-record',
-    'ai-tutor'
-];
+// Read from the filesystem so adding a feature folder doesn't also require
+// remembering to list it here.
+const FEATURES = readdirSync(new URL('./src/features', import.meta.url), {
+    withFileTypes: true
+})
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
 
 export default tseslint.config(
     {
@@ -68,10 +67,10 @@ export default tseslint.config(
                 {
                     patterns: FEATURES.filter((other) => other !== feature).map(
                         (other) => ({
-                            group: [
-                                `@/features/${other}`,
-                                `@/features/${other}/*`
-                            ],
+                            // Matches both the @/ alias and any relative escape
+                            // (../, ../../features/, etc.) into another feature,
+                            // so leaving the alias path doesn't bypass the rule.
+                            regex: `^(@/features/|(\\.\\./)+(features/)?)${other}(/|$)`,
                             message:
                                 'Features may not import from other features directly. Share code through components/ or lib/ instead.'
                         })
