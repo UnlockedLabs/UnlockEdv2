@@ -1,0 +1,64 @@
+version: "2"
+
+# golangci-lint's standard linters (what CI ran before this file existed) plus
+# depguard for the feature-module boundaries (EN-190).
+linters:
+  default: standard
+  enable:
+    - depguard
+  settings:
+    depguard:
+      # One rule per feature module in src/modules (EN-186, EN-188). Lax mode:
+      # everything outside core is allowed (standard library, third-party,
+      # unlocked-contracts), all of core is denied, and the allow list is the
+      # only exceptions: the module seam, the module's own packages and other
+      # modules' api packages. Add a rule here for every new module.
+      rules:
+        opencontent:
+          list-mode: lax
+          files: ["**/src/modules/opencontent/**"]
+          deny:
+            - pkg: github.com/UnlockedLabs/unlocked-core/backend
+              desc: a feature module reaches core only through src/modules/module and unlocked-contracts, and other modules only through their api package (EN-186, EN-188)
+          allow:
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/module
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/programs/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/learningrecord/api
+        providerplatforms:
+          list-mode: lax
+          files: ["**/src/modules/providerplatforms/**"]
+          deny:
+            - pkg: github.com/UnlockedLabs/unlocked-core/backend
+              desc: a feature module reaches core only through src/modules/module and unlocked-contracts, and other modules only through their api package (EN-186, EN-188)
+          allow:
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/module
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/programs/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/learningrecord/api
+        programs:
+          list-mode: lax
+          files: ["**/src/modules/programs/**"]
+          deny:
+            - pkg: github.com/UnlockedLabs/unlocked-core/backend
+              desc: a feature module reaches core only through src/modules/module and unlocked-contracts, and other modules only through their api package (EN-186, EN-188)
+          allow:
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/module
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/programs
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/learningrecord/api
+        learningrecord:
+          list-mode: lax
+          files: ["**/src/modules/learningrecord/**"]
+          deny:
+            - pkg: github.com/UnlockedLabs/unlocked-core/backend
+              desc: a feature module reaches core only through src/modules/module and unlocked-contracts, and other modules only through their api package (EN-186, EN-188)
+          allow:
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/module
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/learningrecord
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/programs/api
