@@ -14,6 +14,8 @@ import (
 
 	database "github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -44,6 +46,7 @@ type Server struct {
 	wsClient       *ClientManager
 	scheduler      *tasks.Scheduler
 	canvasInflight sync.Map
+	modules        []module.Module
 }
 
 type routeDef struct {
@@ -119,6 +122,7 @@ func (srv *Server) RegisterRoutes() {
 	} {
 		srv.register(route)
 	}
+	srv.registerModuleRoutes()
 }
 
 func init() {
@@ -199,6 +203,10 @@ func newServer(ctx context.Context) *Server {
 		Client:    &http.Client{},
 		nats:      conn,
 		dev:       dev,
+		modules:   registry.All(),
+	}
+	if err := server.migrateModules(ctx); err != nil {
+		log.Fatalf("Module migrations failed: %v", err)
 	}
 	features, err := server.Db.GetFeatureAccess()
 	if err != nil {
@@ -216,6 +224,7 @@ func newServer(ctx context.Context) *Server {
 	}
 	server.wsClient = newClientManager()
 	server.scheduler = tasks.InitScheduling(dev, server.nats, server.Db.DB)
+	server.registerModuleJobs()
 	return &server
 }
 
@@ -243,6 +252,7 @@ func newTestingServer() *Server {
 		Client:      nil,
 		features:    features,
 		testingMode: true,
+		modules:     registry.All(),
 	}
 }
 
