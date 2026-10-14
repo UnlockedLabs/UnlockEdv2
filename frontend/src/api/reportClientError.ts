@@ -127,8 +127,10 @@ export function reportClientError(error: unknown, source: string): void {
             user_agent: clamp(navigator.userAgent ?? '', FIELD_MAX)
         };
         // API.post resolves rather than throwing on any status, so nothing here can
-        // turn a report into a second failure.
-        void API.post<null, ClientErrorReport>('client-errors', report);
+        // turn a report into a second failure. keepalive lets the request survive a
+        // navigation/reload that starts right after this fires — notably
+        // installChunkLoadRecovery's own reload, which would otherwise race it.
+        void API.post<null, ClientErrorReport>('client-errors', report, true);
     } catch {
         /* reporting must never be the thing that breaks the page */
     }

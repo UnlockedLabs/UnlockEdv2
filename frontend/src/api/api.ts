@@ -14,7 +14,8 @@ class API {
     private static async fetchWithHandling<T>(
         method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
         url: string,
-        body?: unknown
+        body?: unknown,
+        keepalive?: boolean
     ): Promise<ServerResponse<T>> {
         try {
             const isFormData = body instanceof FormData;
@@ -40,7 +41,11 @@ class API {
                         ? body
                         : JSON.stringify(body)
                     : undefined,
-                signal: controller.signal
+                signal: controller.signal,
+                // Lets this one request survive a reload/navigation that starts
+                // right after it's sent — see reportClientError's chunk-reload
+                // call site, the only caller that passes this.
+                keepalive
             });
             clearTimeout(timeout);
             if (resp.status === 204 || resp.status === 205) {
@@ -166,8 +171,12 @@ class API {
         return API.fetchWithHandling<T>('GET', url);
     }
 
-    public static post<T, D>(url: string, data: D): Promise<ServerResponse<T>> {
-        return API.fetchWithHandling<T>('POST', url, data);
+    public static post<T, D>(
+        url: string,
+        data: D,
+        keepalive?: boolean
+    ): Promise<ServerResponse<T>> {
+        return API.fetchWithHandling<T>('POST', url, data, keepalive);
     }
 
     public static put<T, D>(url: string, data: D): Promise<ServerResponse<T>> {
