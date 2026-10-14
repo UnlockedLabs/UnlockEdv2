@@ -1,0 +1,37 @@
+name: PR title
+
+# Squash and merge lands a multi-commit PR on main under its title, so the
+# title must be a conventional commit too (commit.yml checks the commits).
+# Same check as unlocked-hiset-ai (EN-214).
+#
+# PRs opened with GITHUB_TOKEN don't trigger pull_request workflows. When
+# release-please is added here (EN-181), its workflow must start this one with
+# workflow_dispatch on the release PR, as unlocked-hiset-ai does.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  title:
+    name: pr title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the PR title
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            TITLE=$(gh pr view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json title -q .title)
+          fi
+          pattern='^(feat|fix|chore|docs|refactor|test|ci|build|perf|revert|style)(\([a-z0-9._/-]+\))?!?: .+'
+          if ! printf '%s' "$TITLE" | grep -Eq "$pattern"; then
+            echo "::error::PR title is not a conventional commit: $TITLE"
+            exit 1
+          fi
