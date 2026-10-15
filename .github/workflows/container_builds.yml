@@ -109,6 +109,7 @@ jobs:
           fi
           docker buildx build --platform linux/amd64 \
             --cache-from type=gha,scope=backend --cache-to type=gha,scope=backend,mode=max \
+            --build-arg GIT_COMMIT="$GITHUB_SHA" --build-arg GIT_BRANCH="$GITHUB_REF_NAME" --build-arg APP_VERSION="$IMAGE_VERSION" \
             "${LABELS[@]}" "${TAGS[@]}" --push -f backend/Dockerfile .
 
           echo "Building middleware image"
