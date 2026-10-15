@@ -4,6 +4,10 @@ import "testing"
 
 func TestVersionInfo(t *testing.T) {
 	t.Run("falls back to unknown when env vars are unset", func(t *testing.T) {
+		t.Setenv("APP_VERSION", "")
+		t.Setenv("GIT_COMMIT", "")
+		t.Setenv("GIT_BRANCH", "")
+
 		got := versionInfo()
 		want := versionResponse{Version: "unknown", Commit: "unknown", Branch: "unknown"}
 		if got != want {
