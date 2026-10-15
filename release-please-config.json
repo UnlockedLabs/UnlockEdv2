@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "e8c06b11a20b4636efcd1e018a602edf733d02ad",
+  "packages": {
+    ".": {
+      "release-type": "go",
+      "package-name": "unlocked-core",
+      "include-component-in-tag": false,
+      "initial-version": "1.0.0",
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "frontend/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  }
+}

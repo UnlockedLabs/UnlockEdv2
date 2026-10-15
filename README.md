@@ -175,6 +175,39 @@ so be sure that it didn't update in a later commit.
 
 #### Proper linting/formatting _will_ run automatically in a git hook before each commit. If you want to run them beforehand, you can `cd` into frontend and run `npx prettier -w .` or `cd backend` and `gofmt -w .` IF for some reason you need to skip the pre-commit hooks, you can run `git commit --no-verify`but _do not_ do this unless you know what you are doing and you understand the CI/CD will fail if you submit a PR
 
+## Releases
+
+Versions come from [release-please](https://github.com/googleapis/release-please)
+and our conventional commits (CI checks every commit subject and the PR title).
+
+1. Merge PRs to `main` as usual (squash or rebase). A squash merge lands
+   under the PR title, which is why CI checks it too. release-please keeps a
+   `chore(main): release X.Y.Z` PR open with the next version and its
+   `CHANGELOG.md` entry.
+2. When it's time to release, review and merge that PR. It tags `vX.Y.Z` and
+   creates the GitHub Release.
+3. CI then builds `frontend`, `unlockedv2` and `provider_middleware` at `X.Y.Z`
+   in ECR. Staging keeps following `:latest` from `main`.
+
+`feat` bumps the minor version, `fix` the patch, and a breaking change (`!`)
+the major.
+
+### Hotfixes
+
+To patch a release without shipping unreleased work from `main`:
+
+1. `git switch -c release/1.2.x v1.2.0`, then `git push origin release/1.2.x`.
+2. Branch from `release/1.2.x`, commit the fix (`fix: ...`), and open a PR into
+   `release/1.2.x`.
+3. Merge it. release-please opens `chore(release/1.2.x): release 1.2.1`;
+   merging that tags `v1.2.1` and builds the images. Release branches only
+   ever bump the patch version.
+4. If `main` needs the fix too, open a separate PR for it there.
+
+Setup: `release-please-config.json` (`main`), `release-please-config.hotfix.json`
+(`release/**`), `.release-please-manifest.json` and
+`.github/workflows/release-please.yml`.
+
 ## FAQ/Troubleshooting
 
 ### I cannot log in with the default credentials or with the credentials I previously set
