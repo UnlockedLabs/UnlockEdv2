@@ -88,6 +88,12 @@ func (srv *Server) RegisterRoutes() {
 			return
 		}
 	})
+	srv.Mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(versionInfo()); err != nil {
+			log.Errorln("Error writing version response: ", err)
+		}
+	})
 	for _, route := range []func() []routeDef{
 		srv.registerLoginFlowRoutes,
 		srv.registerAuthRoutes,
@@ -556,6 +562,29 @@ func writePaginatedResponse[T any](w http.ResponseWriter, status int, data []T, 
 		return newResponseServiceError(err)
 	}
 	return nil
+}
+
+type versionResponse struct {
+	Version string `json:"version"`
+	Commit  string `json:"commit"`
+	Branch  string `json:"branch"`
+}
+
+// Reports the build-time GIT_COMMIT/GIT_BRANCH/APP_VERSION baked into the image (see
+// backend/Dockerfile), matching the tutor service's /api/version pattern.
+func versionInfo() versionResponse {
+	return versionResponse{
+		Version: envOrDefault("APP_VERSION", "unknown"),
+		Commit:  envOrDefault("GIT_COMMIT", "unknown"),
+		Branch:  envOrDefault("GIT_BRANCH", "unknown"),
+	}
+}
+
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
