@@ -30,6 +30,17 @@ linters:
             - github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api
             - github.com/UnlockedLabs/unlocked-core/backend/src/modules/programs/api
             - github.com/UnlockedLabs/unlocked-core/backend/src/modules/learningrecord/api
+        # The seam imports nothing from core. depguard only sees each file's
+        # own imports, so a core type handed to modules through the seam
+        # (a *database.DB, handlers.Claims) would slip past the module rules.
+        seam:
+          list-mode: lax
+          files: ["**/src/modules/module/**"]
+          deny:
+            - pkg: github.com/UnlockedLabs/unlocked-core/backend
+              desc: the module seam must not expose core types to feature modules (EN-188)
+          allow:
+            - github.com/UnlockedLabs/unlocked-core/backend/src/modules/module
         opencontent:
           list-mode: lax
           files: ["**/src/modules/opencontent/**"]
