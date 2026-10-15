@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.0 (2026-10-15)
+
+
+### Continuous Integration
+
+* add release-please for automatic versions (EN-181) ([#1251](https://github.com/UnlockedLabs/unlocked-core/issues/1251)) ([362d4ed](https://github.com/UnlockedLabs/unlocked-core/commit/362d4ed0f76e679b05f900506363f74c5572b446))
+
 ## [0.0.7] - 2025-05-14
 
 ### 🚀 Features
