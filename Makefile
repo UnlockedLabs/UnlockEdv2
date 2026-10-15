@@ -44,6 +44,8 @@ define run_dev_compose
 		echo; \
 		exit 1; \
 	fi; \
+	export GIT_COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown); \
+	export GIT_BRANCH=$$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown); \
 	AI_DIR=$${TUTOR_DIR:-$$(sed -n 's/^TUTOR_DIR=//p' .env | tail -1)}; \
 	AI_DIR=$${AI_DIR:-$(DEFAULT_AI_DIR)}; \
 	TUTOR_READY=0; TUTOR_WHY=; \
