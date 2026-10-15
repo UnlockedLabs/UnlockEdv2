@@ -1,0 +1,43 @@
+name: Release
+
+# release-please keeps a "chore(<branch>): release X.Y.Z" PR open, built from
+# the conventional commits merged since the last release. Merging that PR tags
+# vX.Y.Z and creates the GitHub Release; container_builds.yml then builds the
+# X.Y.Z images. On release/** branches it cuts patch releases only (hotfixes).
+#
+# It runs with the unlocked-release-bot GitHub App's token, not GITHUB_TOKEN:
+# pushes, PRs and tags made with GITHUB_TOKEN don't start other workflows, so
+# the release PR would never get its required checks and the tag would never
+# build the versioned images.
+on:
+  push:
+    branches: [main, "release/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          # release-please labels its PR "autorelease: pending" and finds it by
+          # that label after the merge to tag the release.
+          permission-issues: write
+
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          target-branch: ${{ github.ref_name }}
+          config-file: ${{ startsWith(github.ref_name, 'release/') && 'release-please-config.hotfix.json' || 'release-please-config.json' }}
+          manifest-file: .release-please-manifest.json

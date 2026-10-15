@@ -1,7 +1,7 @@
 name: Go Tests 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "release/**"]
 jobs:
   tests:
     runs-on: ubuntu-latest
