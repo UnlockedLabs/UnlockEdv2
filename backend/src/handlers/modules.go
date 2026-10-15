@@ -38,16 +38,19 @@ func (mr moduleRouter) Handle(rt module.Route) {
 	mr.srv.register(func() []routeDef { return []routeDef{def} })
 }
 
+func (srv *Server) moduleDeps() module.Deps {
+	return module.Deps{DB: srv.Db.DB, NATS: srv.nats}
+}
+
 func (srv *Server) registerModuleRoutes() {
-	deps := module.Deps{DB: srv.Db.DB, NATS: srv.nats}
 	for _, m := range srv.modules {
-		m.Register(moduleRouter{srv}, deps)
+		m.Register(moduleRouter{srv}, srv.moduleDeps())
 	}
 }
 
 func (srv *Server) registerModuleJobs() {
 	for _, m := range srv.modules {
-		m.RegisterJobs(srv.scheduler, srv.nats)
+		m.RegisterJobs(srv.scheduler, srv.moduleDeps())
 	}
 }
 

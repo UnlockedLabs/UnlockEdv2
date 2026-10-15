@@ -27,7 +27,7 @@ type Module interface {
 	// ledger, so it never changes.
 	Name() string
 	Register(r Router, deps Deps)
-	RegisterJobs(s Scheduler, nc *nats.Conn)
+	RegisterJobs(s Scheduler, deps Deps)
 	// Migrations holds the module's goose .sql files in a "migrations" folder.
 	Migrations() fs.FS
 }
@@ -71,7 +71,8 @@ type Scheduler interface {
 	Cron(spec string, task func()) error
 }
 
-// Deps is what core shares with every module.
+// Deps is what core shares with every module, for both its routes and its
+// jobs.
 type Deps struct {
 	DB   *gorm.DB
 	NATS *nats.Conn

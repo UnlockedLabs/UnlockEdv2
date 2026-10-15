@@ -7,8 +7,6 @@ import (
 	"io/fs"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
-
-	"github.com/nats-io/nats.go"
 )
 
 //go:embed migrations
@@ -23,6 +21,6 @@ func (Module) Name() string { return "providerplatforms" }
 
 func (Module) Register(module.Router, module.Deps) {}
 
-func (Module) RegisterJobs(module.Scheduler, *nats.Conn) {}
+func (Module) RegisterJobs(module.Scheduler, module.Deps) {}
 
 func (Module) Migrations() fs.FS { return migrations }

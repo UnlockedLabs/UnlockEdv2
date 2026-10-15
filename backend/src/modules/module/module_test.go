@@ -10,7 +10,6 @@ import (
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 
 	_ "github.com/glebarez/go-sqlite"
-	"github.com/nats-io/nats.go"
 	"github.com/pressly/goose/v3"
 )
 
@@ -19,10 +18,10 @@ type fakeModule struct {
 	files fstest.MapFS
 }
 
-func (m fakeModule) Name() string                              { return m.name }
-func (m fakeModule) Register(module.Router, module.Deps)       {}
-func (m fakeModule) RegisterJobs(module.Scheduler, *nats.Conn) {}
-func (m fakeModule) Migrations() fs.FS                         { return m.files }
+func (m fakeModule) Name() string                               { return m.name }
+func (m fakeModule) Register(module.Router, module.Deps)        {}
+func (m fakeModule) RegisterJobs(module.Scheduler, module.Deps) {}
+func (m fakeModule) Migrations() fs.FS                          { return m.files }
 
 func migration(up, down string) *fstest.MapFile {
 	return &fstest.MapFile{Data: []byte("-- +goose Up\n" + up + "\n-- +goose Down\n" + down + "\n")}
