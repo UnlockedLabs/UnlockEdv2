@@ -212,9 +212,7 @@ func newDeptAdminRoute(method string, handler HttpFunc) routeDef {
 		handler:     handler,
 		admin:       true,
 		features:    []models.FeatureAccess{},
-		resolver: func(tx *database.DB, r *http.Request) bool {
-			return r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility()
-		},
+		resolver:    DeptAdminResolver,
 	}
 }
 func deptAdminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
@@ -223,9 +221,7 @@ func deptAdminFeatureRoute(method string, handler HttpFunc, features ...models.F
 		handler:     handler,
 		admin:       true,
 		features:    features,
-		resolver: func(tx *database.DB, r *http.Request) bool {
-			return r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility()
-		},
+		resolver:    DeptAdminResolver,
 	}
 }
 
@@ -235,9 +231,7 @@ func newSystemAdminRoute(method string, handler HttpFunc) routeDef {
 		handler:     handler,
 		admin:       true,
 		features:    []models.FeatureAccess{},
-		resolver: func(tx *database.DB, r *http.Request) bool {
-			return r.Context().Value(ClaimsKey).(*Claims).Role == models.SystemAdmin
-		},
+		resolver:    SystemAdminResolver,
 	}
 }
 

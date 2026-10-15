@@ -19,9 +19,23 @@ func (mr moduleRouter) Handle(rt module.Route) {
 		rt.Handler.ServeHTTP(w, r)
 		return nil
 	}
-	mr.srv.register(func() []routeDef {
-		return []routeDef{{routeMethod: rt.Pattern, handler: h, admin: rt.Admin, features: rt.Features}}
-	})
+	def := routeDef{routeMethod: rt.Pattern, handler: h, features: rt.Features}
+	switch rt.Access {
+	case module.AnyUser:
+	case module.Admin:
+		def.admin = true
+	case module.DeptAdmin:
+		def.admin = true
+		def.resolver = DeptAdminResolver
+	case module.SystemAdmin:
+		def.admin = true
+		def.resolver = SystemAdminResolver
+	default:
+		// Registration runs once at startup, so an unknown level stops the
+		// server instead of leaving a route open.
+		panic(fmt.Sprintf("module route %q: unknown access level %d", rt.Pattern, rt.Access))
+	}
+	mr.srv.register(func() []routeDef { return []routeDef{def} })
 }
 
 func (srv *Server) registerModuleRoutes() {

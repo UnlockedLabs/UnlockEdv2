@@ -37,11 +37,27 @@ type Module interface {
 type Route struct {
 	Pattern string
 	Handler http.Handler
-	// Admin limits the route to admin roles.
-	Admin bool
+	// Access is who may call the route. The zero value is AnyUser.
+	Access AccessLevel
 	// Features turns the route off unless every listed feature is enabled.
 	Features []features.Access
 }
+
+// AccessLevel is who may call a route. Core enforces each level with the same
+// checks as its own routes.
+type AccessLevel int
+
+const (
+	// AnyUser is any logged-in user.
+	AnyUser AccessLevel = iota
+	// Admin is any admin: facility, department or system.
+	Admin
+	// DeptAdmin is department and system admins: the admins who can switch
+	// facility.
+	DeptAdmin
+	// SystemAdmin is system admins only.
+	SystemAdmin
+)
 
 // Router registers a module's routes behind core's auth, admin and
 // feature-flag checks.
