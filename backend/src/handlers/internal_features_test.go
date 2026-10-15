@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
@@ -28,41 +29,44 @@ func TestHandleInternalFeatures(t *testing.T) {
 	tests := []struct {
 		name       string
 		overrides  map[models.FeatureAccess]bool
-		facilityID string // empty: use the facility created for this case
+		query      string // {id} is replaced with the facility created for the case
 		wantStatus int
 		want       []models.FeatureAccess
 	}{
 		{
 			name:       "no overrides returns the statewide defaults",
+			query:      "facility_id={id}",
 			wantStatus: http.StatusOK,
 			want:       srv.features,
 		},
 		{
 			name:       "an override turns on a feature that is off statewide",
 			overrides:  map[models.FeatureAccess]bool{models.LearningRecordAccess: true},
+			query:      "facility_id={id}",
 			wantStatus: http.StatusOK,
 			want:       append([]models.FeatureAccess{models.LearningRecordAccess}, srv.features...),
 		},
 		{
 			name:       "turning off a parent turns off its sub-features",
 			overrides:  map[models.FeatureAccess]bool{models.OpenContentAccess: false},
+			query:      "facility_id={id}",
 			wantStatus: http.StatusOK,
 			want:       []models.FeatureAccess{models.ProviderAccess, models.ProgramAccess, models.ResidentProgramsAccess},
 		},
 		{
 			// Core reports a missing record as 400 (database.NewDBError).
 			name:       "an unknown facility is rejected",
-			facilityID: "999999",
+			query:      "facility_id=999999",
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "a non-numeric facility id is rejected",
-			facilityID: "abc",
+			query:      "facility_id=abc",
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "a missing facility id is rejected",
-			facilityID: "-",
+			query:      "",
 			wantStatus: http.StatusBadRequest,
 		},
 	}
@@ -76,16 +80,9 @@ func TestHandleInternalFeatures(t *testing.T) {
 				require.NoError(t, srv.Db.UpsertFacilityFeatureFlag(&args, facility.ID, feature, enabled, srv.features))
 			}
 
-			target := "/internal/v1/features?facility_id=" + strconv.Itoa(int(facility.ID))
-			switch tt.facilityID {
-			case "":
-			case "-":
-				target = "/internal/v1/features"
-			default:
-				target = "/internal/v1/features?facility_id=" + tt.facilityID
-			}
+			query := strings.ReplaceAll(tt.query, "{id}", strconv.Itoa(int(facility.ID)))
 			w := httptest.NewRecorder()
-			srv.Mux.ServeHTTP(w, httptest.NewRequest(http.MethodGet, target, nil))
+			srv.Mux.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/internal/v1/features?"+query, nil))
 
 			require.Equal(t, tt.wantStatus, w.Code, w.Body.String())
 			if tt.wantStatus != http.StatusOK {
