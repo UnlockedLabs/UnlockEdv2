@@ -263,6 +263,17 @@ func (srv *Server) csrfMiddleware(next http.Handler) http.Handler {
 
 type RouteResolver func(*database.DB, *http.Request) bool
 
+// DeptAdminResolver passes department and system admins: the admins who can
+// switch facility.
+func DeptAdminResolver(_ *database.DB, r *http.Request) bool {
+	return r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility()
+}
+
+// SystemAdminResolver passes system admins only.
+func SystemAdminResolver(_ *database.DB, r *http.Request) bool {
+	return r.Context().Value(ClaimsKey).(*Claims).Role == models.SystemAdmin
+}
+
 // resolver where there is a direct relationship between the resource and the facility_id
 // arguments are "table_name", "path_parameter_name"
 func FacilityAdminResolver(table string, param string) RouteResolver {

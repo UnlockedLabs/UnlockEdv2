@@ -10,6 +10,8 @@ import (
 	"os"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
@@ -44,8 +46,14 @@ func main() {
 		log.Fatal(err)
 	}
 	goose.SetTableName("public.goose_db_version")
+	ctx := context.Background()
+	mods := registry.All()
 	if *fresh {
 		log.Println("Running fresh migrations...")
+		// Modules first: their tables can reference core's.
+		if err := module.Reset(ctx, db, goose.DialectPostgres, mods); err != nil {
+			log.Fatalf("Failed to reset module migrations: %v", err)
+		}
 		if err := goose.Reset(db, migrationDir, goose.WithAllowMissing()); err != nil {
 			log.Fatalf("Failed to run down migrations: %v", err)
 		}
@@ -53,6 +61,9 @@ func main() {
 	log.Println("Running up migrations...")
 	if err := goose.Up(db, migrationDir); err != nil {
 		log.Fatalf("Migration failed: %v", err)
+	}
+	if err := module.Migrate(ctx, db, goose.DialectPostgres, mods); err != nil {
+		log.Fatalf("Module migrations failed: %v", err)
 	}
 	if *fresh {
 		MigrateFresh(db)

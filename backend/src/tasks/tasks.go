@@ -55,6 +55,13 @@ func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
 	return &runner
 }
 
+// Cron runs a feature module's task on a five-field cron schedule
+// (module.Scheduler).
+func (s *Scheduler) Cron(spec string, task func()) error {
+	_, err := s.NewJob(gocron.CronJob(spec, false), gocron.NewTask(task))
+	return err
+}
+
 // provider-service starts after the server and won't be able to access NATS,
 // so here we need to delay the scrape to avoid publishing before anyone is listening.
 const devLibraryScrapeDelay = 60 * time.Second
