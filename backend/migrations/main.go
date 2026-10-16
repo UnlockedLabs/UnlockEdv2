@@ -27,7 +27,7 @@ func main() {
 	fresh := flag.Bool("fresh", false, "Drop all tables and reapply migrations")
 	flag.StringVar(&migrationDir, "dir", "./backend/migrations", "The directory containing the migration files")
 	flag.Parse()
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
 		log.Fatalf("Failed to load .env file: %v", err)
 	}
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
