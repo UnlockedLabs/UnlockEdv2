@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.0.0...v1.1.0) (2026-10-16)
+
+
+### Features
+
+* **backend:** add feature module folders and boundary checks (EN-190) ([889be86](https://github.com/UnlockedLabs/unlocked-core/commit/889be86821ecbb8d972ce3737a39b5a46180e09e))
+* **backend:** add internal feature-check endpoint (EN-189) ([#1253](https://github.com/UnlockedLabs/unlocked-core/issues/1253)) ([b1cad5d](https://github.com/UnlockedLabs/unlocked-core/commit/b1cad5d87bd81e90722f178a301ba6b45bd51419))
+
 ## 1.0.0 (2026-10-15)
 
 
