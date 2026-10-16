@@ -54,8 +54,9 @@ func (srv *Server) registerModuleJobs() {
 	}
 }
 
-// migrateModules runs the feature modules' migrations. InitDB has already run
-// core's, so modules always migrate after core.
+// migrateModules runs the feature modules' migrations. Core's migrations run
+// via the per-deploy Kubernetes Job (EN-177), before the pod starts -- not by
+// InitDB -- so modules always migrate after core.
 func (srv *Server) migrateModules(ctx context.Context) error {
 	db, err := srv.Db.DB.DB()
 	if err != nil {

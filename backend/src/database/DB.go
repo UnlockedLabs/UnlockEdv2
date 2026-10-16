@@ -15,7 +15,6 @@ import (
 
 	"github.com/glebarez/sqlite"
 	"github.com/go-playground/validator/v10"
-	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -71,7 +70,9 @@ var Validate = sync.OnceValue(func() *validator.Validate {
 	return Ins
 })
 
-// InitDB initializes the database connection, runs migrations, and seeds default data.
+// InitDB initializes the database connection and seeds default data. Migrations
+// run separately (a Kubernetes Job before deploy in production; MigrateTesting
+// for the in-memory SQLite test path).
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
@@ -97,14 +98,6 @@ func InitDB(isTesting bool) *DB {
 		}
 		if err := db.Ping(); err != nil {
 			logrus.Fatalf("Failed to ping database: %v", err)
-		}
-		logrus.Println("Running up migrations...")
-		migrationDir := os.Getenv("MIGRATION_DIR")
-		if migrationDir == "" {
-			migrationDir = "migrations"
-		}
-		if err := goose.Up(db, migrationDir); err != nil {
-			logrus.Fatalf("Migration failed: %v", err)
 		}
 		slowThreshold := 200 * time.Millisecond
 		if ms := os.Getenv("GORM_SLOW_THRESHOLD_MS"); ms != "" {
