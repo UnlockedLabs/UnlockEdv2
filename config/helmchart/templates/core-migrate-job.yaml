@@ -4,6 +4,16 @@ metadata:
   name: core-migrate
   labels:
     app: core-migrate
+  annotations:
+    # Runs before the server Deployment and blocks it until this succeeds, so
+    # the server never serves against an unmigrated/partially-migrated schema
+    # (InitDB no longer migrates on startup -- EN-177). Safe as a hook here,
+    # unlike the new unlocked-platform chart: server-dsn is a plain Secret a
+    # site provisions by hand before `helm install`, not an ESO ExternalSecret
+    # synced after install starts, so there's no secret-not-ready race.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   template:
     spec:
@@ -12,6 +22,8 @@ spec:
           image:             # same OCI image as the server Deployment
           command: ["/migrate", "-dir", "/migrations"]
           env:
+            - name: APP_ENV
+              value: production
             - name: APP_DSN
               valueFrom:
                 secretKeyRef:
@@ -25,9 +37,7 @@ spec:
       imagePullSecrets:
         - name: ecr-secret  # ecr-secret needs to be created if pulling images from AWS ecr
   backoffLimit: 4
-# Stopgap for sites still on this chart (EN-177): the server no longer migrates
-# on startup, and this chart predates the per-revision Job pattern the new
-# unlocked-platform chart uses, so a second `helm upgrade` against an
-# unchanged Job spec will error (Kubernetes Jobs are immutable). Delete this
-# Job before reapplying, same as hydra-migrate/kratos-migrate already require.
-# Retired once a site cuts over to unlocked-platform (EN-180).
+# Stopgap for sites still on this chart (EN-177). Retired once a site cuts
+# over to unlocked-platform (EN-180), which uses per-revision Jobs instead of
+# hooks (that chart's secrets ARE ESO-managed, so a pre-install hook there
+# would race ExternalSecrets -- not a concern for this chart, see above).

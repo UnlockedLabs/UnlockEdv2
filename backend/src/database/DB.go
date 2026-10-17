@@ -70,6 +70,19 @@ var Validate = sync.OnceValue(func() *validator.Validate {
 	return Ins
 })
 
+// PostgresDSN resolves the Postgres connection string from the environment:
+// APP_DSN if set, else the individual DB_* vars. Shared by the server
+// (InitDB) and the standalone migration runner so the connection rule has one
+// home; sslMode is a parameter rather than part of the shared rule because
+// the two callers intentionally use different values.
+func PostgresDSN(sslMode string) string {
+	if dsn := os.Getenv("APP_DSN"); dsn != "" {
+		return dsn
+	}
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), sslMode)
+}
+
 // InitDB initializes the database connection and seeds default data. Migrations
 // run separately (a Kubernetes Job before deploy in production; MigrateTesting
 // for the in-memory SQLite test path).
@@ -87,12 +100,7 @@ func InitDB(isTesting bool) *DB {
 		logrus.Println("Connected to the SQLite database in memory")
 		MigrateTesting(gormDb)
 	} else {
-		dsn := os.Getenv("APP_DSN")
-		if dsn == "" {
-			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
-				os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
-		}
-		db, err := sql.Open("pgx", dsn)
+		db, err := sql.Open("pgx", PostgresDSN("allow"))
 		if err != nil {
 			logrus.Fatalf("Failed to open database connection: %v", err)
 		}

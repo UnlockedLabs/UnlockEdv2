@@ -61,7 +61,7 @@ services:
     networks:
       - intranet
     environment:
-      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
+      - &app-dsn APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
     command: ["go", "run", "./backend/migrations", "-dir", "backend/migrations"]
     depends_on:
       postgres:
@@ -82,7 +82,7 @@ services:
       - ./frontend/public/thumbnails:/imgs
       - ./csvs/jaspertmp/:/jaspertmp
     environment:
-      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
+      - *app-dsn
       - APP_ENV=dev
       - LOG_LEVEL=debug
       - APP_URL=http://127.0.0.1
