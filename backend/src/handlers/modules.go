@@ -1,13 +1,10 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
-
-	"github.com/pressly/goose/v3"
 )
 
 // moduleRouter registers feature-module routes behind the same auth, admin and
@@ -52,15 +49,4 @@ func (srv *Server) registerModuleJobs() {
 	for _, m := range srv.modules {
 		m.RegisterJobs(srv.scheduler, srv.moduleDeps())
 	}
-}
-
-// migrateModules runs the feature modules' migrations. Core's migrations run
-// via the per-deploy Kubernetes Job (EN-177), before the pod starts -- not by
-// InitDB -- so modules always migrate after core.
-func (srv *Server) migrateModules(ctx context.Context) error {
-	db, err := srv.Db.DB.DB()
-	if err != nil {
-		return fmt.Errorf("get database connection: %w", err)
-	}
-	return module.Migrate(ctx, db, goose.DialectPostgres, srv.modules)
 }

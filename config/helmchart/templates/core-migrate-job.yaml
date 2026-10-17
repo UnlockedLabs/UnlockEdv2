@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: core-migrate
+  labels:
+    app: core-migrate
+spec:
+  template:
+    spec:
+      containers:
+        - name: core-migrate
+          image:             # same OCI image as the server Deployment
+          command: ["/migrate", "-dir", "/migrations"]
+          env:
+            - name: APP_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: server-dsn
+                  key: SERVER_DSN  # same secret the server Deployment uses
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: ecr-secret  # ecr-secret needs to be created if pulling images from AWS ecr
+  backoffLimit: 4
+# Stopgap for sites still on this chart (EN-177): the server no longer migrates
+# on startup, and this chart predates the per-revision Job pattern the new
+# unlocked-platform chart uses, so a second `helm upgrade` against an
+# unchanged Job spec will error (Kubernetes Jobs are immutable). Delete this
+# Job before reapplying, same as hydra-migrate/kratos-migrate already require.
+# Retired once a site cuts over to unlocked-platform (EN-180).

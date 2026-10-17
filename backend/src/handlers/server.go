@@ -206,9 +206,6 @@ func newServer(ctx context.Context) *Server {
 		dev:       dev,
 		modules:   registry.All(),
 	}
-	if err := server.migrateModules(ctx); err != nil {
-		log.Fatalf("Module migrations failed: %v", err)
-	}
 	features, err := server.Db.GetFeatureAccess()
 	if err != nil {
 		log.Fatal("Failed to fetch feature flags")

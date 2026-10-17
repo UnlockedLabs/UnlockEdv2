@@ -20,6 +20,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 COPY --from=builder /app/migrations /migrations
 COPY --from=builder /usr/local/go/lib/time/zoneinfo.zip /
 ENV ZONEINFO=/zoneinfo.zip
+ENV MIGRATION_DIR=/migrations
 
 EXPOSE 8080
 ENTRYPOINT ["/backend"]

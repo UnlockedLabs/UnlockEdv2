@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 
@@ -25,13 +26,23 @@ import (
 func main() {
 	var migrationDir string
 	fresh := flag.Bool("fresh", false, "Drop all tables and reapply migrations")
-	flag.StringVar(&migrationDir, "dir", "./backend/migrations", "The directory containing the migration files")
+	defaultDir := os.Getenv("MIGRATION_DIR")
+	if defaultDir == "" {
+		defaultDir = "./backend/migrations"
+	}
+	flag.StringVar(&migrationDir, "dir", defaultDir, "The directory containing the migration files")
 	flag.Parse()
-	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
+	if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		log.Fatalf("Failed to load .env file: %v", err)
 	}
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
-		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+	if *fresh && os.Getenv("APP_ENV") == "production" {
+		log.Fatal("-fresh drops all tables and identities; refusing to run with APP_ENV=production")
+	}
+	dsn := os.Getenv("APP_DSN")
+	if dsn == "" {
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
+			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+	}
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatalf("Failed to open database connection: %v", err)
