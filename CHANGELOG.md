@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.1.0...v1.2.0) (2026-10-17)
+
+
+### Features
+
+* **backend:** add /api/version endpoint (EN-185) ([#1255](https://github.com/UnlockedLabs/unlocked-core/issues/1255)) ([4186f5d](https://github.com/UnlockedLabs/unlocked-core/commit/4186f5dfc908dc415164d9ffdc987246855ade85))
+
 ## [1.1.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.0.0...v1.1.0) (2026-10-16)
 
 
