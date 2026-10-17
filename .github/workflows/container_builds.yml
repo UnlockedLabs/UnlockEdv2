@@ -55,9 +55,13 @@ jobs:
             fi
             echo "IMAGE_VERSION=${TAG#v}" >> $GITHUB_ENV
             echo "EXTRA_TAG=" >> $GITHUB_ENV
+            # GITHUB_REF_NAME is the tag itself on this path, not a branch —
+            # report "unknown" rather than a tag name masquerading as a branch.
+            echo "IMAGE_GIT_BRANCH=unknown" >> $GITHUB_ENV
           else
             echo "IMAGE_VERSION=sha-${GITHUB_SHA:0:7}" >> $GITHUB_ENV
             echo "EXTRA_TAG=latest" >> $GITHUB_ENV
+            echo "IMAGE_GIT_BRANCH=$GITHUB_REF_NAME" >> $GITHUB_ENV
           fi
 
       - name: Configure AWS credentials
@@ -109,6 +113,7 @@ jobs:
           fi
           docker buildx build --platform linux/amd64 \
             --cache-from type=gha,scope=backend --cache-to type=gha,scope=backend,mode=max \
+            --build-arg GIT_COMMIT="$GITHUB_SHA" --build-arg GIT_BRANCH="$IMAGE_GIT_BRANCH" --build-arg APP_VERSION="$IMAGE_VERSION" \
             "${LABELS[@]}" "${TAGS[@]}" --push -f backend/Dockerfile .
 
           echo "Building middleware image"

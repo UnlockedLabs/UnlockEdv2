@@ -12,6 +12,16 @@ RUN CGO_ENABLED=0 GOOS=linux GOFLAGS=-mod=readonly go build -trimpath -o backend
 FROM ghcr.io/unlockedlabs/golang-jasper:latest
 WORKDIR /
 
+# Records which commit/branch/version this image was actually built from — see
+# /api/version. Passed in by `make dev` (local git state) or CI (github.sha/ref_name/
+# the release tag); "unknown" for anyone who builds without them.
+ARG GIT_COMMIT=unknown
+ARG GIT_BRANCH=unknown
+ARG APP_VERSION=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
+ENV GIT_BRANCH=$GIT_BRANCH
+ENV APP_VERSION=$APP_VERSION
+
 COPY --from=builder /app/backend /backend
 COPY --from=builder /app/src/templates /templates
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt

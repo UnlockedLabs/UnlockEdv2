@@ -88,6 +88,9 @@ services:
       - PROXY_SCHEME_OVERRIDE=false
       - JASPER_TEMP_DIR=/jaspertmp
       - JASPER_TEMPLATE_DIR=/app/backend/src/templates
+      - GIT_COMMIT=${GIT_COMMIT:-unknown}
+      - GIT_BRANCH=${GIT_BRANCH:-unknown}
+      - APP_VERSION=${APP_VERSION:-dev}
     depends_on:
       kratos:
         condition: service_started

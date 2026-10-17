@@ -81,6 +81,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerImageRoutes()
 	srv.registerWebsocketRoute()
 	srv.registerInternalRoutes()
+	srv.registerVersionRoute()
 	srv.Mux.Handle("/api/metrics", promhttp.Handler())
 	srv.Mux.HandleFunc("/api/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("OK")); err != nil {
