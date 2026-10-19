@@ -21,7 +21,9 @@ import (
 )
 
 // Module is one feature. Core calls Register and RegisterJobs once at startup
-// and runs the module's migrations after its own.
+// and runs the module's migrations after its own. RegisterJobs can run in a
+// different process from Register (the scheduler, see tasks.Start), so routes
+// and jobs share state only through the database or NATS.
 type Module interface {
 	// Name is the module's folder name. It also names the module's migration
 	// ledger, so it never changes.

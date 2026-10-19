@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,20 +32,22 @@ func main() {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		sig := <-shutdown
-		log.Infof("Received signal: %v. Initiating shutdown...", sig)
-		cancel()
-	}()
-
 	// `backend scheduler` runs the background jobs; anything else (including
 	// the "./backend" argument the charts pass) runs the API server.
 	if len(os.Args) > 1 && os.Args[1] == "scheduler" {
+		go cancelOnSignal(shutdown, cancel)
 		runScheduler(ctx, env == "dev")
 		return
 	}
 	srv := server.NewServer(testing, ctx)
+	go cancelOnSignal(shutdown, cancel)
 	srv.ListenAndServe(ctx)
+}
+
+func cancelOnSignal(shutdown <-chan os.Signal, cancel context.CancelFunc) {
+	sig := <-shutdown
+	log.Infof("Received signal: %v. Initiating shutdown...", sig)
+	cancel()
 }
 
 // runScheduler schedules every background job and publishes each one to NATS
@@ -58,9 +60,13 @@ func runScheduler(ctx context.Context, dev bool) {
 	}
 	defer nc.Close()
 	db := database.Connect()
+	sqlDB, err := db.DB.DB()
+	if err != nil {
+		log.Fatalf("Failed to get database connection: %v", err)
+	}
 	mods := registry.All()
-	if err := waitForMigrations(ctx, db, mods); err != nil {
-		log.Infof("Scheduler stopped before migrations finished: %v", err)
+	if !waitForMigrations(ctx, sqlDB, mods) {
+		log.Info("Scheduler stopped before migrations finished")
 		return
 	}
 	s := tasks.Start(dev, nc, db.DB, mods)
@@ -79,12 +85,8 @@ const migrationPollInterval = 5 * time.Second
 // waitForMigrations blocks until the database has every core and module
 // migration this image ships with. Starting earlier would query tables or
 // columns that don't exist yet, and the scheduler builds its job list only
-// once, at start.
-func waitForMigrations(ctx context.Context, db *database.DB, mods []module.Module) error {
-	sqlDB, err := db.DB.DB()
-	if err != nil {
-		return fmt.Errorf("get database connection: %w", err)
-	}
+// once, at start. It returns false if ctx is canceled first.
+func waitForMigrations(ctx context.Context, sqlDB *sql.DB, mods []module.Module) bool {
 	for {
 		pending, err := database.CoreMigrationsPending(ctx, sqlDB)
 		if err == nil && !pending {
@@ -96,11 +98,11 @@ func waitForMigrations(ctx context.Context, db *database.DB, mods []module.Modul
 		case pending:
 			log.Info("Waiting for migrations to finish")
 		default:
-			return nil
+			return true
 		}
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return false
 		case <-time.After(migrationPollInterval):
 		}
 	}
