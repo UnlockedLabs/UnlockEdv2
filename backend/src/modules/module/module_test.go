@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"io/fs"
+	"slices"
 	"testing"
 	"testing/fstest"
 
@@ -177,5 +178,65 @@ func TestResetRollsBackInReverseOrder(t *testing.T) {
 func TestLedgerTable(t *testing.T) {
 	if got := module.LedgerTable("programs"); got != "goose_db_version_programs" {
 		t.Errorf("LedgerTable(programs) = %q", got)
+	}
+}
+
+func TestPending(t *testing.T) {
+	// betaV1 is beta before its second migration was added.
+	betaV1 := fakeModule{name: "beta", files: fstest.MapFS{
+		"migrations/00001_create_beta.sql": beta.files["migrations/00001_create_beta.sql"],
+	}}
+	tests := []struct {
+		name     string
+		migrated []module.Module // what has run
+		check    []module.Module // what this image ships
+		want     bool
+		wantErr  bool
+	}{
+		{
+			name:     "nothing pending once every module has migrated",
+			migrated: []module.Module{alpha, beta},
+			check:    []module.Module{alpha, beta, empty},
+			want:     false,
+		},
+		{
+			name:     "a migration added since the last run is pending",
+			migrated: []module.Module{alpha, betaV1},
+			check:    []module.Module{alpha, beta},
+			want:     true,
+		},
+		{
+			name:    "a module that has never migrated is an error, not a new ledger",
+			check:   []module.Module{alpha},
+			wantErr: true,
+		},
+		{
+			name:  "a module with no migrations is skipped",
+			check: []module.Module{empty},
+			want:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := openDB(t)
+			ctx := context.Background()
+			if err := module.Migrate(ctx, db, goose.DialectSQLite3, tt.migrated); err != nil {
+				t.Fatal(err)
+			}
+			got, err := module.Pending(ctx, db, goose.DialectSQLite3, tt.check)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Pending() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("Pending() = %v, want %v", got, tt.want)
+			}
+			// Pending only reads: it never creates a ledger.
+			for _, m := range tt.check {
+				ran := slices.ContainsFunc(tt.migrated, func(x module.Module) bool { return x.Name() == m.Name() })
+				if !ran && tableExists(t, db, module.LedgerTable(m.Name())) {
+					t.Errorf("Pending created ledger %s", module.LedgerTable(m.Name()))
+				}
+			}
+		})
 	}
 }

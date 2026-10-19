@@ -123,6 +123,42 @@ func Reset(ctx context.Context, db *sql.DB, dialect goose.Dialect, mods []Module
 	return nil
 }
 
+// Pending reports whether any module has a migration its ledger doesn't record
+// as applied. It only reads, so a process that doesn't run migrations (the
+// scheduler) can use it to wait for the one that does.
+func Pending(ctx context.Context, db *sql.DB, dialect goose.Dialect, mods []Module) (bool, error) {
+	for _, m := range mods {
+		p, err := provider(db, dialect, m)
+		if errors.Is(err, goose.ErrNoMigrations) {
+			continue
+		}
+		if err != nil {
+			return false, err
+		}
+		sources := p.ListSources()
+		applied, err := AppliedVersion(ctx, db, LedgerTable(m.Name()))
+		if err != nil {
+			return false, fmt.Errorf("module %s: %w", m.Name(), err)
+		}
+		if applied < sources[len(sources)-1].Version {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// AppliedVersion is the highest version a goose ledger table records as
+// applied. It only reads: unlike goose's own checks, it never creates the
+// table, so a missing ledger is an error.
+func AppliedVersion(ctx context.Context, db *sql.DB, ledger string) (int64, error) {
+	var v int64
+	err := db.QueryRowContext(ctx, `SELECT COALESCE(MAX(version_id), 0) FROM `+ledger+` WHERE is_applied`).Scan(&v)
+	if err != nil {
+		return 0, fmt.Errorf("read migration ledger %s: %w", ledger, err)
+	}
+	return v, nil
+}
+
 func provider(db *sql.DB, dialect goose.Dialect, m Module) (*goose.Provider, error) {
 	fsys, err := fs.Sub(m.Migrations(), migrationsDir)
 	if err != nil {
