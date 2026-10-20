@@ -585,7 +585,8 @@ export default function DigitalTranscriptHome() {
                     learningRecordPdfFilename(residentName)
                 );
                 captureEvent(ANALYTICS_EVENTS.LearningRecordExported, {
-                    source: 'list_row'
+                    source: 'list_row',
+                    entry_count: 1
                 });
                 toast.success('Your record was saved as a PDF');
             } catch {
