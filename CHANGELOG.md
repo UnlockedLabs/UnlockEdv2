@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.2.0...v1.3.0) (2026-10-20)
+
+
+### Features
+
+* **backend:** run background jobs in their own process (EN-191) ([fc08238](https://github.com/UnlockedLabs/unlocked-core/commit/fc082380025642fca5a5adf481a468fad6fc604f))
+
 ## [1.2.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.1.0...v1.2.0) (2026-10-17)
 
 
