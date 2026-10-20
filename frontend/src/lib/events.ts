@@ -35,6 +35,10 @@ export const ANALYTICS_EVENTS = {
     // the editor component. Still the only measure of time in the tool that also
     // counts residents who never saved an entry.
     LrSessionEnded: 'lr_session_ended',
+    // Fired on a successful PDF export only (EN-216) — deployment, state,
+    // facility and distinct_id all ride along as the existing super
+    // properties/identity set by initAnalytics()/identifyUser() below.
+    LearningRecordExported: 'learning_record_exported',
     // Errors & friction
     ApiError: 'api_error'
 } as const;
