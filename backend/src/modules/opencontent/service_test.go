@@ -24,10 +24,15 @@ func (n *fakeNotifier) Notify(userID uint, msg module.Message) {
 	n.sent = append(n.sent, sentMessage{userID, msg})
 }
 
+// openTestDB is a new in-memory database with Open Content's tables, closed
+// when the test ends.
 func openTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:opencontent_%d?mode=memory&cache=shared", time.Now().UnixNano())), &gorm.Config{})
 	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = sqlDB.Close() })
 	require.NoError(t, db.AutoMigrate(Module{}.TestModels()...))
 	return db
 }

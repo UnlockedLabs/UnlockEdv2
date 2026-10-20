@@ -111,20 +111,27 @@ type TestModels interface {
 	TestModels() []any
 }
 
-type auditKey struct{}
+type logKey struct{}
 
-// WithAudit returns a copy of ctx that AuditAction reports to. Core sets it on
-// every module request.
-func WithAudit(ctx context.Context, record func(action string)) context.Context {
-	return context.WithValue(ctx, auditKey{}, record)
+// WithLog returns a copy of ctx whose log fields go to add. Core sets it on
+// every module request, so a module's fields land on core's log lines for the
+// request, including the admin audit line.
+func WithLog(ctx context.Context, add func(key string, value any)) context.Context {
+	return context.WithValue(ctx, logKey{}, add)
+}
+
+// LogField adds a field, such as the library a request acted on, to core's
+// log lines for the request. Outside a module request it does nothing.
+func LogField(ctx context.Context, key string, value any) {
+	if add, ok := ctx.Value(logKey{}).(func(string, any)); ok {
+		add(key, value)
+	}
 }
 
 // AuditAction names what an admin's request did, such as "video_featured",
-// in core's admin audit log. Outside a module request it does nothing.
+// in core's admin audit log.
 func AuditAction(ctx context.Context, action string) {
-	if record, ok := ctx.Value(auditKey{}).(func(string)); ok {
-		record(action)
-	}
+	LogField(ctx, "action", action)
 }
 
 const migrationsDir = "migrations"

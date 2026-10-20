@@ -22,10 +22,6 @@ func (log sLog) adminAudit() {
 	logrus.WithFields(log.f).Println()
 }
 
-func (slog sLog) auditDetails(action string) {
-	slog.f["action"] = action
-}
-
 func (slog sLog) info(args ...any) {
 	logrus.WithFields(slog.f).Info(args...)
 }
@@ -122,9 +118,9 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 }
 
 // facilityScopedQueryContext is for reads whose results are inherently
-// per-facility (resident/user listings tied to a facility). A statewide admin has no single facility
-// (FacilityID == 0), so these fall back to the admin's home facility rather than
-// matching no facility at all.
+// per-facility (resident/user listings tied to a facility). A statewide admin
+// has no single facility (FacilityID == 0), so these fall back to the admin's
+// home facility rather than matching no facility at all.
 func (srv *Server) facilityScopedQueryContext(r *http.Request) models.QueryContext {
 	args := srv.getQueryContext(r)
 	if args.FacilityID == 0 {

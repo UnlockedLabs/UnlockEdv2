@@ -3,6 +3,7 @@ package module_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"io/fs"
 	"slices"
 	"testing"
@@ -241,13 +242,17 @@ func TestPending(t *testing.T) {
 	}
 }
 
-func TestAuditAction(t *testing.T) {
+func TestLogField(t *testing.T) {
 	var got []string
-	ctx := module.WithAudit(context.Background(), func(action string) { got = append(got, action) })
+	ctx := module.WithLog(context.Background(), func(key string, value any) {
+		got = append(got, fmt.Sprintf("%s=%v", key, value))
+	})
+	module.LogField(ctx, "library_id", 7)
 	module.AuditAction(ctx, "video_featured")
-	// Outside a module request there is no audit log, and nothing happens.
+	// Outside a module request there is no log, and nothing happens.
+	module.LogField(context.Background(), "library_id", 8)
 	module.AuditAction(context.Background(), "not_recorded")
-	if !slices.Equal(got, []string{"video_featured"}) {
-		t.Errorf("recorded %v, want [video_featured]", got)
+	if want := []string{"library_id=7", "action=video_featured"}; !slices.Equal(got, want) {
+		t.Errorf("logged %v, want %v", got, want)
 	}
 }

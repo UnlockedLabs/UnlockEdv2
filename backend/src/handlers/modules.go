@@ -13,14 +13,15 @@ import (
 
 // moduleRouter registers feature-module routes behind the same auth, admin and
 // feature-flag middleware as core's own routes. The module's handler gets the
-// caller's identity.Claims and can name its admin audit action.
+// caller's identity.Claims and can add fields, such as its admin audit action,
+// to core's log lines for the request.
 type moduleRouter struct{ srv *Server }
 
 func (mr moduleRouter) Handle(rt module.Route) {
 	h := func(w http.ResponseWriter, r *http.Request, log sLog) error {
 		claims := r.Context().Value(ClaimsKey).(*Claims)
 		ctx := identity.NewContext(r.Context(), claims.identityClaims())
-		ctx = module.WithAudit(ctx, log.auditDetails)
+		ctx = module.WithLog(ctx, log.add)
 		rt.Handler.ServeHTTP(w, r.WithContext(ctx))
 		return nil
 	}

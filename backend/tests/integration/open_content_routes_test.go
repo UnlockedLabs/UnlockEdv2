@@ -149,6 +149,11 @@ func TestOpenContentRoutes(t *testing.T) {
 		{"library_by_id", resident, http.MethodGet, "/api/libraries/1", nil, http.StatusOK},
 		{"library_by_id_bad_id", resident, http.MethodGet, "/api/libraries/abc", nil, http.StatusBadRequest},
 		{"library_by_id_missing", resident, http.MethodGet, "/api/libraries/999", nil, http.StatusBadRequest},
+		{"tags", resident, http.MethodGet, "/api/tags", nil, http.StatusOK},
+		// The library proxy's own checks. A visible library would go on to
+		// Kiwix, which the tests don't run.
+		{"proxy_library_missing", resident, http.MethodGet, "/api/proxy/libraries/999/", nil, http.StatusNotFound},
+		{"proxy_library_hidden", resident, http.MethodGet, "/api/proxy/libraries/2/", nil, http.StatusNotFound},
 		{"library_favorite_toggle", resident, http.MethodPut, "/api/libraries/2/favorite", map[string]any{}, http.StatusOK},
 		{"library_feature_toggle", facAdmin, http.MethodPut, "/api/libraries/1/favorite", map[string]any{}, http.StatusOK},
 		{"library_visibility_toggle", facAdmin, http.MethodPut, "/api/libraries/2/toggle", map[string]any{}, http.StatusOK},
@@ -287,6 +292,7 @@ func TestOpenContentRouteAccess(t *testing.T) {
 		{http.MethodPut, "/api/helpful-links/activity/1", anyUser, []models.FeatureAccess{models.HelpfulLinksAccess}},
 		{http.MethodPut, "/api/helpful-links/sort", admin, []models.FeatureAccess{models.HelpfulLinksAccess}},
 		{http.MethodPut, "/api/helpful-links/favorite/1", anyUser, []models.FeatureAccess{models.HelpfulLinksAccess}},
+		{http.MethodGet, "/api/tags", anyUser, nil},
 	}
 
 	// withFeatures returns the claims with every feature on except the ones
@@ -312,6 +318,12 @@ func TestOpenContentRouteAccess(t *testing.T) {
 					ExpectStatus(http.StatusUnauthorized).ExpectMessage("Feature not enabled")
 			}
 			switch rt.access {
+			case anyUser:
+				// A resident gets past every check. The body isn't valid JSON,
+				// so a route that reads one stops there without side effects.
+				resp := NewRequest[any](client, t, rt.method, rt.path, "not an object").
+					WithTestClaims(w.claims(w.resident)).AsRaw().Do()
+				require.NotEqual(t, http.StatusUnauthorized, resp.resp.StatusCode, resp.rawBody)
 			case admin:
 				NewRequest[any](client, t, rt.method, rt.path, map[string]any{}).
 					WithTestClaims(w.claims(w.resident)).Do().

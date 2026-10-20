@@ -104,16 +104,18 @@ func TestModuleRouterClaims(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-// A module's audit action lands on the same admin audit log line as a core
-// handler's log.auditDetails.
-func TestModuleRouterAuditAction(t *testing.T) {
+// A module's log fields and audit action land on the same admin audit log
+// line as a core handler's log.add and log.auditDetails.
+func TestModuleRouterLogFields(t *testing.T) {
 	srv := newTestingServer()
 	moduleRouter{srv}.Handle(module.Route{Pattern: "PUT /api/test-module/audit", Access: module.Admin, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		module.LogField(r.Context(), "video_id", 9)
 		module.AuditAction(r.Context(), "video_featured")
 	})})
 
+	oldHooks := logrus.StandardLogger().ReplaceHooks(make(logrus.LevelHooks))
+	defer logrus.StandardLogger().ReplaceHooks(oldHooks)
 	hook := logtest.NewGlobal()
-	defer logrus.StandardLogger().ReplaceHooks(make(logrus.LevelHooks))
 
 	r := requestAs(t, "/api/test-module/audit", Claims{UserID: 3, Username: "facadmin", Role: models.FacilityAdmin, FacilityID: 2})
 	r.Method = http.MethodPut
@@ -131,6 +133,7 @@ func TestModuleRouterAuditAction(t *testing.T) {
 	}
 	require.NotNil(t, audit, "no admin audit log line")
 	assert.Equal(t, "video_featured", audit.Data["action"])
+	assert.Equal(t, 9, audit.Data["video_id"])
 	assert.Equal(t, uint(3), audit.Data["admin_id"])
 }
 

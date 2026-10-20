@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	ocapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
@@ -63,7 +64,7 @@ func (srv *Server) handleResidentProfile(w http.ResponseWriter, r *http.Request,
 	args := srv.getQueryContext(r)
 	topLibraries, err := srv.openContent.TopLibraries(args.Ctx, uint(userID), args.FacilityID)
 	if err != nil {
-		return newInternalServerServiceError(err, "error getting top 5 libraries")
+		return newDatabaseServiceError(database.NewDBError(err, "error getting top 5 libraries"))
 	}
 
 	recentVideos, err := srv.openContent.RecentVideos(r.Context(), uint(userID))
@@ -447,27 +448,27 @@ func (srv *Server) handleKnowledgeCenterMetrics(w http.ResponseWriter, r *http.R
 	window := ocapi.Window{Start: start, End: end, FacilityID: facilityID}
 	interactions, err := srv.openContent.Interactions(args.Ctx, window)
 	if err != nil {
-		return newInternalServerServiceError(err, "error getting open_content_activities")
+		return newDatabaseServiceError(database.NewDBError(err, "error getting open_content_activities"))
 	}
 	avgSession, err := srv.openContent.AvgSessionMinutes(args.Ctx, window)
 	if err != nil {
-		return newInternalServerServiceError(err, "error getting open_content_activities")
+		return newDatabaseServiceError(database.NewDBError(err, "error getting open_content_activities"))
 	}
 	repeat, err := srv.openContent.RepeatEngagement(args.Ctx, window)
 	if err != nil {
-		return newInternalServerServiceError(err, "error getting open_content_activities")
+		return newDatabaseServiceError(database.NewDBError(err, "error getting open_content_activities"))
 	}
 	categories, err := srv.openContent.LibraryViewsByCategory(args.Ctx, window)
 	if err != nil {
-		return newInternalServerServiceError(err, "error getting open_content_tags")
+		return newDatabaseServiceError(database.NewDBError(err, "error getting open_content_tags"))
 	}
 	topLibraries, err := srv.openContent.TopLibraryVisits(args.Ctx, window, 8)
 	if err != nil {
-		return newInternalServerServiceError(err, "error getting libraries")
+		return newDatabaseServiceError(database.NewDBError(err, "error getting libraries"))
 	}
 	topVideos, err := srv.openContent.TopVideoVisits(args.Ctx, window, 8)
 	if err != nil {
-		return newInternalServerServiceError(err, "error getting videos")
+		return newDatabaseServiceError(database.NewDBError(err, "error getting videos"))
 	}
 	metrics := models.KnowledgeCenterMetrics{
 		TotalInteractions:       interactions.Total,

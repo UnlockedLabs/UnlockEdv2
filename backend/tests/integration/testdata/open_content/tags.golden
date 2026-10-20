@@ -1,0 +1,9 @@
+{
+  "data": [
+    {
+      "key": 1,
+      "value": "Science"
+    }
+  ],
+  "message": "Data fetched successfully"
+}

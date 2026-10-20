@@ -45,6 +45,7 @@ activity and the content proxies. It moved here from core in EN-192.
   ```
 
   The changed JSON then shows in the PR for review.
-- The tests run on SQLite, which can't run search (Postgres full-text search
-  and Kiwix), the library proxy (NATS), the content-request email (SES) or the
-  video jobs (NATS). Check those with `make dev`.
+- The tests run on SQLite without Kiwix, NATS or AWS, so they can't run
+  search (Postgres full-text search and Kiwix), the library proxy forwarding
+  to Kiwix, the content-request email (SES) or publishing the video jobs
+  (NATS). Check those with `make dev`.

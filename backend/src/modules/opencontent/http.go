@@ -128,8 +128,11 @@ func (slog sLog) auditDetails(action string) {
 	module.AuditAction(slog.ctx, action)
 }
 
+// add adds a field to this module's log lines and to core's, so it also
+// reaches the admin audit line, as it did before the move.
 func (slog sLog) add(key string, value any) {
 	slog.f[key] = value
+	module.LogField(slog.ctx, key, value)
 }
 
 func (slog sLog) info(args ...any) {
