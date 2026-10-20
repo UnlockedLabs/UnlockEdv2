@@ -10,6 +10,7 @@ import {
     SheetContent,
     SheetTitle
 } from '@/components/ui/sheet';
+import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
 import { cn } from '@/lib/utils';
 import {
     downloadAllLearningRecordAchievementsPdf,
@@ -85,6 +86,10 @@ export function ViewAllAchievementsSheet({
                 entriesToExport.length,
                 learningRecordPdfFilename(residentName)
             );
+            captureEvent(ANALYTICS_EVENTS.LearningRecordExported, {
+                source: 'view_all',
+                entry_count: entriesToExport.length
+            });
             toast.success('Your record was saved as a PDF');
         } catch {
             toast.error('Could not save PDF. Please try again.');
