@@ -13,7 +13,9 @@ import (
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 
+	"github.com/UnlockedLabs/unlocked-contracts/identity"
 	"github.com/glebarez/sqlite"
 	"github.com/go-playground/validator/v10"
 	"github.com/pressly/goose/v3"
@@ -235,13 +237,38 @@ func MigrateTesting(db *gorm.DB) {
 		&models.FacilityFeatureFlag{},
 	}
 	logrus.Println("Running up migrations...")
-	for _, table := range TableList {
+	for _, table := range append(TableList, moduleTestModels(registry.All())...) {
 		logrus.Printf("Migrating %T table...", table)
 		if err := db.AutoMigrate(table); err != nil {
 			logrus.Fatal("Failed to migrate table: ", err)
 		}
 	}
 
+}
+
+// moduleTestModels lists the models of every module that has them, in module
+// order.
+func moduleTestModels(mods []module.Module) []any {
+	var tables []any
+	for _, m := range mods {
+		if tm, ok := m.(module.TestModels); ok {
+			tables = append(tables, tm.TestModels()...)
+		}
+	}
+	return tables
+}
+
+// seedModules lets every module with default rows add them to a new
+// database, as the user in ctx.
+func seedModules(ctx context.Context, db *gorm.DB, facilityID uint, mods []module.Module) error {
+	for _, m := range mods {
+		if s, ok := m.(module.Seeder); ok {
+			if err := s.Seed(ctx, db, facilityID); err != nil {
+				return fmt.Errorf("seed module %s: %w", m.Name(), err)
+			}
+		}
+	}
+	return nil
 }
 
 // SeedDefaultData creates the default administrative user, facility, links, and content providers.
@@ -334,6 +361,10 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 			if err := dbWithCtx.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
 				logrus.Fatalf("Failed to create default open content providers: %v", err)
 			}
+		}
+		seedCtx := identity.NewContext(context.Background(), &identity.Claims{UserID: systemBatchUserID})
+		if err := seedModules(seedCtx, db.DB, defaultFacility.ID, registry.All()); err != nil {
+			logrus.Fatalf("Failed to seed modules: %v", err)
 		}
 	}
 }

@@ -240,3 +240,14 @@ func TestPending(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditAction(t *testing.T) {
+	var got []string
+	ctx := module.WithAudit(context.Background(), func(action string) { got = append(got, action) })
+	module.AuditAction(ctx, "video_featured")
+	// Outside a module request there is no audit log, and nothing happens.
+	module.AuditAction(context.Background(), "not_recorded")
+	if !slices.Equal(got, []string{"video_featured"}) {
+		t.Errorf("recorded %v, want [video_featured]", got)
+	}
+}

@@ -78,6 +78,53 @@ type Scheduler interface {
 type Deps struct {
 	DB   *gorm.DB
 	NATS *nats.Conn
+	// Notify sends messages to a user's open browser tabs.
+	Notify Notifier
+}
+
+// Notifier sends a message to a user over core's websocket. A user with no
+// open tab misses it.
+type Notifier interface {
+	Notify(userID uint, msg Message)
+}
+
+// Message is one websocket message to a user.
+type Message struct {
+	// Event is the message's type, such as "visits".
+	Event string
+	// ActivityID is the Open Content activity the message is about, if any.
+	// Core ends that activity when the user's tab closes.
+	ActivityID int64
+	Text       string
+}
+
+// Seeder is a module that adds default rows to a new database. Core calls
+// Seed once, right after it creates the default facility. ctx carries the
+// identity.Claims of the user the rows are created by.
+type Seeder interface {
+	Seed(ctx context.Context, db *gorm.DB, facilityID uint) error
+}
+
+// TestModels is a module whose tables core's SQLite test database creates
+// with AutoMigrate. Production creates them with migrations.
+type TestModels interface {
+	TestModels() []any
+}
+
+type auditKey struct{}
+
+// WithAudit returns a copy of ctx that AuditAction reports to. Core sets it on
+// every module request.
+func WithAudit(ctx context.Context, record func(action string)) context.Context {
+	return context.WithValue(ctx, auditKey{}, record)
+}
+
+// AuditAction names what an admin's request did, such as "video_featured",
+// in core's admin audit log. Outside a module request it does nothing.
+func AuditAction(ctx context.Context, action string) {
+	if record, ok := ctx.Value(auditKey{}).(func(string)); ok {
+		record(action)
+	}
 }
 
 const migrationsDir = "migrations"
