@@ -174,8 +174,10 @@ func (srv *Server) ListenAndServe(ctx context.Context) {
 
 func (srv *Server) Shutdown() {
 	srv.wsClient.Close(srv.Db)
-	if err := srv.scheduler.Stop(); err != nil {
-		log.Errorf("Error stopping scheduler: %v", err)
+	if srv.scheduler != nil {
+		if err := srv.scheduler.Stop(); err != nil {
+			log.Errorf("Error stopping scheduler: %v", err)
+		}
 	}
 	srv.nats.Close()
 }
@@ -192,7 +194,7 @@ func newServer(ctx context.Context) *Server {
 	if port == "" {
 		port = "8080"
 	}
-	conn, err := setupNats()
+	conn, err := ConnectNATS()
 	if err != nil {
 		log.Errorf("Failed to connect to NATS: %v", err)
 	}
@@ -225,8 +227,11 @@ func newServer(ctx context.Context) *Server {
 		log.Fatal("Error setting up default admin in Kratos")
 	}
 	server.wsClient = newClientManager()
-	server.scheduler = tasks.InitScheduling(dev, server.nats, server.Db.DB)
-	server.registerModuleJobs()
+	if tasks.ServerRunsJobs() {
+		server.scheduler = tasks.Start(dev, server.nats, server.Db.DB, server.modules)
+	} else {
+		log.Info("RUN_SCHEDULER=false: background jobs run in the scheduler process, not here")
+	}
 	return &server
 }
 
@@ -258,7 +263,9 @@ func newTestingServer() *Server {
 	}
 }
 
-func setupNats() (*nats.Conn, error) {
+// ConnectNATS connects to NATS with NATS_URL, NATS_USER and NATS_PASSWORD. The
+// scheduler process uses it too.
+func ConnectNATS() (*nats.Conn, error) {
 	options := nats.GetDefaultOptions()
 	options.Url = os.Getenv("NATS_URL")
 	options.User = os.Getenv("NATS_USER")

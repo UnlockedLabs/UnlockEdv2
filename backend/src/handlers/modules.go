@@ -48,12 +48,6 @@ func (srv *Server) registerModuleRoutes() {
 	}
 }
 
-func (srv *Server) registerModuleJobs() {
-	for _, m := range srv.modules {
-		m.RegisterJobs(srv.scheduler, srv.moduleDeps())
-	}
-}
-
 // migrateModules runs the feature modules' migrations. InitDB has already run
 // core's, so modules always migrate after core.
 func (srv *Server) migrateModules(ctx context.Context) error {

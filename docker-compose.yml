@@ -77,6 +77,8 @@ services:
       - KRATOS_ADMIN_URL=http://kratos:4434
       - KRATOS_PUBLIC_URL=http://kratos:4433
       - MIDDLEWARE_CRON_SCHEDULE=0 22 * * *
+      # The scheduler service below runs the background jobs (EN-191).
+      - RUN_SCHEDULER=false
       - ORY_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidmo8iV*@
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
@@ -96,6 +98,32 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+
+  # Background jobs (EN-191): the server's own code, run as `backend scheduler`.
+  # It schedules each job and publishes it to NATS for provider-service. It
+  # doesn't migrate: it waits until the server has applied every migration.
+  # No hot reload: restart it after changing job code.
+  scheduler:
+    build:
+      context: ./
+      dockerfile: backend/dev.Dockerfile
+    command: ["go", "run", "./backend/cmd/main.go", "scheduler"]
+    networks:
+      - intranet
+    volumes:
+      - ./:/app
+    environment:
+      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
+      - APP_ENV=dev
+      - LOG_LEVEL=debug
+      - MIDDLEWARE_CRON_SCHEDULE=0 22 * * *
+      # Where it reads the migration files it waits for the server to apply.
+      - MIGRATION_DIR=backend/migrations
+      - NATS_URL=nats:4222
+      - NATS_USER=unlocked
+      - NATS_PASSWORD=dev
+    restart: unless-stopped
+    depends_on: [server]
 
   # AI tutor sidecar (served under basePath /tutor; see tutor-integration.md)
   tutor-service:

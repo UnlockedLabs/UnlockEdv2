@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 
 	"github.com/glebarez/sqlite"
 	"github.com/go-playground/validator/v10"
@@ -86,56 +87,98 @@ func InitDB(isTesting bool) *DB {
 		logrus.Println("Connected to the SQLite database in memory")
 		MigrateTesting(gormDb)
 	} else {
-		dsn := os.Getenv("APP_DSN")
-		if dsn == "" {
-			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
-				os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
-		}
-		db, err := sql.Open("pgx", dsn)
-		if err != nil {
-			logrus.Fatalf("Failed to open database connection: %v", err)
-		}
-		if err := db.Ping(); err != nil {
-			logrus.Fatalf("Failed to ping database: %v", err)
-		}
+		db := openPostgres()
 		logrus.Println("Running up migrations...")
-		migrationDir := os.Getenv("MIGRATION_DIR")
-		if migrationDir == "" {
-			migrationDir = "migrations"
-		}
-		if err := goose.Up(db, migrationDir); err != nil {
+		if err := goose.Up(db, migrationDir()); err != nil {
 			logrus.Fatalf("Migration failed: %v", err)
 		}
-		slowThreshold := 200 * time.Millisecond
-		if ms := os.Getenv("GORM_SLOW_THRESHOLD_MS"); ms != "" {
-			const maxDurationMilliseconds = int64(1<<63-1) / int64(time.Millisecond)
-			if parsed, err := strconv.Atoi(ms); err == nil && parsed > 0 {
-				if parsed, err := strconv.ParseInt(ms, 10, 64); err == nil &&
-					parsed > 0 && parsed <= maxDurationMilliseconds {
-					slowThreshold = time.Duration(parsed) * time.Millisecond
-				}
-			}
-		}
-		// Configure GORM to log only errors and slow queries; threshold from GORM_SLOW_THRESHOLD_MS.
-		gormDb, err = gorm.Open(postgres.New(postgres.Config{
-			Conn: db,
-		}), &gorm.Config{
-			Logger: newLogrusGormLogger(logger.Config{
-				LogLevel:                  logger.Warn,
-				SlowThreshold:             slowThreshold,
-				IgnoreRecordNotFoundError: true,
-				ParameterizedQueries:      true,
-			}),
-		})
-		if err != nil {
-			logrus.Fatalf("Failed to connect to PostgreSQL database using GORM: %v", err)
-		}
-		logrus.Println("Connected to the PostgreSQL database via GORM")
+		gormDb = openGorm(db)
 	}
 	DB := &DB{gormDb}
 	DB.SeedDefaultData(isTesting)
 
 	return DB
+}
+
+// Connect opens the PostgreSQL database without running migrations or seeding
+// default data. It's for processes that run beside the API server, such as the
+// scheduler: the server owns migrations, and two processes running them at
+// once would race.
+func Connect() *DB {
+	return &DB{openGorm(openPostgres())}
+}
+
+// LatestCoreMigration is the newest core migration in MIGRATION_DIR. A folder
+// that can't be read or has no migrations is an error: the image or its
+// config is wrong, and waiting won't fix it.
+func LatestCoreMigration() (int64, error) {
+	files, err := goose.CollectMigrations(migrationDir(), 0, goose.MaxVersion)
+	if err != nil {
+		return 0, fmt.Errorf("list core migrations: %w", err)
+	}
+	return files[len(files)-1].Version, nil
+}
+
+// CoreMigrationsPending reports whether the database is behind latest, the
+// newest core migration. It only reads; see module.AppliedVersion.
+func CoreMigrationsPending(ctx context.Context, db *sql.DB, latest int64) (bool, error) {
+	applied, err := module.AppliedVersion(ctx, db, "goose_db_version")
+	if err != nil {
+		return false, err
+	}
+	return applied < latest, nil
+}
+
+func migrationDir() string {
+	if dir := os.Getenv("MIGRATION_DIR"); dir != "" {
+		return dir
+	}
+	return "migrations"
+}
+
+func openPostgres() *sql.DB {
+	dsn := os.Getenv("APP_DSN")
+	if dsn == "" {
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
+			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+	}
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		logrus.Fatalf("Failed to open database connection: %v", err)
+	}
+	if err := db.Ping(); err != nil {
+		logrus.Fatalf("Failed to ping database: %v", err)
+	}
+	return db
+}
+
+func openGorm(db *sql.DB) *gorm.DB {
+	slowThreshold := 200 * time.Millisecond
+	if ms := os.Getenv("GORM_SLOW_THRESHOLD_MS"); ms != "" {
+		const maxDurationMilliseconds = int64(1<<63-1) / int64(time.Millisecond)
+		if parsed, err := strconv.Atoi(ms); err == nil && parsed > 0 {
+			if parsed, err := strconv.ParseInt(ms, 10, 64); err == nil &&
+				parsed > 0 && parsed <= maxDurationMilliseconds {
+				slowThreshold = time.Duration(parsed) * time.Millisecond
+			}
+		}
+	}
+	// Configure GORM to log only errors and slow queries; threshold from GORM_SLOW_THRESHOLD_MS.
+	gormDb, err := gorm.Open(postgres.New(postgres.Config{
+		Conn: db,
+	}), &gorm.Config{
+		Logger: newLogrusGormLogger(logger.Config{
+			LogLevel:                  logger.Warn,
+			SlowThreshold:             slowThreshold,
+			IgnoreRecordNotFoundError: true,
+			ParameterizedQueries:      true,
+		}),
+	})
+	if err != nil {
+		logrus.Fatalf("Failed to connect to PostgreSQL database using GORM: %v", err)
+	}
+	logrus.Println("Connected to the PostgreSQL database via GORM")
+	return gormDb
 }
 
 // MigrateTesting migrates the in-memory SQLite schema used during tests.

@@ -2,9 +2,12 @@ package tasks
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/nats-io/nats.go"
@@ -53,6 +56,35 @@ func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
 	}
 	runner.Start()
 	return &runner
+}
+
+// Start schedules every background job: core's and each feature module's. The
+// scheduler process (`backend scheduler`) calls it, and so does the API server
+// while ServerRunsJobs is true.
+func Start(dev bool, nats *nats.Conn, db *gorm.DB, mods []module.Module) *Scheduler {
+	s := InitScheduling(dev, nats, db)
+	deps := module.Deps{DB: db, NATS: nats}
+	for _, m := range mods {
+		m.RegisterJobs(s, deps)
+	}
+	return s
+}
+
+// ServerRunsJobs reports whether the API server runs the background jobs
+// itself. It does unless RUN_SCHEDULER is false, which is set wherever a
+// separate scheduler process runs them instead; sites still on the old charts
+// don't set it and keep today's behavior.
+func ServerRunsJobs() bool {
+	v := os.Getenv("RUN_SCHEDULER")
+	if v == "" {
+		return true
+	}
+	run, err := strconv.ParseBool(v)
+	if err != nil {
+		log.Errorf("RUN_SCHEDULER=%q isn't true or false; the server will run the background jobs", v)
+		return true
+	}
+	return run
 }
 
 // Cron runs a feature module's task on a five-field cron schedule
