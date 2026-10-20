@@ -187,7 +187,8 @@ export default function DigitalTranscriptEntryPage() {
                 learningRecordPdfFilename(residentName)
             );
             captureEvent(ANALYTICS_EVENTS.LearningRecordExported, {
-                source: 'entry_page'
+                source: 'entry_page',
+                entry_count: rows.length
             });
             toast.success('Learning record downloaded');
         } catch {
