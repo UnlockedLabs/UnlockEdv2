@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	github.com/UnlockedLabs/unlocked-contracts v0.1.0 // indirect
+	github.com/UnlockedLabs/unlocked-contracts v0.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect

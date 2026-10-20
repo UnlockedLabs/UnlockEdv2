@@ -3,7 +3,7 @@ module provider-middleware
 go 1.26.9
 
 require (
-	github.com/UnlockedLabs/unlocked-contracts v0.1.0
+	github.com/UnlockedLabs/unlocked-contracts v0.2.0
 	github.com/UnlockedLabs/unlocked-core/backend v0.0.0
 	github.com/aws/aws-sdk-go-v2 v1.42.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
