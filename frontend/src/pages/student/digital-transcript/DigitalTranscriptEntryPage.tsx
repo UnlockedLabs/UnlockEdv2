@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
+import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
 import { cn } from '@/lib/utils';
 import {
     downloadLearningRecordPdf,
@@ -185,6 +186,9 @@ export default function DigitalTranscriptEntryPage() {
                 root,
                 learningRecordPdfFilename(residentName)
             );
+            captureEvent(ANALYTICS_EVENTS.LearningRecordExported, {
+                source: 'entry_page'
+            });
             toast.success('Learning record downloaded');
         } catch {
             toast.error('Could not download PDF. Please try again.');
