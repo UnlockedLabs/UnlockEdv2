@@ -54,6 +54,10 @@ func cancelOnSignal(shutdown <-chan os.Signal, cancel context.CancelFunc) {
 // when it's due; provider-middleware does the work. It runs until ctx is
 // canceled. It doesn't migrate: it waits until the database is migrated.
 func runScheduler(ctx context.Context, dev bool) {
+	latest, err := database.LatestCoreMigration()
+	if err != nil {
+		log.Fatalf("Failed to read core migrations: %v", err)
+	}
 	nc, err := server.ConnectNATS()
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
@@ -65,7 +69,7 @@ func runScheduler(ctx context.Context, dev bool) {
 		log.Fatalf("Failed to get database connection: %v", err)
 	}
 	mods := registry.All()
-	if !waitForMigrations(ctx, sqlDB, mods) {
+	if !waitForMigrations(ctx, sqlDB, latest, mods) {
 		log.Info("Scheduler stopped before migrations finished")
 		return
 	}
@@ -83,12 +87,14 @@ func runScheduler(ctx context.Context, dev bool) {
 const migrationPollInterval = 5 * time.Second
 
 // waitForMigrations blocks until the database has every core and module
-// migration this image ships with. Starting earlier would query tables or
-// columns that don't exist yet, and the scheduler builds its job list only
-// once, at start. It returns false if ctx is canceled first.
-func waitForMigrations(ctx context.Context, sqlDB *sql.DB, mods []module.Module) bool {
+// migration this image ships with; latest is the newest core one. Starting
+// earlier would query tables or columns that don't exist yet, and the
+// scheduler builds its job list only once, at start. Errors are waited out:
+// the ledger doesn't exist until the server's first migration run. It returns
+// false if ctx is canceled first.
+func waitForMigrations(ctx context.Context, sqlDB *sql.DB, latest int64, mods []module.Module) bool {
 	for {
-		pending, err := database.CoreMigrationsPending(ctx, sqlDB)
+		pending, err := database.CoreMigrationsPending(ctx, sqlDB, latest)
 		if err == nil && !pending {
 			pending, err = module.Pending(ctx, sqlDB, goose.DialectPostgres, mods)
 		}

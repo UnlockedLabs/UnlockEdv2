@@ -108,21 +108,25 @@ func Connect() *DB {
 	return &DB{openGorm(openPostgres())}
 }
 
-// CoreMigrationsPending reports whether core's migration files (MIGRATION_DIR)
-// are ahead of the database. It only reads; see module.AppliedVersion.
-func CoreMigrationsPending(ctx context.Context, db *sql.DB) (bool, error) {
+// LatestCoreMigration is the newest core migration in MIGRATION_DIR. A folder
+// that can't be read or has no migrations is an error: the image or its
+// config is wrong, and waiting won't fix it.
+func LatestCoreMigration() (int64, error) {
 	files, err := goose.CollectMigrations(migrationDir(), 0, goose.MaxVersion)
 	if err != nil {
-		return false, fmt.Errorf("list core migrations: %w", err)
+		return 0, fmt.Errorf("list core migrations: %w", err)
 	}
-	if len(files) == 0 {
-		return false, nil
-	}
+	return files[len(files)-1].Version, nil
+}
+
+// CoreMigrationsPending reports whether the database is behind latest, the
+// newest core migration. It only reads; see module.AppliedVersion.
+func CoreMigrationsPending(ctx context.Context, db *sql.DB, latest int64) (bool, error) {
 	applied, err := module.AppliedVersion(ctx, db, "goose_db_version")
 	if err != nil {
 		return false, err
 	}
-	return applied < files[len(files)-1].Version, nil
+	return applied < latest, nil
 }
 
 func migrationDir() string {
