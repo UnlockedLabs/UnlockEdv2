@@ -3,37 +3,20 @@ package models
 import (
 	"time"
 
-	"gorm.io/gorm"
+	ocapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api"
 )
 
-type HelpfulLink struct {
-	DatabaseFields
-	Title                 string  `gorm:"size:255;not null" json:"title"`
-	Description           string  `gorm:"size:255;not null" json:"description"`
-	Url                   string  `gorm:"size:255;not null" json:"url"`
-	VisibilityStatus      bool    `gorm:"->" json:"visibility_status"`
-	OpenContentProviderID uint    `json:"open_content_provider_id"`
-	ThumbnailUrl          *string `gorm:"size:255;" json:"thumbnail_url"`
-}
-
-func (HelpfulLink) TableName() string {
-	return "helpful_links"
-}
-
-func (hl *HelpfulLink) BeforeCreate(tx *gorm.DB) error {
-	if err := hl.DatabaseFields.BeforeCreate(tx); err != nil {
-		return err
-	}
-	hl.UpdateUserID = nil
-
-	var id int
-	if hl.OpenContentProviderID == 0 {
-		if err := tx.Table("open_content_providers").Select("id").Where("title = ? ", HelpfulLinks).Scan(&id).Error; err != nil {
-			return err
-		}
-		hl.OpenContentProviderID = uint(id)
-	}
-	return nil
+// KnowledgeCenterMetrics is the Knowledge Center page's numbers, from Open
+// Content.
+type KnowledgeCenterMetrics struct {
+	TotalInteractions       int64                  `json:"total_interactions"`
+	TotalInteractionsChange int                    `json:"total_interactions_change"`
+	UniqueResidents         int64                  `json:"unique_residents"`
+	AvgSessionMinutes       float64                `json:"avg_session_minutes"`
+	RepeatEngagement        ocapi.RepeatEngagement `json:"repeat_engagement"`
+	LibraryViewsByCategory  []ocapi.CategoryViews  `json:"library_views_by_category"`
+	TopLibraries            []ocapi.ContentVisits  `json:"top_libraries"`
+	TopVideos               []ocapi.ContentVisits  `json:"top_videos"`
 }
 
 type CachedDashboard[T any] struct {

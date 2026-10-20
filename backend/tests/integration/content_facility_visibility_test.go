@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
@@ -21,10 +20,8 @@ func TestVideoFacilityVisibility(t *testing.T) {
 	facilityB, err := env.CreateTestFacility("Video Facility B")
 	require.NoError(t, err)
 
-	youtube := &models.OpenContentProvider{Title: models.StringPtr("YouTube"), Url: "http://youtube"}
-	require.NoError(t, env.DB.Create(youtube).Error)
-	video := &models.Video{OpenContentProviderID: youtube.ID, Title: "Test Video", Url: "/vid", ExternalID: "vid1"}
-	require.NoError(t, env.DB.Create(video).Error)
+	youtubeID := env.InsertReturningID(t, `INSERT INTO open_content_providers (title, url, currently_enabled) VALUES ('YouTube', 'http://youtube', false)`)
+	videoID := env.InsertReturningID(t, `INSERT INTO videos (open_content_provider_id, title, url, external_id) VALUES (?, 'Test Video', '/vid', 'vid1')`, youtubeID)
 
 	deptAdmin, err := env.CreateTestUser("videodept", models.DepartmentAdmin, facilityA.ID, "")
 	require.NoError(t, err)
@@ -32,10 +29,10 @@ func TestVideoFacilityVisibility(t *testing.T) {
 	require.NoError(t, err)
 	deptClaims := &handlers.Claims{UserID: deptAdmin.ID, Role: models.DepartmentAdmin, FacilityID: facilityA.ID}
 	facClaims := &handlers.Claims{UserID: facAdmin.ID, Role: models.FacilityAdmin, FacilityID: facilityA.ID}
-	visibilityURL := fmt.Sprintf("/api/videos/%d/facilities", video.ID)
+	visibilityURL := fmt.Sprintf("/api/videos/%d/facilities", videoID)
 
 	t.Run("dept admin sets video visibility per facility", func(t *testing.T) {
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.GreaterOrEqual(t, len(rows), 2)
@@ -48,7 +45,7 @@ func TestVideoFacilityVisibility(t *testing.T) {
 			"visibility_status": true,
 		}).WithTestClaims(deptClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows = NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows = NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.GreaterOrEqual(t, len(rows), 2)
@@ -58,7 +55,7 @@ func TestVideoFacilityVisibility(t *testing.T) {
 	})
 
 	t.Run("video list includes visible facility count", func(t *testing.T) {
-		vids := NewRequest[[]database.VideoResponse](env.Client, t, http.MethodGet,
+		vids := NewRequest[[]contentListItem](env.Client, t, http.MethodGet,
 			"/api/videos?visibility=all", nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
@@ -77,10 +74,10 @@ func TestVideoFacilityVisibility(t *testing.T) {
 
 	t.Run("facility admin toggle still works for own facility", func(t *testing.T) {
 		NewRequest[any](env.Client, t, http.MethodPut,
-			fmt.Sprintf("/api/videos/%d/visibility", video.ID), map[string]any{}).
+			fmt.Sprintf("/api/videos/%d/visibility", videoID), map[string]any{}).
 			WithTestClaims(facClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.GreaterOrEqual(t, len(rows), 2)
@@ -100,8 +97,7 @@ func TestHelpfulLinkFacilityVisibility(t *testing.T) {
 	facilityB, err := env.CreateTestFacility("Link Facility B")
 	require.NoError(t, err)
 
-	provider := &models.OpenContentProvider{Title: models.StringPtr(models.HelpfulLinks), Url: "helpful_links"}
-	require.NoError(t, env.DB.Create(provider).Error)
+	env.InsertReturningID(t, `INSERT INTO open_content_providers (title, url, currently_enabled) VALUES ('HelpfulLinks', 'https://helpful_links', false)`)
 
 	deptAdmin, err := env.CreateTestUser("linkdept", models.DepartmentAdmin, facilityA.ID, "")
 	require.NoError(t, err)
@@ -119,12 +115,16 @@ func TestHelpfulLinkFacilityVisibility(t *testing.T) {
 		}).WithTestClaims(facClaimsA).Do().ExpectStatus(http.StatusCreated)
 	})
 
-	var link models.HelpfulLink
-	require.NoError(t, env.DB.First(&link, "url = ?", "https://khanacademy.org").Error)
+	var link struct {
+		ID                    uint
+		OpenContentProviderID uint
+	}
+	require.NoError(t, env.DB.Raw(`SELECT id, open_content_provider_id FROM helpful_links WHERE url = ?`, "https://khanacademy.org").Scan(&link).Error)
+	require.NotZero(t, link.ID)
 	visibilityURL := fmt.Sprintf("/api/helpful-links/facilities/%d", link.ID)
 
 	t.Run("link is visible at creator facility, hidden elsewhere", func(t *testing.T) {
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.GreaterOrEqual(t, len(rows), 2)
@@ -140,7 +140,7 @@ func TestHelpfulLinkFacilityVisibility(t *testing.T) {
 		}).WithTestClaims(deptClaims).Do().ExpectStatus(http.StatusOK)
 
 		type linkList struct {
-			Links []database.HelpfulLinkResp `json:"helpful_links"`
+			Links []contentListItem `json:"helpful_links"`
 		}
 		resp := NewRequest[linkList](env.Client, t, http.MethodGet, "/api/helpful-links?visibility=true", nil).
 			WithTestClaims(facClaimsB).Do().
@@ -155,7 +155,7 @@ func TestHelpfulLinkFacilityVisibility(t *testing.T) {
 			fmt.Sprintf("/api/helpful-links/toggle/%d", link.ID), map[string]any{}).
 			WithTestClaims(facClaimsA).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.GreaterOrEqual(t, len(rows), 2)
@@ -179,7 +179,7 @@ func TestHelpfulLinkFacilityVisibility(t *testing.T) {
 			WithTestClaims(facClaimsA).Do().ExpectStatus(http.StatusOK)
 
 		var count int64
-		require.NoError(t, env.DB.Model(&models.FacilityVisibilityStatus{}).
+		require.NoError(t, env.DB.Table("facility_visibility_statuses").
 			Where("content_id = ? AND open_content_provider_id = ?", link.ID, link.OpenContentProviderID).
 			Count(&count).Error)
 		require.Zero(t, count)

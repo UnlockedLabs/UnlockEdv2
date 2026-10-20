@@ -13,6 +13,8 @@ import (
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+
+	"github.com/stretchr/testify/require"
 )
 
 type TestEnv struct {
@@ -174,6 +176,16 @@ func (env *TestEnv) SetFacilitiesToProgram(programId uint, facilityIds []uint) e
 	}
 
 	return nil
+}
+
+// InsertReturningID runs an INSERT and returns the new row's id. Tests use it
+// to seed a feature module's tables, whose Go types core can't import.
+func (env *TestEnv) InsertReturningID(t *testing.T, insert string, args ...any) uint {
+	t.Helper()
+	var id uint
+	require.NoError(t, env.DB.Raw(insert+" RETURNING id", args...).Scan(&id).Error, insert)
+	require.NotZero(t, id, insert)
+	return id
 }
 
 func (env *TestEnv) TruncateTable(tableName string) error {

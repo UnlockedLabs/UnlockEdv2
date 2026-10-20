@@ -3,9 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -13,9 +11,6 @@ import (
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sesv2"
-	"github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -127,8 +122,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 }
 
 // facilityScopedQueryContext is for reads whose results are inherently
-// per-facility (libraries, videos, favorites, helpful links, resident/user
-// listings tied to a facility). A statewide admin has no single facility
+// per-facility (resident/user listings tied to a facility). A statewide admin has no single facility
 // (FacilityID == 0), so these fall back to the admin's home facility rather than
 // matching no facility at all.
 func (srv *Server) facilityScopedQueryContext(r *http.Request) models.QueryContext {
@@ -215,15 +209,6 @@ func newDeptAdminRoute(method string, handler HttpFunc) routeDef {
 		resolver:    DeptAdminResolver,
 	}
 }
-func deptAdminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       true,
-		features:    features,
-		resolver:    DeptAdminResolver,
-	}
-}
 
 func newSystemAdminRoute(method string, handler HttpFunc) routeDef {
 	return routeDef{
@@ -301,39 +286,4 @@ func enforceDeptAdminForAllQuery(tx *database.DB, r *http.Request) bool {
 		return false
 	}
 	return claims.isAdmin()
-}
-
-func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML string) error {
-	charset := aws.String("UTF-8")
-	input := &sesv2.SendEmailInput{
-		Content: &types.EmailContent{
-			Simple: &types.Message{
-				Subject: &types.Content{
-					Data:    aws.String(subject),
-					Charset: charset,
-				},
-				Body: &types.Body{
-					Text: &types.Content{
-						Data:    aws.String(bodyText),
-						Charset: charset,
-					},
-					Html: &types.Content{
-						Data:    aws.String(bodyHTML),
-						Charset: charset,
-					},
-				},
-			},
-		},
-		Destination: &types.Destination{
-			ToAddresses: []string{os.Getenv("TO_EMAIL")},
-		},
-		FromEmailAddress: aws.String(os.Getenv("FROM_EMAIL")),
-	}
-
-	_, err := srv.sesClient.SendEmail(ctx, input)
-	if err != nil {
-		logrus.Printf("error sending email: %v\n", err)
-		return fmt.Errorf("failed to send email via SES: %v", err)
-	}
-	return nil
 }

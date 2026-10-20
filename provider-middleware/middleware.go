@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -94,7 +95,7 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
 
-func (sh *ServiceHandler) getContentProvider(msg *nats.Msg) (*models.OpenContentProvider, map[string]any, error) {
+func (sh *ServiceHandler) getContentProvider(msg *nats.Msg) (*opencontent.OpenContentProvider, map[string]any, error) {
 	var body map[string]any
 	if err := json.Unmarshal(msg.Data, &body); err != nil {
 		log.Errorf("failed to unmarshal message: %v", err)

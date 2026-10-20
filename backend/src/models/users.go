@@ -69,12 +69,11 @@ type User struct {
 	DeactivatedAt *time.Time `json:"deactivated_at,omitempty"`
 
 	/* foreign keys */
-	Mappings             []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	Enrollments          []UserEnrollment      `json:"enrollments,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	OpenContentFavorites []OpenContentFavorite `json:"favorites,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	Facility             *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
-	UserRole             *Role                 `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
-	LoginMetrics         *LoginMetrics         `json:"login_metrics,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Mappings     []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Enrollments  []UserEnrollment      `json:"enrollments,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Facility     *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
+	UserRole     *Role                 `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
+	LoginMetrics *LoginMetrics         `json:"login_metrics,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
 }
 
 type ImportUser struct {

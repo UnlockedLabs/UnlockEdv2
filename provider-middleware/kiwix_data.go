@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 )
 
 type Feed struct {
@@ -67,9 +68,9 @@ const (
 	MinImgSize = 150
 )
 
-func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *models.Library {
+func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *opencontent.Library {
 	url, thumbnailURL := ks.ParseUrls(entry.Title, entry.Links)
-	return &models.Library{
+	return &opencontent.Library{
 		OpenContentProviderID: providerId,
 		ExternalID:            models.StringPtr(entry.ID),
 		Title:                 entry.Title,

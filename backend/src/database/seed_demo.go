@@ -1,11 +1,13 @@
 package database
 
 import (
+	"context"
 	"math/rand"
 	"slices"
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 
 	"github.com/google/uuid"
 	// "github.com/sirupsen/logrus"
@@ -32,7 +34,7 @@ func (db *DB) RunOrResetDemoSeed(facilityId uint) error {
 	if err := db.Exec("DELETE from outcomes where date(created_at) <= date(?)", activity.UpdatedAt).Error; err != nil {
 		return newDeleteDBError(err, "outcomes")
 	}
-	if err := db.Exec("DELETE from open_content_activities where date(request_ts) <= date(?)", activity.UpdatedAt).Error; err != nil {
+	if err := registry.OpenContent(db.DB).ResetDemoActivity(context.Background(), activity.UpdatedAt); err != nil {
 		return newDeleteDBError(err, "open_content_activities")
 	}
 	return db.RunDemoSeed(facilityId)
@@ -54,24 +56,14 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 		return newGetRecordsDBError(err, "courses")
 	}
 
-	libraries := []models.Library{}
-	if err := db.Model(&models.Library{}).Limit(40).Find(&libraries).Error; err != nil {
-		return newGetRecordsDBError(err, "libraries")
+	userIDs := make([]uint, 0, len(users))
+	for _, user := range users {
+		userIDs = append(userIDs, user.ID)
+	}
+	if err := registry.OpenContent(db.DB).SeedDemoActivity(context.Background(), facilityId, userIDs); err != nil {
+		return newCreateDBError(err, "open_content_activities")
 	}
 
-	contentUrls := []models.OpenContentUrl{}
-	if err := db.Model(&models.OpenContentUrl{}).Find(&contentUrls).Error; err != nil {
-		return newGetRecordsDBError(err, "open_content_urls")
-	}
-	if len(contentUrls) == 0 {
-		newContentUrls := []models.OpenContentUrl{
-			{ContentURL: "/"}, {ContentURL: "/math"}, {ContentURL: "/science"}, {ContentURL: "/history"},
-		}
-		if err := db.CreateInBatches(&newContentUrls, 4).Error; err != nil {
-			return newCreateDBError(err, "open_content_urls")
-		}
-		contentUrls = newContentUrls
-	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	completedNumCount := 0
 	sixMonthsAgo := time.Now().AddDate(0, -6, 0)
@@ -145,24 +137,6 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 							continue
 						}
 						completedNumCount++
-					}
-				}
-			}
-		}
-
-		for i := 0; i < 180; i++ {
-			for _, library := range libraries {
-				if i%(rand.Intn(8)+1) == 0 {
-					openContentActivity := models.OpenContentActivity{
-						UserID:                user.ID,
-						RequestTS:             sixMonthsAgo.AddDate(0, 0, i).Add(time.Duration(i) * time.Minute),
-						ContentID:             library.ID,
-						OpenContentProviderID: library.OpenContentProviderID,
-						OpenContentUrlID:      uint(rand.Intn(len(contentUrls)) + 1),
-						FacilityID:            facilityId,
-					}
-					if err := db.Create(&openContentActivity).Error; err != nil {
-						continue
 					}
 				}
 			}

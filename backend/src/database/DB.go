@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -27,11 +26,6 @@ import (
 
 // DB wraps a GORM database connection for application database operations.
 type DB struct{ *gorm.DB }
-
-var (
-	defaultOpenContentProviders = [2]models.OpenContentProvider{{Title: models.StringPtr(models.Kiwix), Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.StringPtr(models.KiwixThumbnailURL), Description: models.StringPtr(models.Kiwix)},
-		{Title: models.StringPtr(models.Youtube), Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.StringPtr(models.YoutubeThumbnail), Description: models.StringPtr(models.YoutubeDescription)}}
-)
 
 // NewDB creates a DB wrapper around an existing GORM database connection.
 func NewDB(db *gorm.DB) *DB {
@@ -194,7 +188,6 @@ func MigrateTesting(db *gorm.DB) {
 		&models.Facility{},
 		&models.ProviderPlatform{},
 		&models.ProviderUserMapping{},
-		&models.HelpfulLink{},
 		&models.Course{},
 		&models.Program{},
 		&models.ProgramCreditType{},
@@ -216,22 +209,12 @@ func MigrateTesting(db *gorm.DB) {
 		&models.Activity{},
 		&models.OidcClient{},
 		&models.ChangeLogEntry{},
-		&models.OpenContentProvider{},
-		&models.OpenContentUrl{},
-		&models.OpenContentActivity{},
 		&models.CronJob{},
 		&models.RunnableTask{},
-		&models.Library{},
-		&models.FacilityVisibilityStatus{},
-		&models.Video{},
-		&models.VideoDownloadAttempt{},
-		&models.OpenContentFavorite{},
 		&models.UserEnrollment{},
 		&models.UserCourseActivityTotals{},
 		&models.ProgramClassesHistory{},
 		&models.UserAccountHistory{},
-		&models.Tag{},
-		&models.OpenContentTag{},
 		&models.FeatureFlags{},
 		&models.PageFeatureFlags{},
 		&models.FacilityFeatureFlag{},
@@ -336,32 +319,6 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 			logrus.Fatalf("Failed to update user facility_id: %v", err)
 		}
 
-		links := []models.HelpfulLink{}
-		if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
-			logrus.Fatalf("Failed to unmarshal default left menu links: %v", err)
-		}
-		if err := dbWithCtx.Create(&links).Error; err != nil {
-			logrus.Fatalf("Failed to create left menu links: %v", err)
-		}
-		for _, link := range links {
-			if link.OpenContentProviderID == 0 {
-				continue
-			}
-			visibility := models.FacilityVisibilityStatus{
-				FacilityID:            defaultFacility.ID,
-				OpenContentProviderID: link.OpenContentProviderID,
-				ContentID:             link.ID,
-				VisibilityStatus:      true,
-			}
-			if err := dbWithCtx.Create(&visibility).Error; err != nil {
-				logrus.Fatalf("Failed to create link visibility: %v", err)
-			}
-		}
-		for idx := range defaultOpenContentProviders {
-			if err := dbWithCtx.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
-				logrus.Fatalf("Failed to create default open content providers: %v", err)
-			}
-		}
 		seedCtx := identity.NewContext(context.Background(), &identity.Claims{UserID: systemBatchUserID})
 		if err := seedModules(seedCtx, db.DB, defaultFacility.ID, registry.All()); err != nil {
 			logrus.Fatalf("Failed to seed modules: %v", err)
@@ -378,24 +335,3 @@ func (db *DB) softDeleteMap() map[string]any {
 	}
 	return updates
 }
-
-const (
-	defaultLeftMenuLinks = `[{
-			"title": "Unlocked Labs",
-			"description": "Unlocked Labs website",
-			"url": "https://unlockedlabs.org",
-			"visibility_status": true,
-	        "thumbnail_url": "https://unlockedlabs.org/favicon.ico",
-			"open_content_provider_id": 1,
-			"facility_id": 1
-		},
-	    {
-	    "title": "Google",
-	    "description": "Google search engine",
-	    "url": "https://www.google.com",
-	    "visibility_status": true,
-	    "open_content_provider_id": 1,
-	    "thumbnail_url": "https://www.google.com/favicon.ico",
-	    "facility_id": 1
-	    }]`
-)

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
@@ -23,10 +22,8 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 	facilityC, err := env.CreateTestFacility("Facility C")
 	require.NoError(t, err)
 
-	kiwix := &models.OpenContentProvider{Title: models.StringPtr("Kiwix"), Url: "http://kiwix"}
-	require.NoError(t, env.DB.Create(kiwix).Error)
-	library := &models.Library{OpenContentProviderID: kiwix.ID, Title: "Test Library", Url: "/test"}
-	require.NoError(t, env.DB.Create(library).Error)
+	kiwixID := env.InsertReturningID(t, `INSERT INTO open_content_providers (title, url, currently_enabled) VALUES ('Kiwix', 'http://kiwix', false)`)
+	libraryID := env.InsertReturningID(t, `INSERT INTO libraries (open_content_provider_id, title, url) VALUES (?, 'Test Library', '/test')`, kiwixID)
 
 	deptAdmin, err := env.CreateTestUser("deptadmin", models.DepartmentAdmin, facilityA.ID, "")
 	require.NoError(t, err)
@@ -35,9 +32,9 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 
 	deptClaims := &handlers.Claims{UserID: deptAdmin.ID, Role: models.DepartmentAdmin, FacilityID: facilityA.ID}
 	facClaims := &handlers.Claims{UserID: facAdmin.ID, Role: models.FacilityAdmin, FacilityID: facilityA.ID}
-	visibilityURL := fmt.Sprintf("/api/libraries/%d/facilities", library.ID)
+	visibilityURL := fmt.Sprintf("/api/libraries/%d/facilities", libraryID)
 
-	statusFor := func(rows []database.ContentFacilityVisibility, facilityID uint) bool {
+	statusFor := func(rows []contentFacilityVisibility, facilityID uint) bool {
 		for _, row := range rows {
 			if row.FacilityID == facilityID {
 				return row.VisibilityStatus
@@ -48,7 +45,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 	}
 
 	t.Run("new library is hidden at all facilities", func(t *testing.T) {
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.GreaterOrEqual(t, len(rows), 3)
@@ -63,7 +60,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 			"visibility_status": true,
 		}).WithTestClaims(deptClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.True(t, statusFor(rows, facilityA.ID))
@@ -72,7 +69,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 	})
 
 	t.Run("library list includes visible facility count", func(t *testing.T) {
-		libs := NewRequest[[]database.LibraryResponse](env.Client, t, http.MethodGet,
+		libs := NewRequest[[]contentListItem](env.Client, t, http.MethodGet,
 			"/api/libraries?visibility=all", nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
@@ -86,7 +83,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 			"visibility_status": false,
 		}).WithTestClaims(deptClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		for _, row := range rows {
@@ -100,7 +97,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 			"visibility_status": true,
 		}).WithTestClaims(deptClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.True(t, statusFor(rows, facilityA.ID))
@@ -129,13 +126,27 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 
 	t.Run("facility admin toggle still works for own facility", func(t *testing.T) {
 		NewRequest[any](env.Client, t, http.MethodPut,
-			fmt.Sprintf("/api/libraries/%d/toggle", library.ID), map[string]any{}).
+			fmt.Sprintf("/api/libraries/%d/toggle", libraryID), map[string]any{}).
 			WithTestClaims(facClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]contentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.True(t, statusFor(rows, facilityA.ID))
 		require.False(t, statusFor(rows, facilityB.ID))
 	})
+}
+
+// The JSON shapes of Open Content's responses that these tests read. Tests
+// outside the module can't use its Go types (EN-192).
+type contentFacilityVisibility struct {
+	FacilityID       uint   `json:"facility_id"`
+	FacilityName     string `json:"facility_name"`
+	VisibilityStatus bool   `json:"visibility_status"`
+}
+
+type contentListItem struct {
+	ID                   uint `json:"id"`
+	VisibilityStatus     bool `json:"visibility_status"`
+	VisibleFacilityCount int  `json:"visible_facility_count"`
 }

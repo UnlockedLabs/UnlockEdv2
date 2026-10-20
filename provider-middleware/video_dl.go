@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -64,7 +65,7 @@ func validateVideoURL(urlStr string) error {
 	return nil
 }
 
-func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body map[string]any) *VideoService {
+func NewVideoService(prov *opencontent.OpenContentProvider, db *gorm.DB, body map[string]any) *VideoService {
 	bucketName := os.Getenv("S3_BUCKET_NAME")
 	var svc *s3.Client = nil
 	if bucketName != "" {
@@ -118,7 +119,7 @@ func (yt *VideoService) syncVideoMetadata(ctx context.Context) error {
 		return nil
 	}
 	var count int64
-	if err := yt.db.WithContext(ctx).Model(&models.Video{}).Count(&count).Error; err != nil {
+	if err := yt.db.WithContext(ctx).Model(&opencontent.Video{}).Count(&count).Error; err != nil {
 		logger().Errorf("error counting videos in DB: %v", err)
 		return err
 	}
@@ -130,7 +131,7 @@ func (yt *VideoService) syncVideoMetadata(ctx context.Context) error {
 	// fetch existing video IDs from DB that match any json file
 	var existingVideos []string
 	if err := yt.db.WithContext(ctx).
-		Model(&models.Video{}).
+		Model(&opencontent.Video{}).
 		Where("external_id IN ?", jsonIDs).
 		Pluck("external_id", &existingVideos).Error; err != nil {
 		logger().Errorf("error fetching existing video IDs from DB: %v", err)
@@ -157,7 +158,7 @@ func (yt *VideoService) syncVideoMetadata(ctx context.Context) error {
 				logger().Errorf("failed to read %s: %v", path, err)
 				continue
 			}
-			var video models.Video
+			var video opencontent.Video
 			if err := json.Unmarshal(data, &video); err != nil {
 				logger().Errorf("failed to parse %s: %v", path, err)
 				continue
@@ -169,9 +170,9 @@ func (yt *VideoService) syncVideoMetadata(ctx context.Context) error {
 	}
 
 	// fetch videos in DB that don't exist as json files (unlikely path)
-	var missingFiles []models.Video
+	var missingFiles []opencontent.Video
 	if err := yt.db.WithContext(ctx).
-		Model(&models.Video{}).
+		Model(&opencontent.Video{}).
 		Where("external_id NOT IN ?", jsonIDs).
 		Find(&missingFiles).Error; err != nil {
 		logger().Errorf("error fetching videos missing from disk: %v", err)
@@ -303,8 +304,8 @@ func stripUrlsFromDescription(desc string) string {
 }
 
 func (vs *VideoService) retryFailedVideos(ctx context.Context) error {
-	videos := make([]models.Video, 0)
-	if err := vs.db.WithContext(ctx).Model(&models.Video{}).Find(&videos, "availability <> 'available'").Error; err != nil {
+	videos := make([]opencontent.Video, 0)
+	if err := vs.db.WithContext(ctx).Model(&opencontent.Video{}).Find(&videos, "availability <> 'available'").Error; err != nil {
 		logger().Errorf("error fetching failed videos: %v", err)
 	}
 	for _, video := range videos {
@@ -326,17 +327,17 @@ func (vs *VideoService) retryFailedVideos(ctx context.Context) error {
 }
 
 func (vs *VideoService) retrySingleVideo(ctx context.Context, videoId int) error {
-	var video models.Video
+	var video opencontent.Video
 	if err := vs.db.WithContext(ctx).Preload("Attempts").First(&video, videoId).Error; err != nil {
 		logger().Errorf("error fetching video: %v", err)
 		return vs.incrementFailedAttempt(ctx, &video, err.Error())
 	}
-	if video.Availability == models.VideoAvailable {
+	if video.Availability == opencontent.VideoAvailable {
 		logger().Errorf("video %s is already available", video.ExternalID)
 		return nil
 	}
 	// prevent attempts to retry the video within 30 mins of creation or 10 mins of a recent failed attempt
-	if video.Availability == models.VideoProcessing && (video.CreatedAt.After(time.Now().Add(-30*time.Minute)) || video.HasRecentAttempt()) {
+	if video.Availability == opencontent.VideoProcessing && (video.CreatedAt.After(time.Now().Add(-30*time.Minute)) || video.HasRecentAttempt()) {
 		logger().Errorf("video %s was retried while still processing", video.ExternalID)
 		return nil
 	}
@@ -364,7 +365,7 @@ func (yt *VideoService) addVideos(ctx context.Context) error {
 			return ctx.Err()
 		default:
 			var videoExists bool
-			tx := yt.db.WithContext(ctx).Model(&models.Video{}).Select("count(*) > 0")
+			tx := yt.db.WithContext(ctx).Model(&opencontent.Video{}).Select("count(*) > 0")
 			if strings.Contains(urlStr, "youtu") {
 				tx = tx.Where("external_id = ?", ytIdFromUrl(urlStr))
 			} else {
@@ -389,25 +390,25 @@ func (yt *VideoService) addVideos(ctx context.Context) error {
 	return nil
 }
 
-func (yt *VideoService) incrementFailedAttempt(ctx context.Context, vid *models.Video, vidError string) error {
+func (yt *VideoService) incrementFailedAttempt(ctx context.Context, vid *opencontent.Video, vidError string) error {
 	var numAttempts int64
-	if err := yt.db.WithContext(ctx).Model(&models.VideoDownloadAttempt{}).Where("video_id = ?", vid.ID).Count(&numAttempts).Error; err != nil {
+	if err := yt.db.WithContext(ctx).Model(&opencontent.VideoDownloadAttempt{}).Where("video_id = ?", vid.ID).Count(&numAttempts).Error; err != nil {
 		logger().Errorf("error counting download attempts: %v", err)
 		return err
 	}
-	if numAttempts >= int64(models.MAX_DOWNLOAD_ATTEMPTS) {
+	if numAttempts >= int64(opencontent.MAX_DOWNLOAD_ATTEMPTS) {
 		if err := yt.db.WithContext(ctx).Delete(vid).Error; err != nil {
 			logger().Errorf("error deleting video: %v", err)
 			return err
 		}
 		return nil
 	}
-	attempt := models.VideoDownloadAttempt{
+	attempt := opencontent.VideoDownloadAttempt{
 		VideoID:      vid.ID,
 		ErrorMessage: models.NilIfBlank(vidError),
 	}
 	if vidError != "" {
-		vid.Availability = models.VideoHasError
+		vid.Availability = opencontent.VideoHasError
 		if err := yt.db.Save(vid).Error; err != nil {
 			logger().Errorf("error saving video: %v", err)
 		}
@@ -415,7 +416,7 @@ func (yt *VideoService) incrementFailedAttempt(ctx context.Context, vid *models.
 	return yt.db.WithContext(ctx).Create(&attempt).Error
 }
 
-func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl string, avail bool) (*goutubedl.Result, *models.Video, error) {
+func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl string, avail bool) (*goutubedl.Result, *opencontent.Video, error) {
 	result, err := goutubedl.New(ctx, vidUrl, goutubedl.Options{
 		Type:     goutubedl.TypeAny,
 		DebugLog: logger(),
@@ -433,7 +434,7 @@ func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl
 	if strings.Contains("youtu", vidUrl) {
 		externId = ytIdFromUrl(vidUrl)
 	}
-	vid := &models.Video{
+	vid := &opencontent.Video{
 		Title:                 result.Info.Title,
 		Description:           models.NilIfBlank(stripUrlsFromDescription(result.Info.Description)),
 		ChannelTitle:          &result.Info.Channel,
@@ -444,9 +445,9 @@ func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl
 		OpenContentProviderID: yt.OpenContentProviderID,
 	}
 	if avail {
-		vid.Availability = models.VideoAvailable
+		vid.Availability = opencontent.VideoAvailable
 	} else {
-		vid.Availability = models.VideoProcessing
+		vid.Availability = opencontent.VideoProcessing
 	}
 	if err := yt.db.WithContext(ctx).Create(vid).Error; err != nil {
 		logger().Errorln(err)
@@ -475,7 +476,7 @@ func ytIdFromUrl(url string) string {
 }
 
 // can be called vith the existing goutubedl.Result, or nil and it will fetch the info again
-func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Result, video *models.Video) error {
+func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Result, video *opencontent.Video) error {
 	if err := validateVideoURL(video.Url); err != nil {
 		logger().Errorf("URL validation failed for video %d: %v", video.ID, err)
 		return fmt.Errorf("URL validation failed: %w", err)
@@ -522,7 +523,7 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 	err := cmd.Run()
 	if err != nil {
 		logger().Errorf("yt-dlp failed: %v\nstdout:\n%s\nstderr:\n%s", err, outBuf.String(), errBuf.String())
-		video.Availability = models.VideoHasError
+		video.Availability = opencontent.VideoHasError
 		return yt.incrementFailedAttempt(ctx, video, err.Error())
 	}
 	if yt.s3Svc != nil {
@@ -548,11 +549,11 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 			return err
 		}
 	}
-	video.Availability = models.VideoAvailable
+	video.Availability = opencontent.VideoAvailable
 	return yt.db.WithContext(ctx).Save(video).Error
 }
 
-func (yt *VideoService) uploadFileToS3(ctx context.Context, file *os.File, video *models.Video) error {
+func (yt *VideoService) uploadFileToS3(ctx context.Context, file *os.File, video *opencontent.Video) error {
 	logger().Infof("Uploading to bucket: %s, key: %s", yt.bucketName, video.GetS3KeyMp4())
 	uploadParams := &s3.PutObjectInput{
 		Bucket:      aws.String(yt.bucketName),
