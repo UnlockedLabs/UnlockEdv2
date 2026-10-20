@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/table';
 import { EmptyState, PageHeader } from '@/components/shared';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
+import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
 import { cn } from '@/lib/utils';
 import {
     downloadLearningRecordPdf,
@@ -583,6 +584,9 @@ export default function DigitalTranscriptHome() {
                     root,
                     learningRecordPdfFilename(residentName)
                 );
+                captureEvent(ANALYTICS_EVENTS.LearningRecordExported, {
+                    source: 'list_row'
+                });
                 toast.success('Your record was saved as a PDF');
             } catch {
                 toast.error('Could not save PDF. Please try again.');
