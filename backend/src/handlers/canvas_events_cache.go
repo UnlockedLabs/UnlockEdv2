@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -152,7 +153,7 @@ func (srv *Server) putCanvasEvents(cacheKey string, cached CachedCanvasEvents) {
 // can show which provider is still syncing. They carry Loading and no times, so
 // the frontend keeps them out of the grid and renders them as an indicator.
 func (srv *Server) loadingEventPlaceholders() []models.FacilityProgramClassEvent {
-	providers, err := srv.Db.GetAllActiveProviderPlatforms()
+	providers, err := srv.activeProviders(context.Background())
 	if err != nil {
 		log.WithError(err).Warn("loadingEventPlaceholders: failed to list provider platforms")
 		return nil

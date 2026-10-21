@@ -18,7 +18,6 @@ import (
 )
 
 func (srv *Server) registerDashboardRoutes() []routeDef {
-	axx := models.ProviderAccess
 	resolver := UserRoleResolver("id")
 	return []routeDef{
 		newAdminRoute("GET /api/department-metrics", srv.handleDepartmentMetrics),
@@ -33,8 +32,6 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 		newAdminRoute("GET /api/dashboard/class-metrics", srv.handleClassDashboardMetrics),
 		newAdminRoute("GET /api/dashboard/facility-health", srv.handleFacilityHealthSummary),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
-		validatedFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, axx, resolver),
-		validatedFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, axx, resolver),
 		validatedRoute("GET /api/users/{id}/profile", srv.handleResidentProfile, resolver),
 	}
 }
@@ -546,50 +543,6 @@ func (srv *Server) handleFacilityHealthSummary(w http.ResponseWriter, r *http.Re
 	return writeJsonResponse(w, http.StatusOK, summaries)
 }
 
-/**
-* GET: /api/users/{id}/catalog
-* @Query Params:
-* tag: any number of tags to filter by
-* ?tag=some_tag&tag=another_tag
-* provider_id: provider id to filter by
-**/
-func (srv *Server) handleUserCatalog(w http.ResponseWriter, r *http.Request, log sLog) error {
-	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "user_id")
-	}
-	tags := r.URL.Query()["tags"]
-	var tagsSplit []string
-	if len(tags) > 0 {
-		tagsSplit = strings.Split(tags[0], ",")
-	}
-	search := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("search")))
-	order := r.URL.Query().Get("order")
-	userCatalog, err := srv.Db.GetUserCatalog(userId, tagsSplit, search, order)
-	if err != nil {
-		log.add("user_id", userId)
-		log.add("search", search)
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, userCatalog)
-}
-
-func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log sLog) error {
-	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "user ID")
-	}
-	log.add("user_id", userId)
-	args := srv.getQueryContext(r)
-	args.UserID = uint(userId)
-	userCourses, err := srv.Db.GetUserCourses(&args)
-	if err != nil {
-		log.add("search", args.Search)
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, userCourses)
-}
-
 func (srv *Server) getLayer2Data(r *http.Request, log sLog) (models.CachedDashboard[models.AdminLayer2Join], error) {
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
@@ -607,35 +560,17 @@ func (srv *Server) getLayer2Data(r *http.Request, log sLog) (models.CachedDashbo
 		ref := uint(facilityIdInt)
 		facilityId = &ref
 	}
-	totalCourses, err := srv.Db.GetTotalCoursesOffered(facilityId)
+	stats, err := srv.providerPlatforms.LearningStats(r.Context(), facilityId)
 	if err != nil {
 		log.add("facilityId", claims.FacilityID)
-		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(err)
-	}
-
-	totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(err)
-	}
-
-	totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(err)
-	}
-
-	learningInsights, err := srv.Db.GetLearningInsights(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(err)
+		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(database.NewDBError(err, "error getting learning stats"))
 	}
 
 	adminDashboard := models.AdminLayer2Join{
-		TotalCoursesOffered:   int64(totalCourses),
-		TotalStudentsEnrolled: int64(totalStudents),
-		TotalHourlyActivity:   int64(totalActivity),
-		LearningInsights:      learningInsights,
+		TotalCoursesOffered:   stats.TotalCoursesOffered,
+		TotalStudentsEnrolled: stats.TotalStudentsEnrolled,
+		TotalHourlyActivity:   stats.TotalHourlyActivity,
+		LearningInsights:      stats.Insights,
 	}
 	var cachedData models.CachedDashboard[models.AdminLayer2Join]
 	cachedData.LastCache = time.Now()

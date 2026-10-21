@@ -14,6 +14,7 @@ import (
 	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 
 	"github.com/UnlockedLabs/unlocked-contracts/identity"
 	"github.com/go-faker/faker/v4"
@@ -83,13 +84,13 @@ func seedTestData(db *gorm.DB) {
 	// The local Canvas from `make canvas`. base_url is the compose service name, not
 	// localhost:3001, because the API calls originate inside the server and provider-service
 	// containers. The access key still has to be pasted in by hand -- it is minted per machine.
-	platforms := []models.ProviderPlatform{
+	platforms := []providerplatforms.ProviderPlatform{
 		{
 			Name:      "Canvas",
 			BaseUrl:   "http://canvas",
 			AccountID: "1",
-			Type:      models.CanvasOSS,
-			State:     models.Enabled,
+			Type:      providerplatforms.CanvasOSS,
+			State:     providerplatforms.Enabled,
 			AccessKey: "testing_key_replace_me",
 		},
 	}
@@ -131,7 +132,7 @@ func seedTestData(db *gorm.DB) {
 		// exist, and GetUnmappedUsers then hides them from the list you would use to link
 		// them for real. Link users by hand against a live provider instead.
 	}
-	courses := []models.Course{}
+	courses := []providerplatforms.Course{}
 	if err := json.Unmarshal([]byte(coursesStr), &courses); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
@@ -141,7 +142,7 @@ func seedTestData(db *gorm.DB) {
 		}
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
-	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
+	milestoneTypes := []providerplatforms.MilestoneType{providerplatforms.DiscussionPost, providerplatforms.AssignmentSubmission, providerplatforms.QuizSubmission, providerplatforms.GradeReceived}
 
 	cohorts := []models.ProgramClassCohort{}
 	cohorts, err = createFacilityPrograms(db)
@@ -167,7 +168,7 @@ func seedTestData(db *gorm.DB) {
 	for _, user := range users {
 		for _, prog := range courses {
 			// all test courses are open_enrollment
-			enrollment := models.UserEnrollment{
+			enrollment := providerplatforms.UserEnrollment{
 				CourseID:   prog.ID,
 				UserID:     user.ID,
 				ExternalID: models.StringPtr(fmt.Sprintf("%d", rand.Intn(1000))),
@@ -186,7 +187,7 @@ func seedTestData(db *gorm.DB) {
 				// we want activity for the last year
 				yearAgo := time.Now().AddDate(-1, 0, 0)
 				time := yearAgo.AddDate(0, 0, i)
-				activity := models.Activity{
+				activity := providerplatforms.Activity{
 					UserID:     user.ID,
 					CourseID:   prog.ID,
 					Type:       "interaction",
@@ -201,16 +202,16 @@ func seedTestData(db *gorm.DB) {
 				}
 			}
 			if rand.Float32() < 0.4 { // 40% chance to create an outcome
-				outcome := models.Outcome{
+				outcome := providerplatforms.Outcome{
 					UserID:   user.ID,
 					CourseID: prog.ID,
-					Type:     models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
+					Type:     providerplatforms.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 				}
 				if err := db.Create(&outcome).Error; err != nil {
 					log.Printf("Failed to create outcome: %v", err)
 				}
 			} else {
-				newMilestone := models.Milestone{
+				newMilestone := providerplatforms.Milestone{
 					CourseID:    prog.ID,
 					IsCompleted: false,
 					Type:        milestoneTypes[rand.Intn(len(milestoneTypes))],

@@ -8,6 +8,7 @@ import (
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
+	ppapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api"
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/nats-io/nats.go"
@@ -122,7 +123,7 @@ func (s *Scheduler) execute() {
 	}
 	log.Infof("Generated %v tasks", tasks)
 	for _, task := range tasks {
-		if task.Provider != nil && task.Provider.Type == models.Brightspace {
+		if task.ProviderType == ppapi.Brightspace {
 			continue
 		}
 		log.Infof("Running task: %v", task.Job.Name)
@@ -131,7 +132,7 @@ func (s *Scheduler) execute() {
 }
 
 func getCronSchedule(task *models.RunnableTask, hour int) string {
-	if task.Provider != nil && task.Provider.Type == models.Brightspace {
+	if task.ProviderType == ppapi.Brightspace {
 		return fmt.Sprintf("0 %d * * 4", hour)
 	} else {
 		return task.Job.Schedule

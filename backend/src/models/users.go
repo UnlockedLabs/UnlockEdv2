@@ -69,20 +69,9 @@ type User struct {
 	DeactivatedAt *time.Time `json:"deactivated_at,omitempty"`
 
 	/* foreign keys */
-	Mappings     []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	Enrollments  []UserEnrollment      `json:"enrollments,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	Facility     *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
-	UserRole     *Role                 `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
-	LoginMetrics *LoginMetrics         `json:"login_metrics,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-}
-
-type ImportUser struct {
-	Username         string `json:"username"`
-	NameFirst        string `json:"name_first"`
-	NameLast         string `json:"name_last"`
-	Email            string `json:"email"`
-	ExternalUserID   string `json:"external_user_id"`
-	ExternalUsername string `json:"external_username"`
+	Facility     *Facility     `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
+	UserRole     *Role         `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
+	LoginMetrics *LoginMetrics `json:"login_metrics,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
 }
 
 func (User) TableName() string {

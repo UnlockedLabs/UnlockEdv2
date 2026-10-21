@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 )
 
 type KolibriResponse[T any] struct {
@@ -36,7 +37,7 @@ type KolibriUser struct {
 	Password    string `json:"password"`
 }
 
-func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
+func (ku *KolibriUser) IntoImportUser() (*providerplatforms.ImportUser, error) {
 	var first, last string
 
 	splitName := strings.Split(ku.Fullname, " ")
@@ -53,7 +54,7 @@ func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
 	if first == "" && last == "" && ku.Username == "" {
 		return nil, errors.New("invalid user")
 	}
-	user := models.ImportUser{
+	user := providerplatforms.ImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
 		NameLast:         last,
@@ -81,7 +82,7 @@ func stripUuidForUrl(uuid string) string {
 	return strings.ReplaceAll(uuid, "-", "")
 }
 
-func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course {
+func (kc *KolibriService) IntoCourse(data map[string]interface{}) *providerplatforms.Course {
 	courseType := data["course_type"].(string)
 	thumbnail := data["thumbnail"].(string)
 	root := data["root_id"].(string)
@@ -92,7 +93,7 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course
 		description = description[:255]
 	}
 	totalResourceCount := data["total_resource_count"].(int64)
-	course := models.Course{
+	course := providerplatforms.Course{
 		ProviderPlatformID:      kc.ProviderPlatformID,
 		ExternalID:              id,
 		Name:                    name,

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	ppapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,15 +20,15 @@ import (
 // it as a JSON boolean, close_date arrives as null, and datetimes are space
 // separated rather than RFC3339.
 
-func essentialEdServer(t *testing.T, handler http.HandlerFunc) (*Server, *models.ProviderPlatform, func()) {
+func essentialEdServer(t *testing.T, handler http.HandlerFunc) (*Server, *ppapi.Provider, func()) {
 	t.Helper()
 	ts := httptest.NewTLSServer(handler)
 	srv := &Server{Client: ts.Client()}
-	provider := &models.ProviderPlatform{
-		BaseUrl:   ts.URL,
+	provider := &ppapi.Provider{
+		BaseURL:   ts.URL,
 		AccountID: "303",
 		AccessKey: "test-token",
-		Type:      models.EssentialEd,
+		Type:      ppapi.EssentialEd,
 	}
 	return srv, provider, ts.Close
 }
@@ -47,7 +48,7 @@ func TestEssentialEdTransportAuthorize(t *testing.T) {
 	defer done()
 
 	transport := essentialEdTransport{srv: srv}
-	_, err := transport.fetchAll(context.Background(), provider, provider.BaseUrl+"/classes", 0)
+	_, err := transport.fetchAll(context.Background(), provider, provider.BaseURL+"/classes", 0)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "test-token", gotToken)
@@ -76,7 +77,7 @@ func TestEssentialEdTransportFetchAll(t *testing.T) {
 		defer done()
 
 		transport := essentialEdTransport{srv: srv}
-		out, err := transport.fetchAll(context.Background(), provider, provider.BaseUrl+"/classes", 0)
+		out, err := transport.fetchAll(context.Background(), provider, provider.BaseURL+"/classes", 0)
 
 		assert.NoError(t, err)
 		assert.Len(t, out, 101)
@@ -92,7 +93,7 @@ func TestEssentialEdTransportFetchAll(t *testing.T) {
 		defer done()
 
 		transport := essentialEdTransport{srv: srv}
-		_, err := transport.fetchAll(context.Background(), provider, provider.BaseUrl+"/classes?school_id=6592", 0)
+		_, err := transport.fetchAll(context.Background(), provider, provider.BaseURL+"/classes?school_id=6592", 0)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "6592", gotSchool)
@@ -109,7 +110,7 @@ func TestEssentialEdTransportFetchAll(t *testing.T) {
 		defer done()
 
 		transport := essentialEdTransport{srv: srv}
-		out, err := transport.fetchAll(context.Background(), provider, provider.BaseUrl+"/classes", 0)
+		out, err := transport.fetchAll(context.Background(), provider, provider.BaseURL+"/classes", 0)
 
 		assert.NoError(t, err)
 		assert.Empty(t, out)
@@ -123,7 +124,7 @@ func TestEssentialEdTransportFetchAll(t *testing.T) {
 		defer done()
 
 		transport := essentialEdTransport{srv: srv}
-		_, err := transport.fetchAll(context.Background(), provider, provider.BaseUrl+"/classes", 0)
+		_, err := transport.fetchAll(context.Background(), provider, provider.BaseURL+"/classes", 0)
 		assert.Error(t, err)
 	})
 
@@ -136,7 +137,7 @@ func TestEssentialEdTransportFetchAll(t *testing.T) {
 		defer done()
 
 		transport := essentialEdTransport{srv: srv}
-		_, err := transport.fetchAll(context.Background(), provider, provider.BaseUrl+"/classes", 0)
+		_, err := transport.fetchAll(context.Background(), provider, provider.BaseURL+"/classes", 0)
 		assert.Error(t, err)
 	})
 }
@@ -314,7 +315,7 @@ func TestEssentialEdProviderListCourses(t *testing.T) {
 }
 
 func TestEssentialEdProviderIsLive(t *testing.T) {
-	provider := &models.ProviderPlatform{Type: models.EssentialEd}
+	provider := &ppapi.Provider{Type: ppapi.EssentialEd}
 	assert.True(t, isLiveProgramProvider(provider))
 	assert.False(t, isCanvasProvider(provider), "essential ed must not be mistaken for canvas")
 	assert.Equal(t, "essential_ed", providerSourceLabel(provider))
@@ -368,7 +369,7 @@ func TestProviderCourseEnrolleeIDsDispatchesByType(t *testing.T) {
 
 	t.Run("a non-live provider is rejected", func(t *testing.T) {
 		srv := &Server{}
-		_, err := srv.providerCourseEnrolleeIDs(&models.ProviderPlatform{Type: models.Kolibri}, 1)
+		_, err := srv.providerCourseEnrolleeIDs(&ppapi.Provider{Type: ppapi.Kolibri}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -658,7 +659,7 @@ func TestEssentialEdListUserCourses(t *testing.T) {
 // Canvas keeps its dedicated per-user endpoint rather than filtering a listing.
 func TestCanvasDoesNotImplementLiveUserCourseLister(t *testing.T) {
 	srv := &Server{}
-	reader, err := srv.newLiveProgramProvider(&models.ProviderPlatform{Type: models.CanvasOSS})
+	reader, err := srv.newLiveProgramProvider(&ppapi.Provider{Type: ppapi.CanvasOSS})
 	assert.NoError(t, err)
 	_, ok := reader.(liveUserCourseLister)
 	assert.False(t, ok)
@@ -668,9 +669,9 @@ func TestCanvasDoesNotImplementLiveUserCourseLister(t *testing.T) {
 // provider with no calendar endpoint still shows up beside Canvas classes.
 func TestWeeklyScheduleFacilityEvents(t *testing.T) {
 	march := func(day int) time.Time { return time.Date(2026, time.March, day, 0, 0, 0, 0, time.UTC) }
-	provider := &models.ProviderPlatform{
+	provider := &ppapi.Provider{
 		Name: "Essential Education",
-		Type: models.EssentialEd,
+		Type: ppapi.EssentialEd,
 	}
 	provider.ID = 2
 	courses := []liveCourse{
@@ -703,47 +704,21 @@ func TestWeeklyScheduleFacilityEvents(t *testing.T) {
 func TestLiveUserListerFor(t *testing.T) {
 	tests := []struct {
 		name         string
-		providerType models.ProviderPlatformType
+		providerType ppapi.ProviderType
 		isLister     bool
 	}{
-		{"essential ed lists its own users", models.EssentialEd, true},
-		{"canvas oss goes through provider-middleware", models.CanvasOSS, false},
-		{"canvas cloud goes through provider-middleware", models.CanvasCloud, false},
-		{"a non-live provider has no lister", models.Kolibri, false},
+		{"essential ed lists its own users", ppapi.EssentialEd, true},
+		{"canvas oss goes through provider-middleware", ppapi.CanvasOSS, false},
+		{"canvas cloud goes through provider-middleware", ppapi.CanvasCloud, false},
+		{"a non-live provider has no lister", ppapi.Kolibri, false},
 	}
 	srv := &Server{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, ok := srv.liveUserListerFor(&models.ProviderPlatform{Type: tt.providerType})
+			_, ok := srv.liveUserListerFor(&ppapi.Provider{Type: tt.providerType})
 			assert.Equal(t, tt.isLister, ok)
 		})
 	}
-}
-
-// allProviderUsers is the unfiltered counterpart to listProviderUsers: the
-// mapped-users screen needs every external user, including already mapped ones,
-// to resolve their display names.
-func TestAllProviderUsersReadsEssentialEdLive(t *testing.T) {
-	srv, provider, done := essentialEdServer(t, func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(envelope([]map[string]interface{}{
-			{
-				"id": float64(4329946), "first_name": "UnlockedLabs", "last_name": "Student1",
-				"username": "student1", "active": true,
-			},
-			{
-				"id": float64(4329947), "first_name": "UnlockedLabs", "last_name": "Student2",
-				"username": "student2", "active": true,
-			},
-		}, true))
-	})
-	defer done()
-
-	users, err := srv.allProviderUsers(context.Background(), provider)
-	assert.NoError(t, err)
-	assert.Len(t, users, 2)
-	assert.Equal(t, "4329946", users[0].ExternalUserID)
-	assert.Equal(t, "Student1", users[0].NameLast)
-	assert.Equal(t, "4329947", users[1].ExternalUserID)
 }
 
 // A 4xx body carries the reason; without it a caller only sees the status code.
@@ -755,7 +730,7 @@ func TestEssentialEdErrorIncludesResponseBody(t *testing.T) {
 	defer done()
 
 	transport := essentialEdTransport{srv: srv}
-	_, err := transport.fetchAll(context.Background(), provider, provider.BaseUrl+"/users", 0)
+	_, err := transport.fetchAll(context.Background(), provider, provider.BaseURL+"/users", 0)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "422")

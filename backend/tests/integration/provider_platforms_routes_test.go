@@ -37,14 +37,25 @@ type fakeExternal struct {
 	clients    int
 }
 
+// providerUser is a user's account at a provider, as provider-middleware sends
+// it.
+type providerUser struct {
+	Username         string `json:"username"`
+	NameFirst        string `json:"name_first"`
+	NameLast         string `json:"name_last"`
+	Email            string `json:"email"`
+	ExternalUserID   string `json:"external_user_id"`
+	ExternalUsername string `json:"external_username"`
+}
+
 // The users provider-middleware returns for the Kolibri provider. /api/users
 // is the unmapped ones; /api/users/all adds the one mapped to jdoe.
 var (
-	unmappedProviderUsers = []models.ImportUser{
+	unmappedProviderUsers = []providerUser{
 		{Username: "mary.major", NameFirst: "Mary", NameLast: "Major", Email: "mary@example.com", ExternalUserID: "k-2002", ExternalUsername: "mary.major"},
 		{Username: "jane.smith", NameFirst: "Jane", NameLast: "Smith", Email: "jane@example.com", ExternalUserID: "k-2003", ExternalUsername: "jane.smith"},
 	}
-	allProviderUsers = append([]models.ImportUser{
+	allProviderUsers = append([]providerUser{
 		{Username: "john.doe", NameFirst: "John", NameLast: "Doe", Email: "john@example.com", ExternalUserID: "k-1001", ExternalUsername: "john.doe"},
 	}, unmappedProviderUsers...)
 )
@@ -275,7 +286,7 @@ func TestProviderPlatformRoutes(t *testing.T) {
 		{"create_user_account", facAdmin, http.MethodPost, user("/api/provider-platforms/1/create-user/%d", w.southResident), nil, http.StatusCreated, nil},
 		{"user_account", facAdmin, http.MethodPost, user("/api/provider-platforms/1/user-accounts/%d", w.southResident), nil, http.StatusCreated, nil},
 		{"users_import", facAdmin, http.MethodPost, "/api/provider-platforms/1/users/import",
-			map[string]any{"users": []models.ImportUser{
+			map[string]any{"users": []providerUser{
 				{Username: "pat.lee", NameFirst: "Pat", NameLast: "Lee", Email: "pat@example.com", ExternalUserID: "k-5001", ExternalUsername: "pat.lee"},
 				{Username: "jdoe", NameFirst: "Duplicate", NameLast: "Name", ExternalUserID: "k-5002"},
 			}}, http.StatusOK, []string{"temp_password"}},
@@ -289,7 +300,7 @@ func TestProviderPlatformRoutes(t *testing.T) {
 		{"action_apply_matches", facAdmin, http.MethodPost, "/api/actions/provider-platforms/1/apply-matches",
 			map[string]any{
 				"confirmed": []map[string]any{{"canvas_user": unmappedProviderUsers[0], "unlocked_user_id": w.mmajor.ID}},
-				"to_create": []models.ImportUser{unmappedProviderUsers[1]},
+				"to_create": []providerUser{unmappedProviderUsers[1]},
 			}, http.StatusOK, nil},
 		{"action_apply_matches_other_facility", facAdmin, http.MethodPost, "/api/actions/provider-platforms/1/apply-matches",
 			map[string]any{"confirmed": []map[string]any{{"canvas_user": unmappedProviderUsers[0], "unlocked_user_id": w.southResident.ID}}},

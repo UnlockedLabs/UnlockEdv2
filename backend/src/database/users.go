@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -296,7 +297,7 @@ func (db *DB) DeleteUser(id int) error {
 		if result.RowsAffected == 0 {
 			return newDeleteDBError(gorm.ErrRecordNotFound, "users")
 		}
-		if err := tx.Where("user_id = ?", id).Delete(&models.ProviderUserMapping{}).Error; err != nil {
+		if err := registry.ProviderPlatforms(tx).DeleteUserMappings(context.Background(), uint(id)); err != nil {
 			return newDeleteDBError(err, "provider_user_mappings")
 		}
 		return nil
@@ -1147,4 +1148,63 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 	}
 
 	return csvData, nil
+}
+
+// GetUnmappedUsers is the residents not linked to an account at a provider:
+// every resident whose ID isn't in mappedUserIDs. A provider has at most tens
+// of thousands of linked users, well under Postgres's 65,535-parameter limit.
+func (db *DB) GetUnmappedUsers(args *models.QueryContext, mappedUserIDs []uint, userSearch []string) ([]models.User, error) {
+	var users []models.User
+	tx := db.Model(&models.User{}).Where("role = ?", "student")
+	if len(mappedUserIDs) > 0 {
+		tx = tx.Where("id NOT IN ?", mappedUserIDs)
+	}
+	if args.FacilityID != 0 {
+		tx = tx.Where("facility_id = ?", args.FacilityID)
+	}
+
+	if len(userSearch) > 0 {
+		tx = applyUserSearchConditions(tx, userSearch)
+	}
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, NewDBError(err, "error counting unmapped users")
+	}
+	if err := tx.Offset(args.CalcOffset()).Limit(args.PerPage).Find(&users).Error; err != nil {
+		return nil, NewDBError(err, "error getting unmapped users")
+	}
+	return users, nil
+}
+
+func applyUserSearchConditions(tx *gorm.DB, userSearch []string) *gorm.DB {
+	var conditions []string
+	var args []interface{}
+
+	for _, search := range userSearch {
+		search = strings.TrimSpace(search)
+		if search == "" {
+			continue
+		}
+		searchTerm := "%" + strings.ToLower(search) + "%"
+
+		if strings.Contains(search, "@") {
+			conditions = append(conditions, "LOWER(email) LIKE ?")
+			args = append(args, searchTerm)
+		} else if strings.Contains(search, " ") {
+			splitNames := strings.Fields(search)
+			for _, namePart := range splitNames {
+				nameTerm := "%" + strings.ToLower(namePart) + "%"
+				conditions = append(conditions, "(LOWER(name_first) LIKE ? OR LOWER(name_last) LIKE ?)")
+				args = append(args, nameTerm, nameTerm)
+			}
+		} else {
+			conditions = append(conditions, "(LOWER(name_first) LIKE ? OR LOWER(name_last) LIKE ? OR LOWER(username) LIKE ?)")
+			args = append(args, searchTerm, searchTerm, searchTerm)
+		}
+	}
+
+	if len(conditions) > 0 {
+		combinedCondition := "(" + strings.Join(conditions, " OR ") + ")"
+		tx = tx.Where(combinedCondition, args...)
+	}
+	return tx
 }

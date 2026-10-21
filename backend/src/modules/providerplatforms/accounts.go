@@ -1,4 +1,4 @@
-package handlers
+package providerplatforms
 
 import (
 	"bytes"
@@ -10,26 +10,55 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 
 	log "github.com/sirupsen/logrus"
 )
 
+// accounts creates a user's account and login at a provider platform. The
+// routes and the api both use it.
+type accounts struct {
+	store  *store
+	client *http.Client
+}
+
+func (a accounts) registerProviderLogin(provider *ProviderPlatform, user module.User) error {
+	if provider.Type == CanvasCloud || provider.Type == CanvasOSS {
+		err := a.registerCanvasUserLogin(provider, user)
+		if err != nil {
+			log.Errorf("Error registering canvas user login createProviderLogin")
+			return err
+		}
+	}
+	// TODO: implement login creation for kolibri
+	return nil
+}
+
+func (a accounts) createAndRegisterProviderUserAccount(provider *ProviderPlatform, user module.User) error {
+	fields := log.Fields{"func": "createAndRegisterCanvasUserAccount"}
+	if provider.Type == CanvasCloud || provider.Type == CanvasOSS {
+		return a.createAndRegisterCanvasUserAccount(provider, user)
+	} else {
+		log.WithFields(fields).Println("creating kolibri user")
+		return a.createUserInKolibri(user, provider)
+	}
+}
+
 // creates a new account in canvas,
-func (srv *Server) createAndRegisterCanvasUserAccount(provider *models.ProviderPlatform, user *models.User) error {
+func (a accounts) createAndRegisterCanvasUserAccount(provider *ProviderPlatform, user module.User) error {
 	fields := log.Fields{"user_id": user.ID, "provider_platform_id": provider.ID}
-	newId, err := srv.createUserInCanvas(user, uint(provider.ID))
+	newId, err := a.createUserInCanvas(user, uint(provider.ID))
 	if err != nil {
 		log.WithFields(fields).Errorf("Error creating user in canvas createProviderUserAccount")
 		return err
 	}
-	providerMapping := models.ProviderUserMapping{
+	providerMapping := ProviderUserMapping{
 		UserID:             user.ID,
 		ProviderPlatformID: provider.ID,
 		ExternalUserID:     strconv.Itoa(newId),
 		ExternalUsername:   user.Username,
 	}
-	if err = srv.Db.CreateProviderUserMapping(&providerMapping); err != nil {
+	if err = a.store.createProviderUserMapping(&providerMapping); err != nil {
 		log.WithFields(fields).Errorf("Error creating provider user mapping createProviderUserAccount")
 		return err
 	}
@@ -40,7 +69,7 @@ func (srv *Server) createAndRegisterCanvasUserAccount(provider *models.ProviderP
 	}
 	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
 	req.Header.Add("Accept", "application/json")
-	resp, err := srv.Client.Do(req)
+	resp, err := a.client.Do(req)
 	if err != nil {
 		log.WithFields(fields).Error("error sending request to canvas getting user logins")
 		return err
@@ -66,19 +95,19 @@ func (srv *Server) createAndRegisterCanvasUserAccount(provider *models.ProviderP
 			log.WithFields(fields).Error("error unmarshaling json from canvas getting user logins")
 			return errors.New("unable to decode ID of login from canvas")
 		}
-		providerMapping.ExternalLoginID = models.StringPtr(fmt.Sprintf("%d", int(id)))
-		return srv.Db.UpdateProviderUserMapping(&providerMapping)
+		providerMapping.ExternalLoginID = stringPtr(fmt.Sprintf("%d", int(id)))
+		return a.store.updateProviderUserMapping(&providerMapping)
 	}
 	return nil
 }
 
-func (srv *Server) getExistingCanvasOidcLoginID(provider *models.ProviderPlatform, externalUserID string) string {
+func (a accounts) getExistingCanvasOidcLoginID(provider *ProviderPlatform, externalUserID string) string {
 	req, err := http.NewRequest("GET", provider.BaseUrl+"/api/v1/users/"+externalUserID+"/logins", nil)
 	if err != nil {
 		return ""
 	}
 	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	resp, err := srv.Client.Do(req)
+	resp, err := a.client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return ""
 	}
@@ -97,8 +126,8 @@ func (srv *Server) getExistingCanvasOidcLoginID(provider *models.ProviderPlatfor
 	return ""
 }
 
-func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, user *models.User) error {
-	providerMapping, err := srv.Db.GetProviderUserMapping(int(user.ID), int(provider.ID))
+func (a accounts) registerCanvasUserLogin(provider *ProviderPlatform, user module.User) error {
+	providerMapping, err := a.store.getProviderUserMapping(int(user.ID), int(provider.ID))
 	if err != nil {
 		log.Error("Error getting provider user mapping registerCanvasUserLogin")
 		return err
@@ -111,10 +140,10 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 		return errors.New("provider is not registered as an auth client, please register first")
 	}
 	// user may already have an OIDC login in Canvas (e.g. when mapping an existing Canvas user)
-	if existingID := srv.getExistingCanvasOidcLoginID(provider, providerMapping.ExternalUserID); existingID != "" {
-		providerMapping.ExternalLoginID = models.StringPtr(existingID)
-		providerMapping.AuthenticationProviderStatus = models.OpenIDConnect
-		return srv.Db.UpdateProviderUserMapping(providerMapping)
+	if existingID := a.getExistingCanvasOidcLoginID(provider, providerMapping.ExternalUserID); existingID != "" {
+		providerMapping.ExternalLoginID = stringPtr(existingID)
+		providerMapping.AuthenticationProviderStatus = OpenIDConnect
+		return a.store.updateProviderUserMapping(providerMapping)
 	}
 	body := url.Values{}
 	body.Add("user[id]", providerMapping.ExternalUserID)
@@ -128,7 +157,7 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 	}
 	request.Header.Add("Authorization", "Bearer "+provider.AccessKey)
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := srv.Client.Do(request)
+	resp, err := a.client.Do(request)
 	if err != nil {
 		log.Errorf("Error sending request to canvas registerCanvasUserLogin")
 		return err
@@ -152,9 +181,9 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 		log.Errorf("Error parsing id from response registerCanvasUserLogin")
 		return errors.New("error creating login in canvas")
 	}
-	providerMapping.ExternalLoginID = models.StringPtr(strconv.Itoa(int(newId)))
-	providerMapping.AuthenticationProviderStatus = models.OpenIDConnect
-	if err = srv.Db.UpdateProviderUserMapping(providerMapping); err != nil {
+	providerMapping.ExternalLoginID = stringPtr(strconv.Itoa(int(newId)))
+	providerMapping.AuthenticationProviderStatus = OpenIDConnect
+	if err = a.store.updateProviderUserMapping(providerMapping); err != nil {
 		log.Errorf("Error updating provider user mapping registerCanvasUserLogin")
 		return err
 	}
@@ -162,8 +191,8 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 }
 
 // create new user in canvas, return new user id
-func (srv *Server) createUserInCanvas(user *models.User, providerId uint) (int, error) {
-	provider, err := srv.Db.GetProviderPlatformByID(int(providerId))
+func (a accounts) createUserInCanvas(user module.User, providerId uint) (int, error) {
+	provider, err := a.store.getProviderPlatformByID(int(providerId))
 	if err != nil {
 		log.Errorf("Error getting provider platform by id createUserInCanvas")
 		return 0, err
@@ -188,7 +217,7 @@ func (srv *Server) createUserInCanvas(user *models.User, providerId uint) (int, 
 	log.Debug("registration string for creating provider user in canvas: ", request.URL.String())
 	request.Header.Add("Authorization", "Bearer "+provider.AccessKey)
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := srv.Client.Do(request)
+	resp, err := a.client.Do(request)
 	if err != nil {
 		log.Errorf("Error sending request to canvas createUserInCanvas")
 		return 0, err
@@ -217,10 +246,10 @@ func (srv *Server) createUserInCanvas(user *models.User, providerId uint) (int, 
 
 // This requires that the password is set to an UNHASHED plaintext temporary password
 // don't call this method on a normal user queried from the database
-func (srv *Server) CreateUserInKolibri(user *models.User, prov *models.ProviderPlatform) error {
+func (a accounts) createUserInKolibri(user module.User, prov *ProviderPlatform) error {
 	if prov.AccountID == "TODO" {
 		// here we check if this if this instance has been setup, if so we set the account id
-		if err := srv.checkKolibriAccountSetup(prov); err != nil {
+		if err := a.checkKolibriAccountSetup(prov); err != nil {
 			log.Error("error checking kolibri account setup")
 			return err
 		}
@@ -247,7 +276,7 @@ func (srv *Server) CreateUserInKolibri(user *models.User, prov *models.ProviderP
 		return err
 	}
 	request.Header.Add("Content-Type", "application/json")
-	resp, err := srv.Client.Do(request)
+	resp, err := a.client.Do(request)
 	if err != nil {
 		log.Error("error sending request to kolibri for user creation")
 		return err
@@ -273,26 +302,26 @@ func (srv *Server) CreateUserInKolibri(user *models.User, prov *models.ProviderP
 		// add hyphens back to the uuid django strips out
 		id = fmt.Sprintf("%s-%s-%s-%s-%s", id[:8], id[8:12], id[12:16], id[16:20], id[20:])
 	}
-	providerMapping := models.ProviderUserMapping{
+	providerMapping := ProviderUserMapping{
 		UserID:             user.ID,
 		ProviderPlatformID: prov.ID,
 		ExternalUserID:     id,
 		ExternalUsername:   user.Username,
 	}
-	if err := srv.Db.CreateProviderUserMapping(&providerMapping); err != nil {
+	if err := a.store.createProviderUserMapping(&providerMapping); err != nil {
 		log.Error("error creating provider user mapping for kolibri user creation")
 		return err
 	}
 	return nil
 }
 
-func (srv *Server) checkKolibriAccountSetup(prov *models.ProviderPlatform) error {
+func (a accounts) checkKolibriAccountSetup(prov *ProviderPlatform) error {
 	request, err := http.NewRequest(http.MethodGet, prov.BaseUrl+"/api/public/v1/facility/", nil)
 	if err != nil {
 		log.Error("error creating request for kolibri facility check")
 		return err
 	}
-	resp, err := srv.Client.Do(request)
+	resp, err := a.client.Do(request)
 	if err != nil {
 		log.Error("error sending request to kolibri for facility check")
 		return err
@@ -319,5 +348,5 @@ func (srv *Server) checkKolibriAccountSetup(prov *models.ProviderPlatform) error
 	if !ok {
 		return errors.New("facility ID not found in Kolibri response")
 	}
-	return srv.Db.Model(prov).Update("account_id", first).Error
+	return a.store.updateProviderAccountID(prov, first)
 }

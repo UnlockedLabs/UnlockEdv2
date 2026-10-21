@@ -252,14 +252,14 @@ func TestLiveProvidersUsers(t *testing.T) {
 	}))
 	defer ts.Close()
 	srv.Client = ts.Client()
-	essentialEd := models.ProviderPlatform{Type: models.EssentialEd, Name: "Essential Ed", BaseUrl: ts.URL, AccountID: "303", AccessKey: "token", State: models.Enabled}
-	kolibri := models.ProviderPlatform{Type: models.Kolibri, Name: "Kolibri", BaseUrl: ts.URL, State: models.Enabled}
-	require.NoError(t, srv.Db.CreateProviderPlatform(&essentialEd))
-	require.NoError(t, srv.Db.CreateProviderPlatform(&kolibri))
+	const essentialEd, kolibri = 1, 2
+	require.NoError(t, srv.Db.Exec(`INSERT INTO provider_platforms (id, type, name, account_id, access_key, base_url, state) VALUES
+		(?, 'essential_ed', 'Essential Ed', '303', 'token', ?, 'enabled'), (?, 'kolibri', 'Kolibri', '', '', ?, 'enabled')`,
+		essentialEd, ts.URL, kolibri, ts.URL).Error)
 	live := liveProviders{srv}
 
 	t.Run("essential ed lists its users", func(t *testing.T) {
-		users, ok, err := live.Users(context.Background(), essentialEd.ID)
+		users, ok, err := live.Users(context.Background(), essentialEd)
 		require.NoError(t, err)
 		assert.True(t, ok)
 		assert.Equal(t, []module.ProviderUser{{
@@ -269,7 +269,7 @@ func TestLiveProvidersUsers(t *testing.T) {
 	})
 
 	t.Run("kolibri goes through provider-middleware", func(t *testing.T) {
-		users, ok, err := live.Users(context.Background(), kolibri.ID)
+		users, ok, err := live.Users(context.Background(), kolibri)
 		require.NoError(t, err)
 		assert.False(t, ok)
 		assert.Nil(t, users)
@@ -277,7 +277,7 @@ func TestLiveProvidersUsers(t *testing.T) {
 
 	t.Run("a failed listing is an error", func(t *testing.T) {
 		status = http.StatusBadGateway
-		_, ok, err := live.Users(context.Background(), essentialEd.ID)
+		_, ok, err := live.Users(context.Background(), essentialEd)
 		assert.Error(t, err)
 		assert.True(t, ok)
 	})

@@ -34,10 +34,6 @@ func (slog sLog) debug(args ...any) {
 	logrus.WithFields(slog.f).Debug(args...)
 }
 
-func (slog sLog) debugf(format string, args ...any) {
-	logrus.WithFields(slog.f).Debugf(format, args...)
-}
-
 func (slog sLog) warn(args ...any) {
 	logrus.WithFields(slog.f).Warn(args...)
 }

@@ -1,0 +1,67 @@
+# Provider Platforms module
+
+LMS connections (Canvas, Brightspace, Kolibri, Essential Education), the users
+linked to them, their courses, outcomes and activity, and the OIDC clients that
+let residents log in to them. It moved here from core in EN-193.
+
+## Boundaries
+
+- **It imports nothing from core.** It talks to core only through
+  `modules/module` (the seam) and `unlocked-contracts`. depguard in
+  `backend/.golangci.yml` enforces this.
+- **Core asks it questions through `api/`** (interfaces and plain types only),
+  and gets the implementation from `registry.ProviderPlatforms`. Core never
+  imports this package's insides.
+- **It reaches core through `Deps`:**
+  - `Deps.Users` gets, creates and deletes users and gives them a Kratos
+    login;
+  - `Deps.LiveProviders` lists an Essential Education provider's users and
+    clears core's cached Canvas programs when a mapping changes. It goes away
+    in EN-194.
+- **It reads core's `users` table** to match and list the users linked to a
+  provider (the `user` type in `models.go`).
+- **Core still owns:**
+  - the Canvas and Essential Education live data on the Programs screens,
+    until EN-194;
+  - the provider jobs (`get_courses`, `get_milestones`, `get_activity`) in
+    core's scheduler and provider-middleware, until EN-197;
+  - creating a user with provider accounts (`POST /api/users`), the
+    unmapped-users list (`GET /api/users?include=only_unmapped`), the admin
+    dashboard's course numbers and the demo seed, which ask `api/`.
+
+## Files
+
+| File | What it holds |
+|---|---|
+| `module.go` | Registers the routes, sets up the `oauth_state` bucket, lists the test tables |
+| `handlers.go` | The routes, with their access levels and feature flags, and the provider, OAuth, OIDC and learning-data handlers |
+| `users.go` | Logins and mappings, importing users and matching them to residents |
+| `matching.go` | The name matching behind the matching screen |
+| `accounts.go` | Creating a user's Canvas or Kolibri account and Canvas login |
+| `providerservice.go` | The client for provider-middleware's user lists |
+| `store.go` | The database queries the routes use |
+| `api.go` | The answers to core's questions (`api.ProviderPlatforms`) |
+| `models.go` | Provider Platforms' tables as Go types |
+| `http.go` | Responses, errors, paging and request helpers, matching core's JSON |
+| `migrations/` | This module's own migrations (none yet; its tables come from core's) |
+
+## Tests
+
+- `backend/tests/integration/provider_platforms_routes_test.go` pins every
+  route's status, JSON, access level and feature flag, and the core routes
+  that ask `api/`, against the saved responses in
+  `testdata/provider_platforms/`. Fakes stand in for provider-middleware,
+  Kratos, Hydra and Kolibri. After an intended change, regenerate them from
+  `backend/` with:
+
+  ```bash
+  go test ./tests/integration -run 'TestProviderPlatform' -update
+  ```
+
+  The changed JSON then shows in the PR for review.
+- The unit tests here cover `api.go` (on SQLite), the name matching and the
+  provider user lists.
+- The tests run on SQLite without NATS, Canvas, Brightspace or Essential
+  Education, so they can't run the Brightspace OAuth flow, creating Canvas
+  accounts and logins, or seeding demo data (which calls Postgres
+  procedures). Check those with `make dev`.

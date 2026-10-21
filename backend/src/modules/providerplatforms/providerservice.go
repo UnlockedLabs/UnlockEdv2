@@ -1,4 +1,4 @@
-package src
+package providerplatforms
 
 import (
 	"encoding/json"
@@ -7,8 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -29,12 +27,12 @@ type ProviderService struct {
 	ServiceURL         string       `json:"-"`
 }
 
-func GetProviderService(prov *models.ProviderPlatform, client *http.Client) (*ProviderService, error) {
+func GetProviderService(prov *ProviderPlatform, client *http.Client) (*ProviderService, error) {
 	serviceUrl := os.Getenv("PROVIDER_SERVICE_URL")
 	// If the provider is Kolibri, we need to split the key into username and password
 	// In the future, we will need to have similar fields for Oauth2 retrieval from canvas
 	username, password := "", ""
-	if prov.Type == models.Kolibri {
+	if prov.Type == Kolibri {
 		if strings.Contains(prov.AccessKey, ":") {
 			username, password = strings.Split(prov.AccessKey, ":")[0], strings.Split(prov.AccessKey, ":")[1]
 		} else {
@@ -70,7 +68,7 @@ func (serv *ProviderService) Request(url string) (*http.Request, error) {
 
 // GetAllUsers fetches every Canvas user including those already mapped to a resident.
 // Use this when you need canvas display names for already-linked accounts.
-func (serv *ProviderService) GetAllUsers() ([]models.ImportUser, error) {
+func (serv *ProviderService) GetAllUsers() ([]ImportUser, error) {
 	fields := log.Fields{"handler": "GetAllUsers"}
 	req, err := serv.Request("/api/users/all")
 	if err != nil {
@@ -94,7 +92,7 @@ func (serv *ProviderService) GetAllUsers() ([]models.ImportUser, error) {
 		log.Errorln("request failed with code", resp.Status)
 		return nil, errors.New("request failed")
 	}
-	var users []models.ImportUser
+	var users []ImportUser
 	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
 		fields["error"] = err
 		log.Errorln("error decoding all users from middleware")
@@ -103,7 +101,7 @@ func (serv *ProviderService) GetAllUsers() ([]models.ImportUser, error) {
 	return users, nil
 }
 
-func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
+func (serv *ProviderService) GetUsers() ([]ImportUser, error) {
 	fields := log.Fields{"handler": "GetUsers"}
 	req, err := serv.Request("/api/users")
 	if err != nil {
@@ -127,7 +125,7 @@ func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 		log.Errorln("request failed: with code", resp.Status)
 		return nil, errors.New("request failed")
 	}
-	var users []models.ImportUser
+	var users []ImportUser
 	err = json.NewDecoder(resp.Body).Decode(&users)
 	if err != nil {
 		fields["error"] = err

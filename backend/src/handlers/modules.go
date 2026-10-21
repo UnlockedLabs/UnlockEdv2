@@ -158,11 +158,11 @@ func (u moduleUsers) Delete(ctx context.Context, id uint) error {
 type liveProviders struct{ srv *Server }
 
 func (l liveProviders) Users(ctx context.Context, providerID uint) ([]module.ProviderUser, bool, error) {
-	provider, err := l.srv.Db.GetProviderPlatformByID(int(providerID))
+	provider, err := l.srv.providerPlatforms.Provider(ctx, providerID)
 	if err != nil {
-		return nil, false, fmt.Errorf("get provider platform %d: %w", providerID, dbCause(err))
+		return nil, false, fmt.Errorf("get provider platform %d: %w", providerID, err)
 	}
-	lister, ok := l.srv.liveUserListerFor(provider)
+	lister, ok := l.srv.liveUserListerFor(&provider)
 	if !ok {
 		return nil, false, nil
 	}
@@ -170,11 +170,7 @@ func (l liveProviders) Users(ctx context.Context, providerID uint) ([]module.Pro
 	if err != nil {
 		return nil, true, err
 	}
-	out := make([]module.ProviderUser, len(users))
-	for i, u := range users {
-		out[i] = module.ProviderUser(u)
-	}
-	return out, true, nil
+	return users, true, nil
 }
 
 func (l liveProviders) MappingsChanged(providerID, userID uint) {

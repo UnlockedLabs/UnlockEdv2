@@ -25,15 +25,15 @@ Headers: `Authorization: <ENV_VAR token>`, just to ensure only the product can m
 Some providers do not provide public API's for us to consume their content, in which case we are forced to login and get a session each time
 we make a call to the specific provider.
 
-A ProviderService class exists in the backend to communicate with the middleware from the platform. You can call the methods directly on
+A ProviderService class exists in the backend's Provider Platforms module (`backend/src/modules/providerplatforms`) to communicate with the middleware from the platform. You can call the methods directly on
 this class, or it has a `Request` method that accepts a URL, to handle adding the relevant data to the request, for when you wish to add more
 Provider calls.
 
-From the handlers, given a provider platform:
+From the module's handlers, given a provider platform:
 
 ```go
-provider, err :=  Db.GetProviderPlatformByID(id)
-service := src.GetProviderService(&provider)
+provider, err := srv.store.getProviderPlatformByID(id)
+service, err := GetProviderService(provider, srv.client)
 
 service.GetUsers()
 // or
@@ -64,7 +64,7 @@ type NewProviderService struct {
 
 ```go
 type ProviderServiceInterface interface {
- GetUsers(db *gorm.DB) ([]models.ImportUser, error)
+ GetUsers(db *gorm.DB) ([]providerplatforms.ImportUser, error)
  ImportCourses(db *gorm.DB) error
  ImportMilestonesForCourseUser(courseId, userId uint, db *gorm.DB) error
  ImportActivityForCourse(courseId string, db *gorm.DB) error

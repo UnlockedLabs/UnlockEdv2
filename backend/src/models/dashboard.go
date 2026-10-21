@@ -4,6 +4,7 @@ import (
 	"time"
 
 	ocapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api"
+	ppapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api"
 )
 
 // KnowledgeCenterMetrics is the Knowledge Center page's numbers, from Open
@@ -22,6 +23,14 @@ type KnowledgeCenterMetrics struct {
 type CachedDashboard[T any] struct {
 	LastCache time.Time `json:"last_cache"`
 	Data      T         `json:"data"`
+}
+
+// AdminLayer2Join is the course numbers on the admin dashboard.
+type AdminLayer2Join struct {
+	TotalCoursesOffered   int64                   `json:"total_courses_offered"`
+	TotalStudentsEnrolled int64                   `json:"total_students_enrolled"`
+	TotalHourlyActivity   int64                   `json:"total_hourly_activity"`
+	LearningInsights      []ppapi.LearningInsight `json:"learning_insights"`
 }
 
 type FacilityHealthSummary struct {

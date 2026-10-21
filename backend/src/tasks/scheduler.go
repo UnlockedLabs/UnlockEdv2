@@ -131,16 +131,17 @@ func (s *Scheduler) generateOpenContentProviderTasks() ([]models.RunnableTask, e
 }
 
 func (s *Scheduler) generateProviderTasks() ([]models.RunnableTask, error) {
-	var providers []models.ProviderPlatform
-	if err := s.db.Find(&providers, "state = 'enabled'").Error; err != nil {
+	providers, err := registry.ProviderPlatforms(s.db).ActiveProviders(context.Background())
+	if err != nil {
 		log.Errorln("failed to fetch all provider platforms")
 		return nil, err
 	}
 	log.Infof("Found %d active providers", len(providers))
 	tasksToRun := make([]models.RunnableTask, 0)
 	for _, provider := range providers {
-		provJobs := provider.GetDefaultCronJobs()
-		for _, jobType := range provJobs {
+		// at some point these may differ per provider, for now they all run the default jobs
+		for _, jobType := range models.AllDefaultProviderJobs {
+			log.WithFields(log.Fields{"job": jobType, "provider": provider.Name}).Info("Job added for provider")
 			created, err := s.createIfNotExists(jobType)
 			if err != nil {
 				log.Errorf("failed to create job: %v", err)
@@ -152,6 +153,7 @@ func (s *Scheduler) generateProviderTasks() ([]models.RunnableTask, error) {
 				log.Errorf("failed to create task: %v", err)
 				return nil, err
 			}
+			newTask.ProviderType = provider.Type
 			tasksToRun = append(tasksToRun, newTask)
 		}
 	}
@@ -172,7 +174,7 @@ func (s *Scheduler) intoTask(cj *models.CronJob, provId *uint, task *models.Runn
 			log.Errorf("failed to create task for job: %v. error: %v", cj.Name, err)
 			return err
 		}
-		if err := s.db.Model(&models.RunnableTask{}).Preload("Job").Preload("Provider").First(&task, task.ID).Error; err != nil {
+		if err := s.db.Model(&models.RunnableTask{}).Preload("Job").First(&task, task.ID).Error; err != nil {
 			log.Errorf("failed to reload task for job: %v. error: %v", cj.Name, err)
 			return err
 		}

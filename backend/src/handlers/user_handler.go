@@ -19,6 +19,7 @@ import (
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/jasper"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	ppapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
 	log "github.com/sirupsen/logrus"
 )
@@ -139,7 +140,12 @@ func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 		return newInvalidIdServiceError(err, "provider ID")
 	}
 	search := r.URL.Query()["search"]
-	users, err := srv.Db.GetUnmappedUsers(&args, provID, search)
+	mappedUserIDs, err := srv.providerPlatforms.MappedUserIDs(r.Context(), uint(provID))
+	if err != nil {
+		log.add("provider_id", providerId)
+		return newDatabaseServiceError(database.NewDBError(err, "error getting mapped users"))
+	}
+	users, err := srv.Db.GetUnmappedUsers(&args, mappedUserIDs, search)
 	if err != nil {
 		log.add("provider_id", providerId)
 		log.add("facility_id", args.FacilityID)
@@ -236,16 +242,15 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	for _, providerID := range reqForm.Providers {
-		provider, err := srv.Db.GetProviderPlatformByID(providerID)
-		if err != nil {
-			log.add("provider_id", providerID)
-			log.error("Error getting provider platform by id createProviderUserAccount")
-			return newDatabaseServiceError(err)
+	if len(reqForm.Providers) > 0 {
+		providerIDs := make([]uint, len(reqForm.Providers))
+		for i, id := range reqForm.Providers {
+			providerIDs[i] = uint(id)
 		}
-		if err = srv.createAndRegisterProviderUserAccount(provider, &reqForm.User); err != nil {
-			log.add("provider_id", providerID)
-			log.error("Error creating provider user account for provider: ", provider.Name)
+		if err := srv.providerPlatforms.AddUserToProviders(r.Context(), toModuleUser(&reqForm.User), providerIDs); err != nil {
+			log.add("provider_ids", reqForm.Providers)
+			log.error("Error getting provider platform by id createProviderUserAccount")
+			return newDatabaseServiceError(database.NewDBError(err, "provider_platforms not found"))
 		}
 	}
 	tempPw, err := reqForm.User.CreateTempPassword()
@@ -277,16 +282,11 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 			log.infof("Error creating user in kratos: %v", err)
 			response.KratosRegistered = false
 		}
-		kolibri, err := srv.Db.FindKolibriInstance()
-		if err != nil {
-			log.error("error getting kolibri instance")
-			// still return 201 because user has been created in kratos,
-			// kolibri might not be set up/available
-			return writeJsonResponse(w, http.StatusCreated, response)
-		}
-		if err := srv.CreateUserInKolibri(&reqForm.User, kolibri); err != nil {
+		// still return 201 because user has been created in kratos,
+		// kolibri might not be set up/available
+		if err := srv.providerPlatforms.AddUserToKolibri(r.Context(), toModuleUser(&reqForm.User)); err != nil {
 			log.add("user_id", reqForm.User.ID)
-			log.error("error creating user in kolibri")
+			log.errorf("error creating user in kolibri: %v", err)
 		}
 	}
 	return writeJsonResponse(w, http.StatusCreated, response)
@@ -437,6 +437,15 @@ func canDeleteUser(currentUser *Claims, toDelete models.UserRole) bool {
 	default:
 		return currentUser.isAdmin()
 	}
+}
+
+func stripNonAlphaChars(str string, keepCharacter func(char rune) bool) string {
+	return strings.Map(func(r rune) rune {
+		if keepCharacter(r) {
+			return r
+		}
+		return -1
+	}, str)
 }
 
 func isUsernameChar(r rune) bool {
@@ -619,21 +628,22 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 }
 
 func (srv *Server) fetchCanvasUserPrograms(userID int) []models.ResidentProgramClassInfo {
-	mappings, err := srv.Db.GetAllProviderMappingsForUser(userID)
+	ctx := context.Background()
+	mappings, err := srv.providerPlatforms.UserMappings(ctx, uint(userID))
 	if err != nil || len(mappings) == 0 {
 		return nil
 	}
-	providers, err := srv.Db.GetAllActiveProviderPlatforms()
+	providers, err := srv.activeProviders(ctx)
 	if err != nil {
 		return nil
 	}
-	providerMap := make(map[uint]models.ProviderPlatform, len(providers))
+	providerMap := make(map[uint]ppapi.Provider, len(providers))
 	for _, p := range providers {
 		providerMap[p.ID] = p
 	}
 	var result []models.ResidentProgramClassInfo
 	for _, mapping := range mappings {
-		provider, ok := providerMap[mapping.ProviderPlatformID]
+		provider, ok := providerMap[mapping.ProviderID]
 		if !ok || !isLiveProgramProvider(&provider) {
 			continue
 		}
@@ -649,7 +659,7 @@ func (srv *Server) fetchCanvasUserPrograms(userID int) []models.ResidentProgramC
 // fetchLiveCoursesForUser builds a resident's program rows for a live provider
 // that reports its own per-user enrollments. Canvas has a dedicated endpoint and
 // is handled by fetchCanvasCoursesForUser instead.
-func (srv *Server) fetchLiveCoursesForUser(provider *models.ProviderPlatform, externalUserID string) []models.ResidentProgramClassInfo {
+func (srv *Server) fetchLiveCoursesForUser(provider *ppapi.Provider, externalUserID string) []models.ResidentProgramClassInfo {
 	reader, err := srv.newLiveProgramProvider(provider)
 	if err != nil {
 		return nil
@@ -698,8 +708,8 @@ func (srv *Server) fetchLiveCoursesForUser(provider *models.ProviderPlatform, ex
 	return result
 }
 
-func (srv *Server) fetchCanvasCoursesForUser(provider *models.ProviderPlatform, canvasUserID string) []models.ResidentProgramClassInfo {
-	apiURL := fmt.Sprintf("%s/api/v1/users/%s/courses?enrollment_state=active&per_page=100", provider.BaseUrl, canvasUserID)
+func (srv *Server) fetchCanvasCoursesForUser(provider *ppapi.Provider, canvasUserID string) []models.ResidentProgramClassInfo {
+	apiURL := fmt.Sprintf("%s/api/v1/users/%s/courses?enrollment_state=active&per_page=100", provider.BaseURL, canvasUserID)
 	var result []models.ResidentProgramClassInfo
 	for apiURL != "" {
 		req, err := http.NewRequest("GET", apiURL, nil)

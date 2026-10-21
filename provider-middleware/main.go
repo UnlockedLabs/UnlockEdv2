@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
@@ -18,7 +18,7 @@ import (
 )
 
 type ProviderServiceInterface interface {
-	GetUsers(db *gorm.DB) ([]models.ImportUser, error)
+	GetUsers(db *gorm.DB) ([]providerplatforms.ImportUser, error)
 
 	ImportCourses(db *gorm.DB) error
 
