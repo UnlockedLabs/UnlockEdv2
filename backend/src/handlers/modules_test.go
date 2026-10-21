@@ -1,20 +1,24 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 
 	"github.com/UnlockedLabs/unlocked-contracts/identity"
+	ory "github.com/ory/kratos-client-go"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 // A module route's access level must get the same checks as core's own
@@ -59,6 +63,72 @@ func TestModuleRouterAccess(t *testing.T) {
 		srv.Mux.ServeHTTP(w, requestAs(t, "/api/test-module/feature", Claims{UserID: 1, FacilityID: 1, Role: models.SystemAdmin, FeatureAccess: []models.FeatureAccess{}}))
 		assert.Equal(t, denied, w.Code, w.Body.String())
 	})
+}
+
+// A route with a UserParam gets the same check as core's routes for the user
+// in their path: the user themself (AnyUser only) and the admins who can see
+// that user.
+func TestModuleRouterUserParam(t *testing.T) {
+	srv := newTestingServer()
+	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	router := moduleRouter{srv}
+	router.Handle(module.Route{Pattern: "GET /api/test-module/users/{id}/self", Handler: ok, UserParam: "id"})
+	router.Handle(module.Route{Pattern: "GET /api/test-module/users/{user_id}/admin", Handler: ok, Access: module.Admin, UserParam: "user_id"})
+
+	north, south := createTestFacility(t, srv, "North"), createTestFacility(t, srv, "South")
+	resident := createTestUser(t, srv, "resident", models.Student, north)
+	neighbor := createTestUser(t, srv, "neighbor", models.Student, north)
+	southResident := createTestUser(t, srv, "southres", models.Student, south)
+	as := func(u *models.User) Claims { return Claims{UserID: u.ID, Role: u.Role, FacilityID: u.FacilityID} }
+	facAdmin := as(createTestUser(t, srv, "facadmin", models.FacilityAdmin, north))
+	deptAdmin := as(createTestUser(t, srv, "deptadmin", models.DepartmentAdmin, north))
+
+	allowed, denied := http.StatusOK, http.StatusUnauthorized
+	tests := []struct {
+		name   string
+		route  string
+		caller Claims
+		user   *models.User
+		want   int
+	}{
+		{"user themself", "self", as(resident), resident, allowed},
+		{"another user, same facility", "self", as(resident), neighbor, denied},
+		{"another user, other facility", "self", as(resident), southResident, denied},
+		{"facility admin, own facility", "self", facAdmin, resident, allowed},
+		{"facility admin, other facility", "self", facAdmin, southResident, denied},
+		{"department admin, any facility", "self", deptAdmin, southResident, allowed},
+		{"admin route, user themself", "admin", as(resident), resident, denied},
+		{"admin route, facility admin, own facility", "admin", facAdmin, resident, allowed},
+		{"admin route, facility admin, other facility", "admin", facAdmin, southResident, denied},
+		{"admin route, department admin, any facility", "admin", deptAdmin, southResident, allowed},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			path := fmt.Sprintf("/api/test-module/users/%d/%s", tt.user.ID, tt.route)
+			srv.Mux.ServeHTTP(w, requestAs(t, path, tt.caller))
+			assert.Equal(t, tt.want, w.Code, w.Body.String())
+		})
+	}
+}
+
+// A UserParam that can't be checked stops startup.
+func TestModuleRouterUserParamPanics(t *testing.T) {
+	ok := http.NotFoundHandler()
+	tests := []struct {
+		name  string
+		route module.Route
+	}{
+		{"department admins", module.Route{Pattern: "GET /api/test-module/{id}", Handler: ok, Access: module.DeptAdmin, UserParam: "id"}},
+		{"system admins", module.Route{Pattern: "GET /api/test-module/{id}", Handler: ok, Access: module.SystemAdmin, UserParam: "id"}},
+		{"not in the path", module.Route{Pattern: "GET /api/test-module/{user_id}", Handler: ok, UserParam: "id"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			router := moduleRouter{newTestingServer()}
+			assert.Panics(t, func() { router.Handle(tt.route) })
+		})
+	}
 }
 
 // An access level core doesn't know stops startup rather than leaving the
@@ -158,4 +228,141 @@ func TestWsNotifier(t *testing.T) {
 		// The websocket ends this activity when the tab closes.
 		assert.Equal(t, int64(42), client.OpenContentActivityID)
 	})
+}
+
+func TestModuleDeps(t *testing.T) {
+	deps := newTestingServer().moduleDeps()
+	assert.NotNil(t, deps.Notify)
+	assert.NotNil(t, deps.Users)
+	require.NotNil(t, deps.MappingsChanged)
+	// The testing server has no Canvas cache, so there is nothing to clear.
+	assert.NotPanics(t, func() { deps.MappingsChanged(1, 1) })
+}
+
+func TestModuleUsers(t *testing.T) {
+	srv := newTestingServer()
+	users := moduleUsers{srv}
+	north := createTestFacility(t, srv, "North")
+	admin := createTestUser(t, srv, "facadmin", models.FacilityAdmin, north)
+	ctx := identity.NewContext(context.Background(), &identity.Claims{UserID: admin.ID})
+
+	created, err := users.Create(ctx, module.NewUser{
+		Username: "jdoe", NameFirst: "John", NameLast: "Doe", Email: "jdoe@example.com", FacilityID: north, Role: models.Student,
+	})
+	require.NoError(t, err)
+	want := module.User{ID: created.ID, Username: "jdoe", NameFirst: "John", NameLast: "Doe", Email: "jdoe@example.com", FacilityID: north}
+	assert.Equal(t, want, created)
+
+	t.Run("create records the caller as the creator", func(t *testing.T) {
+		stored, err := srv.Db.GetUserByID(created.ID)
+		require.NoError(t, err)
+		require.NotNil(t, stored.CreateUserID)
+		assert.Equal(t, admin.ID, *stored.CreateUserID)
+		assert.Equal(t, models.Student, stored.Role)
+	})
+
+	t.Run("create rejects an invalid user", func(t *testing.T) {
+		_, err := users.Create(ctx, module.NewUser{Username: "no role", FacilityID: north})
+		assert.Error(t, err)
+	})
+
+	t.Run("get", func(t *testing.T) {
+		got, err := users.Get(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("get a missing user", func(t *testing.T) {
+		_, err := users.Get(ctx, 9999)
+		assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+	})
+
+	t.Run("create login", func(t *testing.T) {
+		kratos := fakeKratos(t, srv, http.StatusCreated)
+		password, err := users.CreateLogin(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, password, kratos.password(t))
+		stored, err := srv.Db.GetUserByID(created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, "kratos-1", models.FormatNullableString(stored.KratosID))
+	})
+
+	t.Run("create login fails when kratos does", func(t *testing.T) {
+		fakeKratos(t, srv, http.StatusInternalServerError)
+		password, err := users.CreateLogin(ctx, created.ID)
+		assert.Error(t, err)
+		assert.Empty(t, password)
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		require.NoError(t, users.Delete(ctx, created.ID))
+		_, err := users.Get(ctx, created.ID)
+		assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+		assert.Error(t, users.Delete(ctx, created.ID), "already deleted")
+	})
+}
+
+// kratosFake is a Kratos admin API that answers identity creation with
+// createStatus and records the password it is given.
+type kratosFake struct {
+	mu   sync.Mutex
+	body map[string]any
+}
+
+func (k *kratosFake) password(t *testing.T) string {
+	t.Helper()
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	creds, _ := k.body["credentials"].(map[string]any)
+	pw, _ := creds["password"].(map[string]any)
+	config, _ := pw["config"].(map[string]any)
+	password, _ := config["password"].(string)
+	require.NotEmpty(t, password, "kratos was never given a password")
+	return password
+}
+
+// fakeKratos points srv at a fake Kratos for the rest of the test.
+func fakeKratos(t *testing.T, srv *Server, createStatus int) *kratosFake {
+	t.Helper()
+	k := &kratosFake{}
+	identity := `{"id":"kratos-1","schema_id":"default","schema_url":"http://kratos.test/schema","traits":{}}`
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /admin/identities", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(createStatus)
+		_, _ = w.Write([]byte(identity))
+	})
+	mux.HandleFunc("GET /admin/identities/{id}", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(identity))
+	})
+	mux.HandleFunc("PUT /admin/identities/{id}", func(w http.ResponseWriter, r *http.Request) {
+		k.mu.Lock()
+		defer k.mu.Unlock()
+		_ = json.NewDecoder(r.Body).Decode(&k.body)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(identity))
+	})
+	ts := httptest.NewServer(mux)
+	t.Cleanup(ts.Close)
+	t.Setenv("KRATOS_ADMIN_URL", ts.URL)
+	cfg := ory.NewConfiguration()
+	cfg.Servers = ory.ServerConfigurations{{URL: ts.URL}}
+	srv.OryClient = ory.NewAPIClient(cfg)
+	srv.Client = ts.Client()
+	return k
+}
+
+func createTestFacility(t *testing.T, srv *Server, name string) uint {
+	t.Helper()
+	f := &models.Facility{Name: name, Timezone: "America/Chicago"}
+	require.NoError(t, srv.Db.CreateFacility(f))
+	return f.ID
+}
+
+func createTestUser(t *testing.T, srv *Server, username string, role models.UserRole, facilityID uint) *models.User {
+	t.Helper()
+	u := &models.User{Username: username, NameFirst: "Test", NameLast: "User", Email: username + "@example.com", Role: role, FacilityID: facilityID}
+	require.NoError(t, srv.Db.CreateUser(u))
+	return u
 }

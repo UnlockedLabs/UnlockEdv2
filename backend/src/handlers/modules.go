@@ -2,9 +2,13 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 
 	"github.com/UnlockedLabs/unlocked-contracts/identity"
@@ -41,7 +45,27 @@ func (mr moduleRouter) Handle(rt module.Route) {
 		// server instead of leaving a route open.
 		panic(fmt.Sprintf("module route %q: unknown access level %d", rt.Pattern, rt.Access))
 	}
+	if rt.UserParam != "" {
+		def.resolver = userResolver(rt)
+	}
 	mr.srv.register(func() []routeDef { return []routeDef{def} })
+}
+
+// userResolver is the check for a route's UserParam: the same check core's own
+// routes use for the user in their path. A misconfigured route stops startup
+// instead of leaving the route open or closed by mistake.
+func userResolver(rt module.Route) RouteResolver {
+	if !strings.Contains(rt.Pattern, "{"+rt.UserParam+"}") {
+		panic(fmt.Sprintf("module route %q: no path parameter %q", rt.Pattern, rt.UserParam))
+	}
+	switch rt.Access {
+	case module.AnyUser:
+		return UserRoleResolver(rt.UserParam)
+	case module.Admin:
+		return FacilityAdminResolver("users", rt.UserParam)
+	default:
+		panic(fmt.Sprintf("module route %q: UserParam works only with AnyUser and Admin", rt.Pattern))
+	}
 }
 
 // identityClaims is what a module sees of the caller: core's claims without
@@ -75,8 +99,91 @@ func (n wsNotifier) Notify(userID uint, msg module.Message) {
 	})
 }
 
+// moduleUsers gives modules core's user accounts. It reads srv's fields on each
+// call, like wsNotifier.
+type moduleUsers struct{ srv *Server }
+
+func (u moduleUsers) Get(ctx context.Context, id uint) (module.User, error) {
+	user, err := database.NewDB(u.srv.Db.WithContext(ctx)).GetUserByID(id)
+	if err != nil {
+		return module.User{}, fmt.Errorf("get user %d: %w", id, dbCause(err))
+	}
+	return toModuleUser(user), nil
+}
+
+func (u moduleUsers) Create(ctx context.Context, nu module.NewUser) (module.User, error) {
+	user := models.User{
+		Username:   nu.Username,
+		NameFirst:  nu.NameFirst,
+		NameLast:   nu.NameLast,
+		Email:      nu.Email,
+		FacilityID: nu.FacilityID,
+		Role:       nu.Role,
+	}
+	// The creator comes from ctx the way WithUserContext takes it from a
+	// request.
+	if c, ok := identity.FromContext(ctx); ok {
+		ctx = context.WithValue(ctx, models.UserIDKey, c.UserID)
+	}
+	if err := database.NewDB(u.srv.Db.WithContext(ctx)).CreateUser(&user); err != nil {
+		return module.User{}, fmt.Errorf("create user %s: %w", nu.Username, dbCause(err))
+	}
+	return toModuleUser(&user), nil
+}
+
+func (u moduleUsers) CreateLogin(ctx context.Context, userID uint) (string, error) {
+	user, err := database.NewDB(u.srv.Db.WithContext(ctx)).GetUserByID(userID)
+	if err != nil {
+		return "", fmt.Errorf("get user %d: %w", userID, dbCause(err))
+	}
+	password, err := user.CreateTempPassword()
+	if err != nil {
+		return "", fmt.Errorf("create temporary password: %w", err)
+	}
+	if err := u.srv.HandleCreateUserKratos(user.Username, password); err != nil {
+		return "", fmt.Errorf("create kratos login for user %d: %w", userID, err)
+	}
+	return password, nil
+}
+
+func (u moduleUsers) Delete(ctx context.Context, id uint) error {
+	if err := database.NewDB(u.srv.Db.WithContext(ctx)).DeleteUser(int(id)); err != nil {
+		return fmt.Errorf("delete user %d: %w", id, dbCause(err))
+	}
+	return nil
+}
+
+func toModuleUser(u *models.User) module.User {
+	return module.User{
+		ID:         u.ID,
+		Username:   u.Username,
+		NameFirst:  u.NameFirst,
+		NameLast:   u.NameLast,
+		Email:      u.Email,
+		FacilityID: u.FacilityID,
+	}
+}
+
+// dbCause is the error inside a database.DBError, which doesn't unwrap, so a
+// module can match it with errors.Is.
+func dbCause(err error) error {
+	var dbErr database.DBError
+	if errors.As(err, &dbErr) {
+		return dbErr.InternalErr
+	}
+	return err
+}
+
 func (srv *Server) moduleDeps() module.Deps {
-	return module.Deps{DB: srv.Db.DB, NATS: srv.nats, Notify: wsNotifier{srv}}
+	return module.Deps{
+		DB:     srv.Db.DB,
+		NATS:   srv.nats,
+		Notify: wsNotifier{srv},
+		Users:  moduleUsers{srv},
+		MappingsChanged: func(providerID, userID uint) {
+			srv.invalidateCanvasProgramCache(providerID, int(userID))
+		},
+	}
 }
 
 func (srv *Server) registerModuleRoutes() {

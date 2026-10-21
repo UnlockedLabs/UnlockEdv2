@@ -14,6 +14,7 @@ import (
 	"slices"
 
 	"github.com/UnlockedLabs/unlocked-contracts/features"
+	"github.com/UnlockedLabs/unlocked-contracts/users"
 
 	"github.com/nats-io/nats.go"
 	"github.com/pressly/goose/v3"
@@ -41,6 +42,12 @@ type Route struct {
 	Handler http.Handler
 	// Access is who may call the route. The zero value is AnyUser.
 	Access AccessLevel
+	// UserParam names the path parameter that holds the user a route is about,
+	// such as "id" in "GET /api/users/{id}/courses". Then only admins who can
+	// see that user may call the route: department and system admins see
+	// everyone, facility admins their own facility's users. With AnyUser, the
+	// user themself may too. It works only with AnyUser and Admin.
+	UserParam string
 	// Features turns the route off unless every listed feature is enabled.
 	Features []features.Access
 }
@@ -80,6 +87,14 @@ type Deps struct {
 	NATS *nats.Conn
 	// Notify sends messages to a user's open browser tabs.
 	Notify Notifier
+	// Users is core's user accounts. Only routes get it: it is nil in
+	// RegisterJobs.
+	Users Users
+	// MappingsChanged tells core that a user's account at a provider platform
+	// was linked or unlinked, so core can clear its cached Canvas programs.
+	// Only routes get it. It goes away when that cache moves into Provider
+	// Platforms (EN-194).
+	MappingsChanged func(providerID, userID uint)
 }
 
 // Notifier sends a message to a user over core's websocket. A user with no
@@ -96,6 +111,42 @@ type Message struct {
 	// Core ends that activity when the user's tab closes.
 	ActivityID int64
 	Text       string
+}
+
+// Users is core's user accounts, for a module that adds or looks up users.
+type Users interface {
+	// Get returns the user with id. When there is none, the error matches
+	// gorm.ErrRecordNotFound.
+	Get(ctx context.Context, id uint) (User, error)
+	// Create adds a user, recording the caller in ctx as its creator. The user
+	// can't log in until CreateLogin.
+	Create(ctx context.Context, u NewUser) (User, error)
+	// CreateLogin gives a user a Kratos login with a new temporary password,
+	// which they must change when they first log in. It returns the password.
+	CreateLogin(ctx context.Context, userID uint) (string, error)
+	// Delete removes a user and their links to provider platform accounts,
+	// such as to undo a Create. It doesn't remove their Kratos login.
+	Delete(ctx context.Context, id uint) error
+}
+
+// User is what a module sees of a user.
+type User struct {
+	ID         uint
+	Username   string
+	NameFirst  string
+	NameLast   string
+	Email      string
+	FacilityID uint
+}
+
+// NewUser is a user for Users.Create to add.
+type NewUser struct {
+	Username   string
+	NameFirst  string
+	NameLast   string
+	Email      string
+	FacilityID uint
+	Role       users.Role
 }
 
 // Seeder is a module that adds default rows to a new database. Core calls

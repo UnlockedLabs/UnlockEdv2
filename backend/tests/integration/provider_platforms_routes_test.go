@@ -448,6 +448,7 @@ func TestProviderPlatformRouteAccess(t *testing.T) {
 				passes(t, rt.method, rt.path(w.southResident), deptAdmin)
 			case selfOrAdmin:
 				passes(t, rt.method, rt.path(w.resident), resident)
+				notAllowed(t, rt.method, rt.path(w.mmajor), resident)
 				notAllowed(t, rt.method, rt.path(w.southResident), resident)
 				notAllowed(t, rt.method, rt.path(w.southResident), facAdmin)
 				passes(t, rt.method, rt.path(w.resident), facAdmin)
