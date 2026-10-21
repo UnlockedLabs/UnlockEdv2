@@ -51,9 +51,7 @@ func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
 			hour = 1
 		}
 	}
-	if dev {
-		runner.scheduleDevLibraryScrape(tasks)
-	} else {
+	if !dev {
 		runner.execute()
 	}
 	runner.Start()
@@ -97,31 +95,19 @@ func (s *Scheduler) Cron(spec string, task func()) error {
 }
 
 // AtStart runs a feature module's task once, right away, or after
-// devLibraryScrapeDelay in dev (module.Scheduler).
+// devStartDelay in dev (module.Scheduler).
 func (s *Scheduler) AtStart(task func()) error {
 	start := gocron.OneTimeJobStartImmediately()
 	if s.dev {
-		start = gocron.OneTimeJobStartDateTime(time.Now().Add(devLibraryScrapeDelay))
+		start = gocron.OneTimeJobStartDateTime(time.Now().Add(devStartDelay))
 	}
 	_, err := s.NewJob(gocron.OneTimeJob(start), gocron.NewTask(task))
 	return err
 }
 
-// provider-service starts after the server and won't be able to access NATS,
-// so here we need to delay the scrape to avoid publishing before anyone is listening.
-const devLibraryScrapeDelay = 60 * time.Second
-
-func (s *Scheduler) scheduleDevLibraryScrape(tasks []models.RunnableTask) {
-	for _, task := range tasks {
-		if task.Job == nil || task.Job.Name != string(models.ScrapeKiwixJob) {
-			continue
-		}
-		startAt := gocron.OneTimeJobStartDateTime(time.Now().Add(devLibraryScrapeDelay))
-		if _, err := s.NewJob(gocron.OneTimeJob(startAt), gocron.NewTask(s.runTask, &task)); err != nil {
-			log.Errorf("Failed to schedule dev library scrape: %v", err)
-		}
-	}
-}
+// devStartDelay holds back the at-start jobs in dev: the workers start after
+// the server, and a job published before they subscribe is lost.
+const devStartDelay = 60 * time.Second
 
 func (s *Scheduler) Stop() error {
 	return s.StopJobs()

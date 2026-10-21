@@ -1,3 +1,7 @@
+ARG FFMPEG_VERSION=7.1
+
+FROM mwader/static-ffmpeg:$FFMPEG_VERSION AS ffmpeg
+
 FROM ghcr.io/unlockedlabs/golang-jasper:latest AS builder
 
 ENV GOTOOLCHAIN=auto
@@ -12,6 +16,13 @@ RUN cd migrations && CGO_ENABLED=0 GOOS=linux GOFLAGS=-mod=readonly go build -tr
 
 FROM ghcr.io/unlockedlabs/golang-jasper:latest
 WORKDIR /
+
+# The Open Content worker (`backend worker opencontent`) downloads videos with
+# yt-dlp and ffmpeg.
+RUN apk add --no-cache python3 py3-pip && \
+	pip install --break-system-packages requests brotli websockets certifi yt-dlp[default,curl-cffi]
+COPY --from=ffmpeg /ffmpeg /ffprobe /usr/bin/
+ADD --chmod=755 https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp /usr/bin/yt-dlp
 
 # Records which commit/branch/version this image was actually built from — see
 # /api/version. Passed in by `make dev` (local git state) or CI (github.sha/ref_name/

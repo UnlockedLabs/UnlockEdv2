@@ -1,4 +1,4 @@
-package main
+package opencontent
 
 import (
 	"encoding/json"
@@ -9,8 +9,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -24,7 +22,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(opencontent.Module{}.TestModels()...); err != nil {
+	if err := db.AutoMigrate(Module{}.TestModels()...); err != nil {
 		t.Fatal(err)
 	}
 	return db

@@ -65,8 +65,9 @@ func cancelOnSignal(shutdown <-chan os.Signal, cancel context.CancelFunc) {
 }
 
 // runScheduler schedules every background job and publishes each one to NATS
-// when it's due; provider-middleware does the work. It runs until ctx is
-// canceled. It doesn't migrate: it waits until the database is migrated.
+// when it's due; provider-middleware and the module workers do the work. It
+// runs until ctx is canceled. It doesn't migrate: it waits until the database
+// is migrated.
 func runScheduler(ctx context.Context, dev bool) {
 	mods := registry.All()
 	nc, db, ok := connectMigrated(ctx)

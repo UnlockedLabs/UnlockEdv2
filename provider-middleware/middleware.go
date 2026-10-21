@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 
 	"github.com/nats-io/nats.go"
@@ -96,30 +95,12 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
 
-func (sh *ServiceHandler) getContentProvider(msg *nats.Msg) (*opencontent.OpenContentProvider, map[string]any, error) {
-	var body map[string]any
-	if err := json.Unmarshal(msg.Data, &body); err != nil {
-		log.Errorf("failed to unmarshal message: %v", err)
-		return nil, nil, fmt.Errorf("failed to unmarshal message: %v", err)
-	}
-	providerId, ok := body["open_content_provider_id"].(float64)
-	if !ok {
-		return nil, body, fmt.Errorf("failed to parse open_content_provider_id: %v", body)
-	}
-	openContentProvider, err := sh.LookupOpenContentProvider(int(providerId))
-	if err != nil {
-		log.Printf("Error looking up content provider: %v", err)
-		return nil, body, fmt.Errorf("failed to find open content provider: %v", err)
-	}
-	return openContentProvider, body, nil
-}
-
 func (sh *ServiceHandler) cleanupJob(ctx context.Context, provId *int, jobId string, success bool) {
 	log.Infof("job %s succeeded?: %v \n cleaning up task", jobId, success)
 	var task models.RunnableTask
 	tx := sh.db.WithContext(ctx).Model(models.RunnableTask{})
 	if provId != nil {
-		tx = tx.Where("(provider_platform_id = ? AND job_id = ?) OR (open_content_provider_id = ? AND job_id = ?)", *provId, jobId, *provId, jobId)
+		tx = tx.Where("provider_platform_id = ? AND job_id = ?", *provId, jobId)
 	} else {
 		tx = tx.Where("job_id = ?", jobId)
 	}

@@ -69,26 +69,18 @@ func TestStart(t *testing.T) {
 		t.Errorf("the module got DB %p, want the scheduler's %p", got.DB, db.DB)
 	}
 
-	// The test database enables Kiwix and YouTube and no LMS providers, so
-	// core schedules the class-activation job and the three content jobs, plus
-	// dev's one-off Kiwix scrape; the module adds its cron and at-start jobs.
+	// The test database has no LMS providers, so core schedules only the
+	// class-activation job; the module adds its cron and at-start jobs.
 	var names []string
 	if err := db.Model(&models.CronJob{}).Pluck("name", &names).Error; err != nil {
 		t.Fatal(err)
 	}
-	slices.Sort(names)
-	wantNames := []string{
-		string(models.ActivateScheduledClassesJob),
-		string(models.RetryVideoDownloadsJob),
-		string(models.ScrapeKiwixJob),
-		string(models.SyncVideoMetadataJob),
-	}
-	slices.Sort(wantNames)
+	wantNames := []string{string(models.ActivateScheduledClassesJob)}
 	if !slices.Equal(names, wantNames) {
 		t.Errorf("cron jobs = %v, want %v", names, wantNames)
 	}
-	if n := len(s.Jobs()); n != len(wantNames)+3 {
-		t.Errorf("scheduled %d jobs, want %d (core's %d, dev's one-off scrape, the module's 2)", n, len(wantNames)+3, len(wantNames))
+	if n := len(s.Jobs()); n != len(wantNames)+2 {
+		t.Errorf("scheduled %d jobs, want %d (core's %d, the module's 2)", n, len(wantNames)+2, len(wantNames))
 	}
 }
 
@@ -98,7 +90,7 @@ func TestAtStart(t *testing.T) {
 		wantWait time.Duration
 	}{
 		{dev: false, wantWait: 0},
-		{dev: true, wantWait: devLibraryScrapeDelay},
+		{dev: true, wantWait: devStartDelay},
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("dev=%v", tt.dev), func(t *testing.T) {

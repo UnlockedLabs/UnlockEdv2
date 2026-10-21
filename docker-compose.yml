@@ -121,8 +121,9 @@ services:
         condition: service_completed_successfully
 
   # Background jobs (EN-191): the server's own code, run as `backend scheduler`.
-  # It schedules each job and publishes it to NATS for provider-service. It
-  # doesn't migrate: it waits until server-migrate has applied every migration.
+  # It schedules each job and publishes it to NATS for provider-service or the
+  # Open Content worker. It doesn't migrate: it waits until server-migrate has
+  # applied every migration.
   # No hot reload: restart it after changing job code.
   scheduler:
     build:
@@ -138,6 +139,32 @@ services:
       - APP_ENV=dev
       - LOG_LEVEL=debug
       - MIDDLEWARE_CRON_SCHEDULE=0 22 * * *
+      # Where it reads the migration files it waits for server-migrate to apply.
+      - MIGRATION_DIR=backend/migrations
+      - NATS_URL=nats:4222
+      - NATS_USER=unlocked
+      - NATS_PASSWORD=dev
+    restart: unless-stopped
+    depends_on: [server]
+
+  # Open Content's jobs (EN-196): the Kiwix scrape and the video downloads,
+  # run as `backend worker opencontent`. No hot reload: restart it after
+  # changing job code.
+  opencontent-worker:
+    build:
+      context: ./
+      dockerfile: backend/dev.Dockerfile
+    command: ["go", "run", "./backend/cmd/main.go", "worker", "opencontent"]
+    networks:
+      - intranet
+    volumes:
+      - ./:/app
+      - ./frontend/public/videos:/videos
+    environment:
+      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
+      - APP_ENV=dev
+      - APP_URL=http://server:8080
+      - LOG_LEVEL=debug
       # Where it reads the migration files it waits for server-migrate to apply.
       - MIGRATION_DIR=backend/migrations
       - NATS_URL=nats:4222
@@ -225,7 +252,6 @@ services:
       - intranet
     volumes:
       - logs:/logs
-      - ./frontend/public/videos:/videos
       - ./:/app
       - csvs:/csvs
     ports:

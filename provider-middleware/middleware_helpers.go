@@ -3,22 +3,12 @@ package main
 import (
 	"time"
 
-	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 
 	log "github.com/sirupsen/logrus"
 )
 
 const TIMEOUT_WAIT = 5
-
-func (sh *ServiceHandler) LookupOpenContentProvider(id int) (*opencontent.OpenContentProvider, error) {
-	var provider opencontent.OpenContentProvider
-	if err := sh.db.Model(opencontent.OpenContentProvider{}).Find(&provider, id).Error; err != nil {
-		log.Errorf("Failed to fetch open content provider %v", err)
-		return nil, err
-	}
-	return &provider, nil
-}
 
 func (sh *ServiceHandler) lookupUserMapping(params map[string]any) ([]map[string]any, error) {
 	providerPlatformId := int(params["provider_platform_id"].(float64))

@@ -33,6 +33,7 @@ var (
 	_ module.Module     = Module{}
 	_ module.Seeder     = Module{}
 	_ module.TestModels = Module{}
+	_ module.Worker     = Module{}
 )
 
 func (Module) Name() string { return "opencontent" }
@@ -62,9 +63,19 @@ func (Module) Register(r module.Router, deps module.Deps) {
 	}
 }
 
-// RegisterJobs does nothing yet: Open Content's scheduled jobs run from core's
-// scheduler until EN-196.
-func (Module) RegisterJobs(module.Scheduler, module.Deps) {}
+// RegisterJobs schedules the Kiwix scrape and the video jobs for the worker,
+// and runs each once when the scheduler starts. In dev only the scrape runs
+// at start.
+func (Module) RegisterJobs(s module.Scheduler, deps module.Deps) {
+	p := &jobPublisher{store: &store{db: deps.DB}, publish: deps.NATS.PublishMsg}
+	scheduleJobs(s, p, os.Getenv("APP_ENV") == "dev")
+}
+
+// Work runs Open Content's jobs until ctx is canceled (worker.go).
+func (Module) Work(ctx context.Context, deps module.Deps) error {
+	w := &worker{db: deps.DB}
+	return w.run(ctx, deps.NATS)
+}
 
 func (Module) Migrations() fs.FS { return migrations }
 

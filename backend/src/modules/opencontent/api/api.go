@@ -38,9 +38,6 @@ type OpenContent interface {
 	TopLibraryVisits(ctx context.Context, w Window, limit int) ([]ContentVisits, error)
 	TopVideoVisits(ctx context.Context, w Window, limit int) ([]ContentVisits, error)
 
-	// JobProviders is the content providers core's scheduled jobs run for.
-	JobProviders(ctx context.Context) (JobProviders, error)
-
 	// ResetDemoActivity deletes demo reading activity from before the given
 	// day.
 	ResetDemoActivity(ctx context.Context, before time.Time) error
@@ -100,13 +97,4 @@ type ContentVisits struct {
 	Title  string `json:"title"`
 	Visits int64  `json:"visits"`
 	Change int    `json:"change"`
-}
-
-// JobProviders is the enabled providers' IDs. A provider that's off or
-// missing is zero.
-type JobProviders struct {
-	// Kiwix runs the library jobs.
-	Kiwix uint
-	// YouTube runs the video jobs.
-	YouTube uint
 }
