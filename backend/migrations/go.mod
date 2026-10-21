@@ -1,6 +1,6 @@
 module migrations
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/UnlockedLabs/unlocked-core/backend v0.0.0

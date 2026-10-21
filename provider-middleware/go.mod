@@ -1,6 +1,6 @@
 module provider-middleware
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/UnlockedLabs/unlocked-contracts v0.2.0
