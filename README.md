@@ -130,7 +130,7 @@ If this does not work because your directory is named something different, you c
  - **Videos**:
    Videos can be hosted locally for development, in which case they are simply downloaded and moved into the `frontend/public/videos` directory,
    If you wish to use `s3` and test out hosting videos between multiple instances, you need to set the following environment variables in either
-   the docker-compose.yml for both the `provider-middleware` and `server` or in your production environment.
+   the docker-compose.yml for both the `opencontent-worker` and `server` or in your production environment.
  ```
      - AWS_REGION=
      - S3_BUCKET_NAME=

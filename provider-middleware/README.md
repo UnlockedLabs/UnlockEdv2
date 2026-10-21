@@ -6,6 +6,9 @@ It will handle the resource intensive business of fetching, parsing, de-duping d
 return the data to the backend or write it to the database. The middleware is subscribed to a NATS message queue, listening for
 msg's published from the back-end, which will trigger the middleware to fetch data from the provider platforms.
 
+It runs the LMS jobs only. Open Content's jobs (the Kiwix scrape and the video downloads) moved to the Open Content
+worker, `backend worker opencontent`, in EN-196.
+
 ### **HTTP API**
 
 Example:
