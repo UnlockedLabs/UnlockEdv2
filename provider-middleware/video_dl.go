@@ -44,6 +44,10 @@ type VideoService struct {
 
 var errInvalidVideoURL = errors.New("invalid video URL")
 
+// videosDir is the mounted videos folder that syncVideoMetadata reads. Tests
+// point it at a temp dir.
+var videosDir = "/videos/"
+
 func validateVideoURL(urlStr string) error {
 	u, err := url.Parse(urlStr)
 	if err != nil {
@@ -94,7 +98,7 @@ func NewVideoService(prov *opencontent.OpenContentProvider, db *gorm.DB, body ma
 // will work across all nodes as long as PVs are properly mounted to the pods.
 func (yt *VideoService) syncVideoMetadata(ctx context.Context) error {
 	var jsonIDs []string
-	directory := "/videos/"
+	directory := videosDir
 	dir, err := os.ReadDir(directory)
 	if err != nil {
 		logger().Errorf("Error reading mounted s3 directory: %v", err)
