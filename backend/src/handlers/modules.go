@@ -153,6 +153,34 @@ func (u moduleUsers) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
+// liveProviders gives Provider Platforms core's Canvas and Essential Education
+// code until EN-194 moves it there.
+type liveProviders struct{ srv *Server }
+
+func (l liveProviders) Users(ctx context.Context, providerID uint) ([]module.ProviderUser, bool, error) {
+	provider, err := l.srv.Db.GetProviderPlatformByID(int(providerID))
+	if err != nil {
+		return nil, false, fmt.Errorf("get provider platform %d: %w", providerID, dbCause(err))
+	}
+	lister, ok := l.srv.liveUserListerFor(provider)
+	if !ok {
+		return nil, false, nil
+	}
+	users, err := lister.ListUsers(ctx)
+	if err != nil {
+		return nil, true, err
+	}
+	out := make([]module.ProviderUser, len(users))
+	for i, u := range users {
+		out[i] = module.ProviderUser(u)
+	}
+	return out, true, nil
+}
+
+func (l liveProviders) MappingsChanged(providerID, userID uint) {
+	l.srv.invalidateCanvasProgramCache(providerID, int(userID))
+}
+
 func toModuleUser(u *models.User) module.User {
 	return module.User{
 		ID:         u.ID,
@@ -176,13 +204,11 @@ func dbCause(err error) error {
 
 func (srv *Server) moduleDeps() module.Deps {
 	return module.Deps{
-		DB:     srv.Db.DB,
-		NATS:   srv.nats,
-		Notify: wsNotifier{srv},
-		Users:  moduleUsers{srv},
-		MappingsChanged: func(providerID, userID uint) {
-			srv.invalidateCanvasProgramCache(providerID, int(userID))
-		},
+		DB:            srv.Db.DB,
+		NATS:          srv.nats,
+		Notify:        wsNotifier{srv},
+		Users:         moduleUsers{srv},
+		LiveProviders: liveProviders{srv},
 	}
 }
 

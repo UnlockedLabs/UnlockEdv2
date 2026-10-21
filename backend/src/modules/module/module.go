@@ -90,11 +90,10 @@ type Deps struct {
 	// Users is core's user accounts. Only routes get it: it is nil in
 	// RegisterJobs.
 	Users Users
-	// MappingsChanged tells core that a user's account at a provider platform
-	// was linked or unlinked, so core can clear its cached Canvas programs.
-	// Only routes get it. It goes away when that cache moves into Provider
-	// Platforms (EN-194).
-	MappingsChanged func(providerID, userID uint)
+	// LiveProviders is core's Canvas and Essential Education code, for
+	// Provider Platforms. Only routes get it. It goes away when EN-194 moves
+	// that code into Provider Platforms.
+	LiveProviders LiveProviders
 }
 
 // Notifier sends a message to a user over core's websocket. A user with no
@@ -127,6 +126,27 @@ type Users interface {
 	// Delete removes a user and their links to provider platform accounts,
 	// such as to undo a Create. It doesn't remove their Kratos login.
 	Delete(ctx context.Context, id uint) error
+}
+
+// LiveProviders is what Provider Platforms needs from the Canvas and Essential
+// Education code that stays in core until EN-194.
+type LiveProviders interface {
+	// Users is every user a provider's own API lists. ok is false for a
+	// provider that can't list them; its users come from provider-middleware.
+	Users(ctx context.Context, providerID uint) (users []ProviderUser, ok bool, err error)
+	// MappingsChanged tells core that a user's account at a provider was
+	// linked or unlinked, so core can clear its cached Canvas programs.
+	MappingsChanged(providerID, userID uint)
+}
+
+// ProviderUser is a user's account at a provider platform.
+type ProviderUser struct {
+	Username         string
+	NameFirst        string
+	NameLast         string
+	Email            string
+	ExternalUserID   string
+	ExternalUsername string
 }
 
 // User is what a module sees of a user.

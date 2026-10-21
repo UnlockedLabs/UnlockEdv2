@@ -234,9 +234,53 @@ func TestModuleDeps(t *testing.T) {
 	deps := newTestingServer().moduleDeps()
 	assert.NotNil(t, deps.Notify)
 	assert.NotNil(t, deps.Users)
-	require.NotNil(t, deps.MappingsChanged)
+	require.NotNil(t, deps.LiveProviders)
 	// The testing server has no Canvas cache, so there is nothing to clear.
-	assert.NotPanics(t, func() { deps.MappingsChanged(1, 1) })
+	assert.NotPanics(t, func() { deps.LiveProviders.MappingsChanged(1, 1) })
+}
+
+// Only a provider that lists its own users (Essential Ed) answers; the rest
+// fall back to provider-middleware.
+func TestLiveProvidersUsers(t *testing.T) {
+	srv := newTestingServer()
+	status := http.StatusOK
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(envelope([]map[string]interface{}{
+			{"id": float64(4329946), "first_name": "Jane", "last_name": "Smith", "username": "jsmith", "email_address": "jane@example.com"},
+		}, true))
+	}))
+	defer ts.Close()
+	srv.Client = ts.Client()
+	essentialEd := models.ProviderPlatform{Type: models.EssentialEd, Name: "Essential Ed", BaseUrl: ts.URL, AccountID: "303", AccessKey: "token", State: models.Enabled}
+	kolibri := models.ProviderPlatform{Type: models.Kolibri, Name: "Kolibri", BaseUrl: ts.URL, State: models.Enabled}
+	require.NoError(t, srv.Db.CreateProviderPlatform(&essentialEd))
+	require.NoError(t, srv.Db.CreateProviderPlatform(&kolibri))
+	live := liveProviders{srv}
+
+	t.Run("essential ed lists its users", func(t *testing.T) {
+		users, ok, err := live.Users(context.Background(), essentialEd.ID)
+		require.NoError(t, err)
+		assert.True(t, ok)
+		assert.Equal(t, []module.ProviderUser{{
+			Username: "jsmith", NameFirst: "Jane", NameLast: "Smith", Email: "jane@example.com",
+			ExternalUserID: "4329946", ExternalUsername: "jsmith",
+		}}, users)
+	})
+
+	t.Run("kolibri goes through provider-middleware", func(t *testing.T) {
+		users, ok, err := live.Users(context.Background(), kolibri.ID)
+		require.NoError(t, err)
+		assert.False(t, ok)
+		assert.Nil(t, users)
+	})
+
+	t.Run("a failed listing is an error", func(t *testing.T) {
+		status = http.StatusBadGateway
+		_, ok, err := live.Users(context.Background(), essentialEd.ID)
+		assert.Error(t, err)
+		assert.True(t, ok)
+	})
 }
 
 func TestModuleUsers(t *testing.T) {
