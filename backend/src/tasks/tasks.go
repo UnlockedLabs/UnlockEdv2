@@ -20,6 +20,7 @@ type Scheduler struct {
 	gocron.Scheduler
 	nats *nats.Conn
 	db   *gorm.DB
+	dev  bool
 }
 
 func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
@@ -28,7 +29,7 @@ func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
 		log.Fatalf("Failed to create scheduler: %v", err)
 		return nil
 	}
-	runner := Scheduler{scheduler, nats, db}
+	runner := Scheduler{scheduler, nats, db, dev}
 	tasks, err := runner.generateTasks()
 	if err != nil {
 		log.Fatalf("failed to generate tasks: %v", err)
@@ -92,6 +93,17 @@ func ServerRunsJobs() bool {
 // (module.Scheduler).
 func (s *Scheduler) Cron(spec string, task func()) error {
 	_, err := s.NewJob(gocron.CronJob(spec, false), gocron.NewTask(task))
+	return err
+}
+
+// AtStart runs a feature module's task once, right away, or after
+// devLibraryScrapeDelay in dev (module.Scheduler).
+func (s *Scheduler) AtStart(task func()) error {
+	start := gocron.OneTimeJobStartImmediately()
+	if s.dev {
+		start = gocron.OneTimeJobStartDateTime(time.Now().Add(devLibraryScrapeDelay))
+	}
+	_, err := s.NewJob(gocron.OneTimeJob(start), gocron.NewTask(task))
 	return err
 }
 

@@ -2,14 +2,18 @@ package tasks
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"slices"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
+
+	"github.com/go-co-op/gocron/v2"
 )
 
 func TestServerRunsJobs(t *testing.T) {
@@ -47,6 +51,9 @@ func (m jobModule) RegisterJobs(s module.Scheduler, deps module.Deps) {
 	if err := s.Cron("0 3 * * *", func() {}); err != nil {
 		panic(err)
 	}
+	if err := s.AtStart(func() {}); err != nil {
+		panic(err)
+	}
 }
 
 func TestStart(t *testing.T) {
@@ -64,7 +71,7 @@ func TestStart(t *testing.T) {
 
 	// The test database enables Kiwix and YouTube and no LMS providers, so
 	// core schedules the class-activation job and the three content jobs, plus
-	// dev's one-off Kiwix scrape; the module adds its own job.
+	// dev's one-off Kiwix scrape; the module adds its cron and at-start jobs.
 	var names []string
 	if err := db.Model(&models.CronJob{}).Pluck("name", &names).Error; err != nil {
 		t.Fatal(err)
@@ -80,7 +87,58 @@ func TestStart(t *testing.T) {
 	if !slices.Equal(names, wantNames) {
 		t.Errorf("cron jobs = %v, want %v", names, wantNames)
 	}
-	if n := len(s.Jobs()); n != len(wantNames)+2 {
-		t.Errorf("scheduled %d jobs, want %d (core's %d, dev's one-off scrape, the module's)", n, len(wantNames)+2, len(wantNames))
+	if n := len(s.Jobs()); n != len(wantNames)+3 {
+		t.Errorf("scheduled %d jobs, want %d (core's %d, dev's one-off scrape, the module's 2)", n, len(wantNames)+3, len(wantNames))
+	}
+}
+
+func TestAtStart(t *testing.T) {
+	tests := []struct {
+		dev      bool
+		wantWait time.Duration
+	}{
+		{dev: false, wantWait: 0},
+		{dev: true, wantWait: devLibraryScrapeDelay},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("dev=%v", tt.dev), func(t *testing.T) {
+			gs, err := gocron.NewScheduler()
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := &Scheduler{Scheduler: gs, dev: tt.dev}
+			s.Start()
+			t.Cleanup(func() { _ = s.Shutdown() })
+
+			ran := make(chan struct{})
+			before := time.Now()
+			if err := s.AtStart(func() { close(ran) }); err != nil {
+				t.Fatal(err)
+			}
+			if tt.wantWait == 0 {
+				select {
+				case <-ran:
+				case <-time.After(5 * time.Second):
+					t.Fatal("the task didn't run right away")
+				}
+				return
+			}
+			jobs := s.Jobs()
+			if len(jobs) != 1 {
+				t.Fatalf("%d jobs, want 1", len(jobs))
+			}
+			next, err := jobs[0].NextRun()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if wait := next.Sub(before); wait < tt.wantWait || wait > tt.wantWait+5*time.Second {
+				t.Errorf("the task runs in %v, want %v", wait, tt.wantWait)
+			}
+			select {
+			case <-ran:
+				t.Error("the task ran right away, want it delayed")
+			default:
+			}
+		})
 	}
 }
