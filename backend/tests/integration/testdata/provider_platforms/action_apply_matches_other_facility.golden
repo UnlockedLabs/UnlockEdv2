@@ -1,0 +1,10 @@
+{
+  "data": {
+    "applied": 0,
+    "created": 0,
+    "failed": [
+      "mary.major"
+    ]
+  },
+  "message": "Data fetched successfully"
+}

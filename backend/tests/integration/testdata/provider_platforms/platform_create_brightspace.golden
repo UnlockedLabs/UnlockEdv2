@@ -1,0 +1,4 @@
+{
+  "data": null,
+  "message": "Server not configured with buckets, unable to process oauth2 flow."
+}
