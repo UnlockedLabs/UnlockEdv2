@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	ocapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/services"
 
 	"github.com/nats-io/nats.go"
@@ -60,12 +62,12 @@ func (srv *Server) handleResidentProfile(w http.ResponseWriter, r *http.Request,
 		return newDatabaseServiceError(err)
 	}
 	args := srv.getQueryContext(r)
-	topLibraries, err := srv.Db.GetTopFiveLibrariesByUserID(userID, &args)
+	topLibraries, err := srv.openContent.TopLibraries(args.Ctx, uint(userID), args.FacilityID)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(database.NewDBError(err, "error getting top 5 libraries"))
 	}
 
-	recentVideos, err := srv.Db.GetMostRecentFiveVideosByUserID(userID)
+	recentVideos, err := srv.openContent.RecentVideos(r.Context(), uint(userID))
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -443,34 +445,35 @@ func (srv *Server) handleKnowledgeCenterMetrics(w http.ResponseWriter, r *http.R
 	if err != nil {
 		return err
 	}
-	total, unique, totalChange, err := srv.Db.GetKCInteractionStats(&args, start, end, facilityID)
+	window := ocapi.Window{Start: start, End: end, FacilityID: facilityID}
+	interactions, err := srv.openContent.Interactions(args.Ctx, window)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(database.NewDBError(err, "error getting open_content_activities"))
 	}
-	avgSession, err := srv.Db.GetKCAvgSessionMinutes(&args, start, end, facilityID)
+	avgSession, err := srv.openContent.AvgSessionMinutes(args.Ctx, window)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(database.NewDBError(err, "error getting open_content_activities"))
 	}
-	repeat, err := srv.Db.GetKCRepeatEngagement(&args, start, end, facilityID)
+	repeat, err := srv.openContent.RepeatEngagement(args.Ctx, window)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(database.NewDBError(err, "error getting open_content_activities"))
 	}
-	categories, err := srv.Db.GetKCLibraryViewsByCategory(&args, start, end, facilityID)
+	categories, err := srv.openContent.LibraryViewsByCategory(args.Ctx, window)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(database.NewDBError(err, "error getting open_content_tags"))
 	}
-	topLibraries, err := srv.Db.GetKCTopLibraries(&args, start, end, facilityID, 8)
+	topLibraries, err := srv.openContent.TopLibraryVisits(args.Ctx, window, 8)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(database.NewDBError(err, "error getting libraries"))
 	}
-	topVideos, err := srv.Db.GetKCTopVideos(&args, start, end, facilityID, 8)
+	topVideos, err := srv.openContent.TopVideoVisits(args.Ctx, window, 8)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(database.NewDBError(err, "error getting videos"))
 	}
 	metrics := models.KnowledgeCenterMetrics{
-		TotalInteractions:       total,
-		TotalInteractionsChange: totalChange,
-		UniqueResidents:         unique,
+		TotalInteractions:       interactions.Total,
+		TotalInteractionsChange: interactions.Change,
+		UniqueResidents:         interactions.Unique,
 		AvgSessionMinutes:       avgSession,
 		RepeatEngagement:        repeat,
 		LibraryViewsByCategory:  categories,

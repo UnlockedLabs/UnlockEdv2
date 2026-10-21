@@ -4,15 +4,16 @@ import (
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 
 	log "github.com/sirupsen/logrus"
 )
 
 const TIMEOUT_WAIT = 5
 
-func (sh *ServiceHandler) LookupOpenContentProvider(id int) (*models.OpenContentProvider, error) {
-	var provider models.OpenContentProvider
-	if err := sh.db.Model(models.OpenContentProvider{}).Find(&provider, id).Error; err != nil {
+func (sh *ServiceHandler) LookupOpenContentProvider(id int) (*opencontent.OpenContentProvider, error) {
+	var provider opencontent.OpenContentProvider
+	if err := sh.db.Model(opencontent.OpenContentProvider{}).Find(&provider, id).Error; err != nil {
 		log.Errorf("Failed to fetch open content provider %v", err)
 		return nil, err
 	}

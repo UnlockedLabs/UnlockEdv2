@@ -10,6 +10,9 @@ import (
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 
+	"github.com/UnlockedLabs/unlocked-contracts/identity"
+	"github.com/sirupsen/logrus"
+	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -76,4 +79,83 @@ func requestAs(t *testing.T, path string, claims Claims) *http.Request {
 	r := httptest.NewRequest(http.MethodGet, path, nil)
 	r.Header.Set("X-Test-Claims", string(body))
 	return r
+}
+
+// A module handler sees who is calling as identity.Claims, without core's
+// Kratos and password-reset details.
+func TestModuleRouterClaims(t *testing.T) {
+	srv := newTestingServer()
+	var got *identity.Claims
+	moduleRouter{srv}.Handle(module.Route{Pattern: "GET /api/test-module/claims", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got, _ = identity.FromContext(r.Context())
+	})})
+
+	caller := Claims{
+		UserID: 7, Username: "jdoe", Email: "jdoe@example.com", Role: models.Student, FacilityID: 2,
+		FacilityName: "North", KratosID: "k-1", FeatureAccess: []models.FeatureAccess{models.OpenContentAccess},
+		SessionID: "s-1", DocID: "1001", TimeZone: "America/Chicago",
+	}
+	srv.Mux.ServeHTTP(httptest.NewRecorder(), requestAs(t, "/api/test-module/claims", caller))
+
+	want := &identity.Claims{
+		UserID: 7, Username: "jdoe", Role: models.Student, FacilityID: 2, FacilityName: "North",
+		FeatureAccess: []models.FeatureAccess{models.OpenContentAccess}, SessionID: "s-1", TimeZone: "America/Chicago",
+	}
+	assert.Equal(t, want, got)
+}
+
+// A module's log fields and audit action land on the same admin audit log
+// line as a core handler's log.add and log.auditDetails.
+func TestModuleRouterLogFields(t *testing.T) {
+	srv := newTestingServer()
+	moduleRouter{srv}.Handle(module.Route{Pattern: "PUT /api/test-module/audit", Access: module.Admin, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		module.LogField(r.Context(), "video_id", 9)
+		module.AuditAction(r.Context(), "video_featured")
+	})})
+
+	oldHooks := logrus.StandardLogger().ReplaceHooks(make(logrus.LevelHooks))
+	defer logrus.StandardLogger().ReplaceHooks(oldHooks)
+	hook := logtest.NewGlobal()
+
+	r := requestAs(t, "/api/test-module/audit", Claims{UserID: 3, Username: "facadmin", Role: models.FacilityAdmin, FacilityID: 2})
+	r.Method = http.MethodPut
+	r.Header.Set("X-CSRF-Token", "token")
+	r.AddCookie(&http.Cookie{Name: "csrf_token", Value: "token"})
+	w := httptest.NewRecorder()
+	srv.Mux.ServeHTTP(w, r)
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+
+	var audit *logrus.Entry
+	for _, e := range hook.AllEntries() {
+		if e.Data["audit"] == "admin_action" {
+			audit = e
+		}
+	}
+	require.NotNil(t, audit, "no admin audit log line")
+	assert.Equal(t, "video_featured", audit.Data["action"])
+	assert.Equal(t, 9, audit.Data["video_id"])
+	assert.Equal(t, uint(3), audit.Data["admin_id"])
+}
+
+// Module messages reach the user's open tab as the websocket's own message
+// shape, and are dropped when the server has no websocket.
+func TestWsNotifier(t *testing.T) {
+	msg := module.Message{Event: "visits", ActivityID: 42, Text: "hi"}
+
+	t.Run("no websocket", func(t *testing.T) {
+		assert.NotPanics(t, func() { wsNotifier{newTestingServer()}.Notify(7, msg) })
+	})
+
+	t.Run("open tab", func(t *testing.T) {
+		srv := newTestingServer()
+		srv.wsClient = newClientManager()
+		client := &WsClient{UserID: 7, sendChan: make(chan []byte, 1)}
+		srv.wsClient.clients[7] = client
+
+		wsNotifier{srv}.Notify(7, msg)
+
+		assert.JSONEq(t, `{"event_type":"visits","user_id":7,"session_id":"","msg":{"activity_id":42,"msg":"hi"}}`, string(<-client.sendChan))
+		// The websocket ends this activity when the tab closes.
+		assert.Equal(t, int64(42), client.OpenContentActivityID)
+	})
 }

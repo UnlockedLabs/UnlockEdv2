@@ -61,9 +61,8 @@ type RunnableTask struct {
 	OpenContentProviderID *uint          `json:"open_content_provider_id"`
 	Status                JobStatus      `json:"status"`
 
-	Provider        *ProviderPlatform    `gorm:"foreignKey:ProviderPlatformID" json:"-"`
-	ContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID" json:"-"`
-	Job             *CronJob             `gorm:"foreignKey:JobID" json:"-"`
+	Provider *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
+	Job      *CronJob          `gorm:"foreignKey:JobID" json:"-"`
 }
 
 func (task *RunnableTask) Prepare(provId *uint) {

@@ -1,10 +1,11 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
-	"slices"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -96,35 +97,29 @@ func (s *Scheduler) intoSystemTask(cj *models.CronJob, task *models.RunnableTask
 
 func (s *Scheduler) generateOpenContentProviderTasks() ([]models.RunnableTask, error) {
 	otherTasks := make([]models.RunnableTask, 0, 5)
-	providers := make([]models.OpenContentProvider, 0, 2)
-	if err := s.db.Find(&providers, "currently_enabled = true").Error; err != nil {
+	providers, err := registry.OpenContent(s.db).JobProviders(context.Background())
+	if err != nil {
 		log.Errorf("failed to fetch all open content providers: %v", err)
 		return nil, err
 	}
-	vidProvider := slices.IndexFunc(providers, func(p models.OpenContentProvider) bool {
-		return models.FormatNullableString(p.Title) == models.Youtube
-	})
-	libProvider := slices.IndexFunc(providers, func(p models.OpenContentProvider) bool {
-		return models.FormatNullableString(p.Title) == models.Kiwix
-	})
 	for _, jobType := range models.AllContentProviderJobs {
 		if jobType.IsLibraryJob() {
-			if libProvider == -1 {
+			if providers.Kiwix == 0 {
 				continue
 			}
 			job := models.CronJob{Name: string(jobType)}
-			task, err := s.handleCreateOCProviderTask(&job, providers[libProvider].ID)
+			task, err := s.handleCreateOCProviderTask(&job, providers.Kiwix)
 			if err != nil {
 				log.Errorf("failed to create task: %v", err)
 				continue
 			}
 			otherTasks = append(otherTasks, *task)
 		} else if jobType.IsVideoJob() {
-			if vidProvider == -1 {
+			if providers.YouTube == 0 {
 				continue
 			}
 			job := models.CronJob{Name: string(jobType)}
-			task, err := s.handleCreateOCProviderTask(&job, providers[vidProvider].ID)
+			task, err := s.handleCreateOCProviderTask(&job, providers.YouTube)
 			if err != nil {
 				log.Errorf("failed to create task: %v", err)
 				continue

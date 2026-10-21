@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 
 	"gorm.io/gorm"
 )
@@ -27,7 +28,7 @@ type KiwixService struct {
 	params                map[string]any
 }
 
-func NewKiwixService(openContentProvider *models.OpenContentProvider, params map[string]any) *KiwixService {
+func NewKiwixService(openContentProvider *opencontent.OpenContentProvider, params map[string]any) *KiwixService {
 	url := fmt.Sprintf("%s%s%d", openContentProvider.Url, KiwixCatalogUrl, maxLibraries)
 	client := http.Client{}
 	jobID := params["job_id"].(string)
@@ -101,8 +102,8 @@ func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, 
 	logger().Infof("Attempting to insert or update library from Kiwix: %v", entry.Title)
 	library := ks.IntoLibrary(entry, providerId)
 	if err := db.WithContext(ctx).
-		Where(&models.Library{ExternalID: models.StringPtr(entry.ID)}).
-		Assign(models.Library{
+		Where(&opencontent.Library{ExternalID: models.StringPtr(entry.ID)}).
+		Assign(opencontent.Library{
 			Url:          library.Url,
 			Title:        library.Title,
 			Description:  library.Description,
@@ -118,7 +119,7 @@ func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, 
 
 func RemoveDeletedEntries(ctx context.Context, db *gorm.DB, externalIds []string, providerId uint) (int64, error) {
 	logger().Infoln("Removing any deleted Kiwix libraries")
-	tx := db.WithContext(ctx).Where("open_content_provider_id = ?", providerId).Delete(&models.Library{}, "external_id NOT IN (?)", externalIds)
+	tx := db.WithContext(ctx).Where("open_content_provider_id = ?", providerId).Delete(&opencontent.Library{}, "external_id NOT IN (?)", externalIds)
 	if tx.Error != nil {
 		return 0, tx.Error
 	}

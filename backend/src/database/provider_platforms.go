@@ -91,3 +91,12 @@ func (db *DB) DeleteProviderPlatform(id int) error {
 	}
 	return nil
 }
+
+func (db *DB) FindKolibriInstance() (*models.ProviderPlatform, error) {
+	kolibri := models.ProviderPlatform{}
+	if err := db.First(&kolibri, "type = ?", "kolibri").Error; err != nil {
+		log.Error("error getting kolibri provider platform")
+		return nil, newNotFoundDBError(err, "provider_platforms")
+	}
+	return &kolibri, nil
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/UnlockedLabs/unlocked-core/backend/src"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 
 	"github.com/evertonvps/go-jasper"
 	"github.com/google/uuid"
@@ -53,7 +54,7 @@ func (js *jasperService) generateUsageReportPDF(userID int) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get user engagements: %w", err)
 	}
 
-	resourceCount, err := js.db.GetUserOpenContentAccessCount(js.queryCtx.Ctx, userID)
+	resourcesAccessed, err := registry.OpenContent(js.db.DB).ResourcesAccessed(js.queryCtx.Ctx, uint(userID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource count: %w", err)
 	}
@@ -82,7 +83,7 @@ func (js *jasperService) generateUsageReportPDF(userID int) ([]byte, error) {
 		{Key: "DateRange", Value: fmt.Sprintf("%s - present", user.CreatedAt.Format("January 2, 2006"))},
 		{Key: "TotalTimeSpent", Value: js.calculateTotalTime(sessionEngagements)},
 		{Key: "TotalLogins", Value: js.calculateTotalLogins(user)},
-		{Key: "TotalResourcesAccessed", Value: fmt.Sprintf("%d", resourceCount.TotalResourcesAccessed)},
+		{Key: "TotalResourcesAccessed", Value: fmt.Sprintf("%d", resourcesAccessed)},
 		{Key: "HasProgramAccess", Value: fmt.Sprintf("%t", js.hasProgramAccess)},
 		{Key: "LogoImage", Value: base64.StdEncoding.EncodeToString(src.UnlockedLogoImg)},
 		{Key: "ProgramsCount", Value: fmt.Sprintf("%d", len(userPrograms))},

@@ -13,7 +13,9 @@ import (
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
 
+	"github.com/UnlockedLabs/unlocked-contracts/identity"
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/joho/godotenv"
@@ -58,7 +60,10 @@ func seedTestData(db *gorm.DB) {
 	if err := db.Where("username = ?", SystemBatchUID).First(&systemUser).Error; err == nil {
 		systemUserID = systemUser.ID
 	}
-	db = db.WithContext(context.WithValue(context.Background(), models.UserIDKey, systemUserID))
+	// Core's rows read the user from models.UserIDKey, Open Content's from
+	// identity.Claims.
+	ctx := context.WithValue(context.Background(), models.UserIDKey, systemUserID)
+	db = db.WithContext(identity.NewContext(ctx, &identity.Claims{UserID: systemUserID}))
 
 	facilities := []models.Facility{
 		{
@@ -102,7 +107,7 @@ func seedTestData(db *gorm.DB) {
 	videos := generateFakeVideos(3, 25)
 	for i := range videos {
 		// create open_content_url for each video
-		_ = db.Create(&models.OpenContentUrl{
+		_ = db.Create(&opencontent.OpenContentUrl{
 			ContentURL: fmt.Sprintf("/api/proxy/videos/%d", videos[i].ID),
 		}).Error
 	}
@@ -358,21 +363,21 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 	}
 
 	// libraries come from the kiwix scrape, so seed activity against whatever exists
-	var libraries []models.Library
-	if err := db.Model(&models.Library{}).Find(&libraries).Error; err != nil {
+	var libraries []opencontent.Library
+	if err := db.Model(&opencontent.Library{}).Find(&libraries).Error; err != nil {
 		log.Printf("Failed to get libraries: %v", err)
 	}
 	for _, lib := range libraries {
-		if err := db.Create(&models.OpenContentUrl{ContentURL: fmt.Sprintf("/api/proxy/libraries/%d/", lib.ID)}).Error; err != nil {
+		if err := db.Create(&opencontent.OpenContentUrl{ContentURL: fmt.Sprintf("/api/proxy/libraries/%d/", lib.ID)}).Error; err != nil {
 			log.Printf("Failed to create openconenturl: %v", err)
 		}
 	}
-	var openContentUrls []models.OpenContentUrl
+	var openContentUrls []opencontent.OpenContentUrl
 	if err := db.Find(&openContentUrls).Error; err != nil {
 		log.Printf("Failed to get open content urls: %v", err)
 	}
-	var videos []models.Video
-	if err := db.Model(&models.Video{}).Find(&videos).Error; err != nil {
+	var videos []opencontent.Video
+	if err := db.Model(&opencontent.Video{}).Find(&videos).Error; err != nil {
 		log.Printf("Failed to get videos: %v", err)
 	}
 	generateOpenContentFavorites(db, dbUsers, libraries, videos)
@@ -391,7 +396,7 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 					requestSecond := rand.Intn(60)
 					requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
 					stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
-					contentActivity := models.OpenContentActivity{
+					contentActivity := opencontent.OpenContentActivity{
 						OpenContentUrlID:      getRandomURLForLibrary(openContentUrls),
 						RequestTS:             requestTS,
 						OpenContentProviderID: video.OpenContentProviderID,
@@ -419,7 +424,7 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 					requestSecond := rand.Intn(60)
 					requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
 					stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
-					contentActivity := models.OpenContentActivity{
+					contentActivity := opencontent.OpenContentActivity{
 						RequestTS:             requestTS,
 						OpenContentProviderID: kiwix.OpenContentProviderID,
 						FacilityID:            user.FacilityID,
@@ -438,13 +443,13 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 	}
 }
 
-func getRandomURLForLibrary(urls []models.OpenContentUrl) uint {
+func getRandomURLForLibrary(urls []opencontent.OpenContentUrl) uint {
 	selectedURL := urls[rand.Intn(len(urls))]
 	return selectedURL.ID
 }
 
-func generateOpenContentFavorites(db *gorm.DB, users []models.User, libraries []models.Library, videos []models.Video) {
-	var urls []models.OpenContentUrl
+func generateOpenContentFavorites(db *gorm.DB, users []models.User, libraries []opencontent.Library, videos []opencontent.Video) {
+	var urls []opencontent.OpenContentUrl
 
 	if err := db.Find(&urls).Error; err != nil {
 		log.Printf("Failed to fetch open content URLs: %v", err)
@@ -457,7 +462,7 @@ func generateOpenContentFavorites(db *gorm.DB, users []models.User, libraries []
 		numFavorites := rand.Intn(8) + 3 // 3-10 favorites
 		for range numFavorites {
 			isLibrary := rand.Intn(2) == 0
-			var fav models.OpenContentFavorite
+			var fav opencontent.OpenContentFavorite
 
 			if isLibrary && len(libraries) > 0 {
 				lib := libraries[rand.Intn(len(libraries))]
@@ -469,7 +474,7 @@ func generateOpenContentFavorites(db *gorm.DB, users []models.User, libraries []
 					}
 				}
 
-				fav = models.OpenContentFavorite{
+				fav = opencontent.OpenContentFavorite{
 					UserID:                user.ID,
 					ContentID:             lib.ID,
 					OpenContentProviderID: lib.OpenContentProviderID,
@@ -479,7 +484,7 @@ func generateOpenContentFavorites(db *gorm.DB, users []models.User, libraries []
 				}
 			} else if len(videos) > 0 {
 				vid := videos[rand.Intn(len(videos))]
-				fav = models.OpenContentFavorite{
+				fav = opencontent.OpenContentFavorite{
 					UserID:                user.ID,
 					ContentID:             vid.ID,
 					OpenContentProviderID: vid.OpenContentProviderID,
@@ -505,16 +510,16 @@ func getRandomProgram(programMap map[string]models.ProgType) string {
 	return keySlice[rand.Intn(len(keySlice))]
 }
 
-func generateFakeVideos(providerID uint, count int) []models.Video {
-	videos := make([]models.Video, 0, count)
+func generateFakeVideos(providerID uint, count int) []opencontent.Video {
+	videos := make([]opencontent.Video, 0, count)
 	for range count {
 		title := faker.Sentence()
 		channel := faker.Name()
-		video := models.Video{
+		video := opencontent.Video{
 			ExternalID:            fmt.Sprintf("vid-%d-%s", rand.Intn(999999), faker.Word()),
 			Url:                   fmt.Sprintf("https://video.example.com/watch?v=%d", rand.Intn(999999)),
 			Title:                 title,
-			Availability:          models.VideoAvailable,
+			Availability:          opencontent.VideoAvailable,
 			ChannelTitle:          &channel,
 			Duration:              rand.Intn(7200) + 60, // 1–120 mins
 			Description:           models.StringPtr(faker.Paragraph()),

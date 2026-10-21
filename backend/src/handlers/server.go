@@ -15,12 +15,10 @@ import (
 	database "github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
+	ocapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/nats-io/nats.go"
 	ory "github.com/ory/kratos-client-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -29,7 +27,6 @@ import (
 )
 
 type Server struct {
-	sesClient      *sesv2.Client
 	port           string
 	Db             *database.DB
 	Mux            *http.ServeMux
@@ -40,13 +37,11 @@ type Server struct {
 	buckets        map[string]nats.KeyValue
 	features       []models.FeatureAccess
 	testingMode    bool
-	s3             *s3.Client
-	presigner      *s3.PresignClient
-	s3Bucket       string
 	wsClient       *ClientManager
 	scheduler      *tasks.Scheduler
 	canvasInflight sync.Map
 	modules        []module.Module
+	openContent    ocapi.OpenContent
 }
 
 type routeDef struct {
@@ -77,7 +72,6 @@ func (srv *Server) register(routes func() []routeDef) {
 **/
 func (srv *Server) RegisterRoutes() {
 	/* register special routes */
-	srv.registerProxyRoutes()
 	srv.registerImageRoutes()
 	srv.registerWebsocketRoute()
 	srv.registerInternalRoutes()
@@ -96,7 +90,6 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerProviderPlatformRoutes,
 		srv.registerProviderMappingRoutes,
 		srv.registerActionsRoutes,
-		srv.registerLeftMenuRoutes,
 		srv.registerCoursesRoutes,
 		srv.registerOutcomesRoutes,
 		srv.registerActivityRoutes,
@@ -106,18 +99,13 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerOryRoutes,
 		srv.registerFacilitiesRoutes,
 		srv.registerFacilityFeatureAccessRoutes,
-		srv.registerOpenContentRoutes,
-		srv.registerLibraryRoutes,
 		srv.registerProgramsRoutes,
 		srv.registerClassesRoutes,
 		srv.registerProgramClassTierRoutes,
 		srv.registerClassEventsRoutes,
 		srv.registerProgramClassEnrollmentsRoutes,
 		srv.registerAttendanceRoutes,
-		srv.registerVideoRoutes,
 		srv.registerDemoSeedRoutes,
-		srv.registerOpenContentActivityRoutes,
-		srv.registerTagRoutes,
 		srv.registerReportsRoutes,
 		srv.registerLearningRecordRoutes,
 		srv.registerClientErrorRoutes,
@@ -173,7 +161,7 @@ func (srv *Server) ListenAndServe(ctx context.Context) {
 }
 
 func (srv *Server) Shutdown() {
-	srv.wsClient.Close(srv.Db)
+	srv.wsClient.Close(srv.Db, srv.openContent)
 	if srv.scheduler != nil {
 		if err := srv.scheduler.Stop(); err != nil {
 			log.Errorf("Error stopping scheduler: %v", err)
@@ -199,15 +187,17 @@ func newServer(ctx context.Context) *Server {
 		log.Errorf("Failed to connect to NATS: %v", err)
 	}
 	dev := os.Getenv("APP_ENV") == "dev"
+	db := database.InitDB(false)
 	server := Server{
-		port:      port,
-		Db:        database.InitDB(false),
-		Mux:       http.NewServeMux(),
-		OryClient: ory.NewAPIClient(oryConfig()),
-		Client:    &http.Client{},
-		nats:      conn,
-		dev:       dev,
-		modules:   registry.All(),
+		port:        port,
+		Db:          db,
+		Mux:         http.NewServeMux(),
+		OryClient:   ory.NewAPIClient(oryConfig()),
+		Client:      &http.Client{},
+		nats:        conn,
+		dev:         dev,
+		modules:     registry.All(),
+		openContent: registry.OpenContent(db.DB),
 	}
 	if err := server.migrateModules(ctx); err != nil {
 		log.Fatalf("Module migrations failed: %v", err)
@@ -221,7 +211,6 @@ func newServer(ctx context.Context) *Server {
 	if err != nil {
 		log.Fatalf("Failed to setup JetStream KV store: %v", err)
 	}
-	server.initAwsConfig(ctx)
 	server.RegisterRoutes()
 	if err := server.setupDefaultAdminInKratos(ctx); err != nil {
 		log.Fatal("Error setting up default admin in Kratos")
@@ -235,20 +224,6 @@ func newServer(ctx context.Context) *Server {
 	return &server
 }
 
-func (srv *Server) initAwsConfig(ctx context.Context) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	srv.sesClient = sesv2.NewFromConfig(cfg)
-	bucket := os.Getenv("S3_BUCKET_NAME")
-	if bucket != "" {
-		srv.s3 = s3.NewFromConfig(cfg)
-		srv.presigner = s3.NewPresignClient(srv.s3)
-		srv.s3Bucket = bucket
-	}
-}
-
 func newTestingServer() *Server {
 	db := database.InitDB(true)
 	features := models.AllFeatures
@@ -260,6 +235,7 @@ func newTestingServer() *Server {
 		features:    features,
 		testingMode: true,
 		modules:     registry.All(),
+		openContent: registry.OpenContent(db.DB),
 	}
 }
 
@@ -293,7 +269,6 @@ func oryConfig() *ory.Configuration {
 
 const (
 	CachedUsers    string = "cache_users"
-	LibraryPaths   string = "library_paths"
 	OAuthState     string = "oauth_state"
 	LoginMetrics   string = "login_metrics"
 	AdminLayer2    string = "admin_layer_2"
@@ -309,7 +284,7 @@ func (srv *Server) setupNatsKvBuckets() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState, AdminLayer2, CanvasPrograms, CanvasClasses, CanvasEvents} {
+	for _, bucket := range []string{CachedUsers, LoginMetrics, OAuthState, AdminLayer2, CanvasPrograms, CanvasClasses, CanvasEvents} {
 		kv, err := js.KeyValue(bucket)
 		if err != nil {
 			cfg := &nats.KeyValueConfig{
@@ -455,25 +430,6 @@ func (srv *Server) getFacilityID(r *http.Request) uint {
 
 func (srv *Server) getUserID(r *http.Request) uint {
 	return r.Context().Value(ClaimsKey).(*Claims).UserID
-}
-
-func (srv *Server) createContentActivityAndNotifyWS(urlString string, activity *models.OpenContentActivity) {
-	srv.Db.CreateContentActivity(urlString, activity)
-	if activity.ID > 0 {
-		srv.wsClient.notifyUser(WsMsg{EventType: VisitEvent, UserID: activity.UserID, Msg: MsgContent{ActivityID: activity.ID}})
-		if !strings.HasPrefix(urlString, "/viewer/videos") {
-			var (
-				bookmark models.OpenContentFavorite
-				wsMsg    MsgContent
-			)
-			if srv.Db.Model(&models.OpenContentFavorite{}).Where("user_id = ? AND content_id = ? AND open_content_url_id = ?", activity.UserID, activity.ContentID, activity.OpenContentUrlID).First(&bookmark).RowsAffected > 0 {
-				wsMsg = MsgContent{Msg: "true"}
-			} else {
-				wsMsg = MsgContent{Msg: "false"}
-			}
-			srv.wsClient.notifyUser(WsMsg{EventType: BookmarkEvent, UserID: activity.UserID, Msg: wsMsg})
-		}
-	}
 }
 
 func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {

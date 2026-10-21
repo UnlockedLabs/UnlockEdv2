@@ -78,6 +78,60 @@ type Scheduler interface {
 type Deps struct {
 	DB   *gorm.DB
 	NATS *nats.Conn
+	// Notify sends messages to a user's open browser tabs.
+	Notify Notifier
+}
+
+// Notifier sends a message to a user over core's websocket. A user with no
+// open tab misses it.
+type Notifier interface {
+	Notify(userID uint, msg Message)
+}
+
+// Message is one websocket message to a user.
+type Message struct {
+	// Event is the message's type, such as "visits".
+	Event string
+	// ActivityID is the Open Content activity the message is about, if any.
+	// Core ends that activity when the user's tab closes.
+	ActivityID int64
+	Text       string
+}
+
+// Seeder is a module that adds default rows to a new database. Core calls
+// Seed once, right after it creates the default facility. ctx carries the
+// identity.Claims of the user the rows are created by.
+type Seeder interface {
+	Seed(ctx context.Context, db *gorm.DB, facilityID uint) error
+}
+
+// TestModels is a module whose tables core's SQLite test database creates
+// with AutoMigrate. Production creates them with migrations.
+type TestModels interface {
+	TestModels() []any
+}
+
+type logKey struct{}
+
+// WithLog returns a copy of ctx whose log fields go to add. Core sets it on
+// every module request, so a module's fields land on core's log lines for the
+// request, including the admin audit line.
+func WithLog(ctx context.Context, add func(key string, value any)) context.Context {
+	return context.WithValue(ctx, logKey{}, add)
+}
+
+// LogField adds a field, such as the library a request acted on, to core's
+// log lines for the request. Outside a module request it does nothing.
+func LogField(ctx context.Context, key string, value any) {
+	if add, ok := ctx.Value(logKey{}).(func(string, any)); ok {
+		add(key, value)
+	}
+}
+
+// AuditAction names what an admin's request did, such as "video_featured",
+// in core's admin audit log.
+func AuditAction(ctx context.Context, action string) {
+	LogField(ctx, "action", action)
 }
 
 const migrationsDir = "migrations"

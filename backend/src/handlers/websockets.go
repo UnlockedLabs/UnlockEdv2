@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	ocapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api"
 
 	"github.com/coder/websocket"
 	log "github.com/sirupsen/logrus"
@@ -67,12 +68,12 @@ type ClientManager struct {
 	mutex   sync.RWMutex
 }
 
-func (c *ClientManager) Close(db *database.DB) {
+func (c *ClientManager) Close(db *database.DB, openContent ocapi.OpenContent) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	for _, client := range c.clients {
 		key := client.getClientKey()
-		c.handleCleanup(db, key)
+		c.handleCleanup(db, openContent, key)
 		client.cancel()
 		if client.Conn != nil {
 			err := client.Conn.Close(websocket.StatusNormalClosure, "server shutdown")
@@ -191,7 +192,7 @@ func (srv *Server) handleWebsocketConnection(w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
-func (cm *ClientManager) handleCleanup(db *database.DB, clientKey uint) {
+func (cm *ClientManager) handleCleanup(db *database.DB, openContent ocapi.OpenContent, clientKey uint) {
 	cm.mutex.RLock()
 	defer cm.mutex.RUnlock()
 	client, ok := cm.clients[clientKey]
@@ -202,7 +203,7 @@ func (cm *ClientManager) handleCleanup(db *database.DB, clientKey uint) {
 		db.LogUserSessionEnded(client.UserID, client.SessionID)
 	}
 	if client.OpenContentActivityID > 0 {
-		db.UpdateOpenContentActivityStopTS(client.OpenContentActivityID)
+		openContent.EndActivity(context.Background(), client.OpenContentActivityID)
 	}
 }
 
@@ -211,7 +212,7 @@ func (srv *Server) handleIfClientExists(client *WsClient, reason string) {
 	existingClient, exists := srv.wsClient.clients[clientKey]
 	if exists {
 		log.Warnf("client exists for key/user_id %d. Closing connection.", clientKey)
-		srv.wsClient.handleCleanup(srv.Db, clientKey)
+		srv.wsClient.handleCleanup(srv.Db, srv.openContent, clientKey)
 		srv.wsClient.removeClient(existingClient, reason)
 	}
 }
@@ -238,7 +239,7 @@ func (srv *Server) handleWsReader(ctx context.Context, client *WsClient) {
 		}
 		switch event.EventType {
 		case VisitEvent:
-			srv.Db.UpdateOpenContentActivityStopTS(event.Msg.ActivityID)
+			srv.openContent.EndActivity(context.Background(), event.Msg.ActivityID)
 		case ClientGoodbye:
 			srv.Db.LogUserSessionEnded(event.UserID, event.SessionID)
 		case ClientHello:
