@@ -16,7 +16,7 @@ func (db *DB) RunOrResetDemoSeed(facilityId uint) error {
 		return db.RunDemoSeed(facilityId)
 	}
 	if err := learning.ResetDemoLearning(ctx, lastSeed); err != nil {
-		return NewDBError(err, "error deleting demo learning data")
+		return newDeleteDBError(err, "demo learning data")
 	}
 	if err := registry.OpenContent(db.DB).ResetDemoActivity(ctx, lastSeed); err != nil {
 		return newDeleteDBError(err, "open_content_activities")
@@ -34,7 +34,7 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 		return newCreateDBError(err, "open_content_activities")
 	}
 	if err := registry.ProviderPlatforms(db.DB).SeedDemoLearning(ctx, userIDs); err != nil {
-		return NewDBError(err, "error seeding demo learning data")
+		return newCreateDBError(err, "demo learning data")
 	}
 	return nil
 }

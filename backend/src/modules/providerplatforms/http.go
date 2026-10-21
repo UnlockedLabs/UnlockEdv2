@@ -409,7 +409,6 @@ func updateStruct(dst, src any) {
 }
 
 // requireHTTPS reports whether a URL is safe to send a provider's access key to.
-// The handlers reject a non-https base URL on the way in.
 func requireHTTPS(rawURL string) error {
 	parsed, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil {

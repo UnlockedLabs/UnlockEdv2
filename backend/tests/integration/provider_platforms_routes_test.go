@@ -351,6 +351,13 @@ func TestProviderPlatformRoutes(t *testing.T) {
 			expectGolden(t, "provider_platforms", tt.name, maskFields(t, body, tt.mask...))
 		})
 	}
+
+	// platform_create masks the access key because it's encrypted with a
+	// random IV, so check here that it isn't stored as sent.
+	var stored string
+	require.NoError(t, env.DB.Raw(`SELECT access_key FROM provider_platforms WHERE name = 'New Canvas'`).Scan(&stored).Error)
+	require.NotEmpty(t, stored)
+	require.NotEqual(t, "new-token", stored)
 }
 
 // TestProviderPlatformRouteAccess pins each route's access level and feature

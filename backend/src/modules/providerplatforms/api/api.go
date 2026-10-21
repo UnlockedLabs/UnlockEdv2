@@ -29,8 +29,8 @@ type ProviderPlatforms interface {
 	UserMappings(ctx context.Context, userID uint) ([]Mapping, error)
 	// MappedUserIDs is the users linked to an account at the provider.
 	MappedUserIDs(ctx context.Context, providerID uint) ([]uint, error)
-	// DeleteUserMappings unlinks every provider account from the user. Pass a
-	// transaction's db to NewAPI to make it part of that transaction.
+	// DeleteUserMappings unlinks every provider account from the user. Get the
+	// api with registry.ProviderPlatforms(tx) to make it part of a transaction.
 	DeleteUserMappings(ctx context.Context, userID uint) error
 
 	// The users linked to the given accounts at a provider, for core's Canvas
@@ -56,7 +56,8 @@ type ProviderPlatforms interface {
 	SetupKolibri(ctx context.Context) error
 
 	// LearningStats is the course numbers on the admin dashboard, for
-	// facilityID (every facility when nil).
+	// facilityID (every facility when nil). Insights always covers every
+	// facility.
 	LearningStats(ctx context.Context, facilityID *uint) (LearningStats, error)
 
 	// LastDemoSeed is when SeedDemoLearning last ran. found is false when it

@@ -129,7 +129,7 @@ func (srv *Server) fetchCanvasMappedUsers(providerID uint, canvasUserIDs []strin
 	}
 	rows, err := srv.providerPlatforms.MappedUsers(context.Background(), providerID, canvasUserIDs, facilityID)
 	if err != nil {
-		return nil, err
+		return nil, database.NewDBError(err, "error getting canvas_mapped_users")
 	}
 	result := make(map[string]canvasMappedUser, len(rows))
 	for _, r := range rows {
@@ -1595,7 +1595,9 @@ func (srv *Server) countMappedCanvasEnrolleesPerFacility(ctx context.Context, re
 	if len(canvasUserIDs) == 0 {
 		return map[uint]int64{}
 	}
-	result, err := srv.providerPlatforms.CountMappedPerFacility(ctx, provider.ID, canvasUserIDs)
+	// The count runs even if ctx's deadline passed during the Canvas fetch, so
+	// the enrollees fetched in time still count.
+	result, err := srv.providerPlatforms.CountMappedPerFacility(context.WithoutCancel(ctx), provider.ID, canvasUserIDs)
 	if err != nil {
 		log.WithError(err).Warnf("countMappedCanvasEnrolleesPerFacility: failed to count enrollees for course %d", course.rawID)
 		return nil
@@ -1649,7 +1651,9 @@ func (srv *Server) countMappedCanvasEnrolleesForFacility(ctx context.Context, re
 	if len(canvasUserIDs) == 0 {
 		return 0
 	}
-	count, err := srv.providerPlatforms.CountMappedAtFacility(ctx, provider.ID, canvasUserIDs, facilityID)
+	// The count runs even if ctx's deadline passed during the Canvas fetch, so
+	// the enrollees fetched in time still count.
+	count, err := srv.providerPlatforms.CountMappedAtFacility(context.WithoutCancel(ctx), provider.ID, canvasUserIDs, facilityID)
 	if err != nil {
 		log.WithError(err).Warnf("countMappedCanvasEnrolleesForFacility: failed to count enrollees for course %d", course.rawID)
 		return 0
@@ -1669,7 +1673,9 @@ func (srv *Server) countMappedCanvasEnrollees(ctx context.Context, reader LivePr
 	if len(canvasUserIDs) == 0 {
 		return 0
 	}
-	count, err := srv.providerPlatforms.CountMapped(ctx, provider.ID, canvasUserIDs)
+	// The count runs even if ctx's deadline passed during the Canvas fetch, so
+	// the enrollees fetched in time still count.
+	count, err := srv.providerPlatforms.CountMapped(context.WithoutCancel(ctx), provider.ID, canvasUserIDs)
 	if err != nil {
 		log.WithError(err).Warnf("countMappedCanvasEnrollees: failed to count enrollees for course %d", course.rawID)
 		return 0
@@ -1758,7 +1764,10 @@ func (srv *Server) computeCanvasCompletionRate(ctx context.Context, provider *pp
 		return nil
 	}
 
-	totalMapped, err := srv.providerPlatforms.CountMapped(ctx, provider.ID, allIDs)
+	// The count runs even if ctx's deadline passed during the Canvas fetch, so
+	// the enrollees fetched in time still count.
+	countCtx := context.WithoutCancel(ctx)
+	totalMapped, err := srv.providerPlatforms.CountMapped(countCtx, provider.ID, allIDs)
 	if err != nil {
 		log.WithError(err).Warnf("canvas completion rate: counting mapped enrollees failed for provider %d", provider.ID)
 		return nil
@@ -1768,7 +1777,7 @@ func (srv *Server) computeCanvasCompletionRate(ctx context.Context, provider *pp
 	}
 	var completedMapped int64
 	if len(completedIDs) > 0 {
-		completedMapped, err = srv.providerPlatforms.CountMapped(ctx, provider.ID, completedIDs)
+		completedMapped, err = srv.providerPlatforms.CountMapped(countCtx, provider.ID, completedIDs)
 		if err != nil {
 			log.WithError(err).Warnf("canvas completion rate: counting completed mapped enrollees failed for provider %d", provider.ID)
 			return nil

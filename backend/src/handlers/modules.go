@@ -158,11 +158,11 @@ func (u moduleUsers) Delete(ctx context.Context, id uint) error {
 type liveProviders struct{ srv *Server }
 
 func (l liveProviders) Users(ctx context.Context, providerID uint) ([]module.ProviderUser, bool, error) {
-	provider, err := l.srv.providerPlatforms.Provider(ctx, providerID)
+	provider, err := l.srv.providerByID(ctx, providerID)
 	if err != nil {
-		return nil, false, fmt.Errorf("get provider platform %d: %w", providerID, err)
+		return nil, false, err
 	}
-	lister, ok := l.srv.liveUserListerFor(&provider)
+	lister, ok := l.srv.liveUserListerFor(provider)
 	if !ok {
 		return nil, false, nil
 	}
