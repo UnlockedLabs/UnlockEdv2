@@ -79,8 +79,8 @@ type Router interface {
 type Scheduler interface {
 	// Cron runs task on a standard five-field cron schedule.
 	Cron(spec string, task func()) error
-	// AtStart runs task once, when the scheduler starts. In dev it waits a
-	// minute first, so the workers that start alongside it are listening.
+	// AtStart runs task once, a minute after the scheduler starts, so the
+	// workers that start alongside it are listening.
 	AtStart(task func()) error
 }
 

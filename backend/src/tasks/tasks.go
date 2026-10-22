@@ -20,7 +20,6 @@ type Scheduler struct {
 	gocron.Scheduler
 	nats *nats.Conn
 	db   *gorm.DB
-	dev  bool
 }
 
 func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
@@ -29,7 +28,7 @@ func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
 		log.Fatalf("Failed to create scheduler: %v", err)
 		return nil
 	}
-	runner := Scheduler{scheduler, nats, db, dev}
+	runner := Scheduler{scheduler, nats, db}
 	tasks, err := runner.generateTasks()
 	if err != nil {
 		log.Fatalf("failed to generate tasks: %v", err)
@@ -94,20 +93,18 @@ func (s *Scheduler) Cron(spec string, task func()) error {
 	return err
 }
 
-// AtStart runs a feature module's task once, right away, or after
-// devStartDelay in dev (module.Scheduler).
+// AtStart runs a feature module's task once, startDelay after the scheduler
+// starts (module.Scheduler).
 func (s *Scheduler) AtStart(task func()) error {
-	start := gocron.OneTimeJobStartImmediately()
-	if s.dev {
-		start = gocron.OneTimeJobStartDateTime(time.Now().Add(devStartDelay))
-	}
+	start := gocron.OneTimeJobStartDateTime(time.Now().Add(startDelay))
 	_, err := s.NewJob(gocron.OneTimeJob(start), gocron.NewTask(task))
 	return err
 }
 
-// devStartDelay holds back the at-start jobs in dev: the workers start after
-// the server, and a job published before they subscribe is lost.
-const devStartDelay = 60 * time.Second
+// startDelay holds back the at-start jobs: the workers start alongside the
+// scheduler and subscribe only once they've checked migrations, and a job
+// published before they subscribe is lost.
+const startDelay = 60 * time.Second
 
 func (s *Scheduler) Stop() error {
 	return s.StopJobs()

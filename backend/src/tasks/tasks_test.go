@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"context"
-	"fmt"
 	"io/fs"
 	"slices"
 	"testing"
@@ -84,53 +83,36 @@ func TestStart(t *testing.T) {
 	}
 }
 
+// AtStart holds the task back for startDelay, so workers that start with the
+// scheduler are subscribed before it publishes.
 func TestAtStart(t *testing.T) {
-	tests := []struct {
-		dev      bool
-		wantWait time.Duration
-	}{
-		{dev: false, wantWait: 0},
-		{dev: true, wantWait: devStartDelay},
+	gs, err := gocron.NewScheduler()
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("dev=%v", tt.dev), func(t *testing.T) {
-			gs, err := gocron.NewScheduler()
-			if err != nil {
-				t.Fatal(err)
-			}
-			s := &Scheduler{Scheduler: gs, dev: tt.dev}
-			s.Start()
-			t.Cleanup(func() { _ = s.Shutdown() })
+	s := &Scheduler{Scheduler: gs}
+	s.Start()
+	t.Cleanup(func() { _ = s.Shutdown() })
 
-			ran := make(chan struct{})
-			before := time.Now()
-			if err := s.AtStart(func() { close(ran) }); err != nil {
-				t.Fatal(err)
-			}
-			if tt.wantWait == 0 {
-				select {
-				case <-ran:
-				case <-time.After(5 * time.Second):
-					t.Fatal("the task didn't run right away")
-				}
-				return
-			}
-			jobs := s.Jobs()
-			if len(jobs) != 1 {
-				t.Fatalf("%d jobs, want 1", len(jobs))
-			}
-			next, err := jobs[0].NextRun()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if wait := next.Sub(before); wait < tt.wantWait || wait > tt.wantWait+5*time.Second {
-				t.Errorf("the task runs in %v, want %v", wait, tt.wantWait)
-			}
-			select {
-			case <-ran:
-				t.Error("the task ran right away, want it delayed")
-			default:
-			}
-		})
+	ran := make(chan struct{})
+	before := time.Now()
+	if err := s.AtStart(func() { close(ran) }); err != nil {
+		t.Fatal(err)
+	}
+	jobs := s.Jobs()
+	if len(jobs) != 1 {
+		t.Fatalf("%d jobs, want 1", len(jobs))
+	}
+	next, err := jobs[0].NextRun()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wait := next.Sub(before); wait < startDelay || wait > startDelay+5*time.Second {
+		t.Errorf("the task runs in %v, want %v", wait, startDelay)
+	}
+	select {
+	case <-ran:
+		t.Error("the task ran right away, want it delayed")
+	default:
 	}
 }

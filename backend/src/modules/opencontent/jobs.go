@@ -61,10 +61,15 @@ type jobPublisher struct {
 	publish func(*nats.Msg) error
 }
 
-// run publishes job for the first enabled provider of its kind. With none
-// enabled it publishes nothing.
+// run publishes job for the first enabled provider of its kind: Kiwix for the
+// library jobs, YouTube for the video jobs. With none enabled it publishes
+// nothing.
 func (p *jobPublisher) run(ctx context.Context, job jobs.Type) {
-	providerID, err := p.store.JobProviderID(ctx, job)
+	title := Youtube
+	if job.IsLibraryJob() {
+		title = Kiwix
+	}
+	providerID, err := p.store.GetEnabledProviderID(ctx, title)
 	if err != nil {
 		log.Errorf("failed to find the provider for %s: %v", job, err)
 		return

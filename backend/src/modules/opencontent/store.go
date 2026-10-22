@@ -8,7 +8,6 @@ import (
 
 	"github.com/UnlockedLabs/unlocked-contracts/features"
 	"github.com/UnlockedLabs/unlocked-contracts/identity"
-	"github.com/UnlockedLabs/unlocked-contracts/jobs"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -435,24 +434,17 @@ func (s *store) GetVideoProvider() (*OpenContentProvider, error) {
 	return &provider, nil
 }
 
-// JobProviderID is the first enabled provider of the kind that runs job:
-// Kiwix for the library jobs, YouTube for the video jobs. It's zero if none
-// is enabled.
-func (s *store) JobProviderID(ctx context.Context, job jobs.Type) (uint, error) {
-	title := Youtube
-	if job.IsLibraryJob() {
-		title = Kiwix
-	}
-	providers := make([]OpenContentProvider, 0, 2)
-	if err := s.db.WithContext(ctx).Find(&providers, "currently_enabled = true").Error; err != nil {
+// GetEnabledProviderID is the first enabled content provider with this
+// title, or zero if none is enabled.
+func (s *store) GetEnabledProviderID(ctx context.Context, title string) (uint, error) {
+	providers := make([]OpenContentProvider, 0, 1)
+	if err := s.db.WithContext(ctx).Find(&providers, "currently_enabled = true AND title = ?", title).Error; err != nil {
 		return 0, newGetRecordsDBError(err, "open_content_providers")
 	}
-	for _, p := range providers {
-		if formatNullableString(p.Title) == title {
-			return p.ID, nil
-		}
+	if len(providers) == 0 {
+		return 0, nil
 	}
-	return 0, nil
+	return providers[0].ID, nil
 }
 
 // Jobs: the queries the worker's jobs run (worker.go).
