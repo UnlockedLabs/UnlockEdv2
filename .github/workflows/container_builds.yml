@@ -125,7 +125,7 @@ jobs:
             --cache-from type=gha,scope=middleware --cache-to type=gha,scope=middleware,mode=max \
             "${LABELS[@]}" "${TAGS[@]}" --push -f provider-middleware/Dockerfile .
 
-          echo "deployments=frontend server provider-service" >> $GITHUB_OUTPUT
+          echo "deployments=frontend server provider-service opencontent-worker" >> $GITHUB_OUTPUT
 
   restart-deployments:
     if: github.repository == 'UnlockedLabs/unlocked-core' || github.repository == 'PThorpe92/UnlockEdv2'
