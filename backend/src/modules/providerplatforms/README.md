@@ -20,16 +20,26 @@ let residents log in to them. It moved here from core in EN-193.
     in EN-194.
 - **It reads core's `users` table** to match and list the users linked to a
   provider (the `user` type in `models.go`).
+- **Two places still import its insides, until EN-197:** provider-middleware
+  (8 files) and `backend/seeder`. depguard doesn't check either one:
+  provider-middleware has no `.golangci.yml`, and `golint.yml` skips the
+  seeder.
 - **Core still owns:**
   - the Canvas and Essential Education live data on the Programs screens,
     until EN-194;
   - the provider jobs (`get_courses`, `get_milestones`, `get_activity`) in
-    core's scheduler and provider-middleware, until EN-197;
+    core's scheduler and provider-middleware, until EN-197, along with their
+    `cron_jobs`/`runnable_tasks` rows and the
+    `runnable_tasks.provider_platform_id` foreign key into this module's
+    `provider_platforms` (EN-196 did the same for Open Content's jobs);
   - creating a user with provider accounts (`POST /api/users`), the
     unmapped-users list (`GET /api/users?include=only_unmapped`), the admin
     dashboard's course numbers and the demo seed, which ask `api/`.
 
 ## Files
+
+There's no `service.go` or `jobs.go`: the logic is split by topic (`users.go`,
+`matching.go`, `accounts.go`), and the jobs arrive in EN-197.
 
 | File | What it holds |
 |---|---|
@@ -43,7 +53,7 @@ let residents log in to them. It moved here from core in EN-193.
 | `api.go` | The answers to core's questions (`api.ProviderPlatforms`) |
 | `models.go` | Provider Platforms' tables as Go types |
 | `http.go` | Responses, errors, paging and request helpers, matching core's JSON |
-| `migrations/` | This module's own migrations (none yet; its tables come from core's) |
+| `migrations/` | This module's own migrations (none yet; its tables come from core's until they move to its own `provider` schema in EN-199) |
 
 ## Tests
 

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io/fs"
+	"maps"
 	"slices"
 	"testing"
 	"testing/fstest"
@@ -244,7 +245,7 @@ func TestPending(t *testing.T) {
 
 func TestLogField(t *testing.T) {
 	var got []string
-	ctx := module.WithLog(context.Background(), func(key string, value any) {
+	ctx := module.WithLog(context.Background(), nil, func(key string, value any) {
 		got = append(got, fmt.Sprintf("%s=%v", key, value))
 	})
 	module.LogField(ctx, "library_id", 7)
@@ -255,4 +256,25 @@ func TestLogField(t *testing.T) {
 	if want := []string{"library_id=7", "action=video_featured"}; !slices.Equal(got, want) {
 		t.Errorf("logged %v, want %v", got, want)
 	}
+}
+
+func TestLogFields(t *testing.T) {
+	core := map[string]any{"admin_id": uint(3), "method": "PUT"}
+	ctx := module.WithLog(context.Background(), core, func(string, any) {})
+
+	got := module.LogFields(ctx)
+	if !maps.Equal(got, core) {
+		t.Errorf("LogFields = %v, want %v", got, core)
+	}
+	// It's a copy: the module's own fields don't change core's.
+	got["module"] = "opencontent"
+	if _, ok := core["module"]; ok {
+		t.Error("writing to LogFields changed core's fields")
+	}
+	// Outside a module request it's empty, and still writable.
+	empty := module.LogFields(context.Background())
+	if len(empty) != 0 {
+		t.Errorf("LogFields outside a request = %v, want empty", empty)
+	}
+	empty["module"] = "opencontent"
 }

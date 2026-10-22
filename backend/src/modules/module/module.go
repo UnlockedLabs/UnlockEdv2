@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"net/http"
 	"slices"
 
@@ -184,18 +185,34 @@ type TestModels interface {
 
 type logKey struct{}
 
-// WithLog returns a copy of ctx whose log fields go to add. Core sets it on
-// every module request, so a module's fields land on core's log lines for the
-// request, including the admin audit line.
-func WithLog(ctx context.Context, add func(key string, value any)) context.Context {
-	return context.WithValue(ctx, logKey{}, add)
+// requestLog is core's log for one module request.
+type requestLog struct {
+	fields map[string]any
+	add    func(key string, value any)
+}
+
+// WithLog returns a copy of ctx that carries core's log for the request:
+// fields is what core has logged so far, such as the admin on an admin write,
+// and add adds a field to core's log lines, including the admin audit line.
+// Core sets it on every module request.
+func WithLog(ctx context.Context, fields map[string]any, add func(key string, value any)) context.Context {
+	return context.WithValue(ctx, logKey{}, requestLog{fields: fields, add: add})
+}
+
+// LogFields is a copy of core's log fields for the request, for a module's own
+// log lines to start from. Outside a module request it's empty.
+func LogFields(ctx context.Context) map[string]any {
+	rl, _ := ctx.Value(logKey{}).(requestLog)
+	fields := make(map[string]any, len(rl.fields))
+	maps.Copy(fields, rl.fields)
+	return fields
 }
 
 // LogField adds a field, such as the library a request acted on, to core's
 // log lines for the request. Outside a module request it does nothing.
 func LogField(ctx context.Context, key string, value any) {
-	if add, ok := ctx.Value(logKey{}).(func(string, any)); ok {
-		add(key, value)
+	if rl, ok := ctx.Value(logKey{}).(requestLog); ok {
+		rl.add(key, value)
 	}
 }
 

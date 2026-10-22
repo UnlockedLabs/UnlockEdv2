@@ -175,10 +175,13 @@ func TestModuleRouterClaims(t *testing.T) {
 }
 
 // A module's log fields and audit action land on the same admin audit log
-// line as a core handler's log.add and log.auditDetails.
+// line as a core handler's log.add and log.auditDetails, and the module sees
+// core's fields, such as the admin, for its own log lines.
 func TestModuleRouterLogFields(t *testing.T) {
 	srv := newTestingServer()
+	var coreFields map[string]any
 	moduleRouter{srv}.Handle(module.Route{Pattern: "PUT /api/test-module/audit", Access: module.Admin, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		coreFields = module.LogFields(r.Context())
 		module.LogField(r.Context(), "video_id", 9)
 		module.AuditAction(r.Context(), "video_featured")
 	})})
@@ -205,6 +208,8 @@ func TestModuleRouterLogFields(t *testing.T) {
 	assert.Equal(t, "video_featured", audit.Data["action"])
 	assert.Equal(t, 9, audit.Data["video_id"])
 	assert.Equal(t, uint(3), audit.Data["admin_id"])
+	assert.Equal(t, uint(3), coreFields["admin_id"])
+	assert.Equal(t, "facadmin", coreFields["username"])
 }
 
 // Module messages reach the user's open tab as the websocket's own message

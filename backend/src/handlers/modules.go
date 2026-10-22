@@ -25,7 +25,7 @@ func (mr moduleRouter) Handle(rt module.Route) {
 	h := func(w http.ResponseWriter, r *http.Request, log sLog) error {
 		claims := r.Context().Value(ClaimsKey).(*Claims)
 		ctx := identity.NewContext(r.Context(), claims.identityClaims())
-		ctx = module.WithLog(ctx, log.add)
+		ctx = module.WithLog(ctx, log.f, log.add)
 		rt.Handler.ServeHTTP(w, r.WithContext(ctx))
 		return nil
 	}

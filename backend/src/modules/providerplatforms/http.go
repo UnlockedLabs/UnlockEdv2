@@ -101,7 +101,13 @@ type handlerFunc func(w http.ResponseWriter, r *http.Request, log sLog) error
 // handleError does.
 func handle(h handlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log := sLog{ctx: r.Context(), f: logrus.Fields{"module": "providerplatforms", "method": r.Method, "path": r.URL.Path}}
+		// Start from core's fields, so an admin write's error line names the
+		// admin, as core's own handlers' lines do.
+		f := logrus.Fields(module.LogFields(r.Context()))
+		f["module"] = "providerplatforms"
+		f["method"] = r.Method
+		f["path"] = r.URL.Path
+		log := sLog{ctx: r.Context(), f: f}
 		if err := h(w, r, log); err != nil {
 			var svcErr serviceError
 			if errors.As(err, &svcErr) {
