@@ -11,6 +11,7 @@ import (
 	ocapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/programs"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
+	ppapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api"
 
 	"gorm.io/gorm"
 )
@@ -30,4 +31,9 @@ func All() []module.Module {
 // OpenContent is Open Content's answers to core, reading db.
 func OpenContent(db *gorm.DB) ocapi.OpenContent {
 	return opencontent.NewAPI(db)
+}
+
+// ProviderPlatforms is Provider Platforms' answers to core, reading db.
+func ProviderPlatforms(db *gorm.DB) ppapi.ProviderPlatforms {
+	return providerplatforms.NewAPI(db)
 }

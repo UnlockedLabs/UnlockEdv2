@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -167,7 +168,7 @@ func (srv *Server) putCanvasClasses(cacheKey string, cached CachedCanvasClasses)
 // can show that a provider is still syncing. They carry Loading so the frontend
 // can keep them out of the filtered list and render them as skeleton rows.
 func (srv *Server) loadingClassPlaceholders(facilityID *uint) []models.ProgramClassCohort {
-	providers, err := srv.Db.GetAllActiveProviderPlatforms()
+	providers, err := srv.activeProviders(context.Background())
 	if err != nil {
 		log.WithError(err).Warn("loadingClassPlaceholders: failed to list provider platforms")
 		return nil

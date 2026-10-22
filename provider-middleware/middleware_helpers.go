@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +23,7 @@ func (sh *ServiceHandler) LookupOpenContentProvider(id int) (*opencontent.OpenCo
 func (sh *ServiceHandler) lookupUserMapping(params map[string]any) ([]map[string]any, error) {
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	users := make([]map[string]any, 0, 25) // rough class size estimate
-	if err := sh.db.Model(models.ProviderUserMapping{}).Select("user_id, external_user_id").
+	if err := sh.db.Model(providerplatforms.ProviderUserMapping{}).Select("user_id, external_user_id").
 		Joins("JOIN users u on provider_user_mappings.user_id = u.id").
 		Find(&users, "provider_platform_id = ? AND u.role = 'student'", providerPlatformId).
 		Error; err != nil {
@@ -54,7 +54,7 @@ func dbUint(row map[string]any, key string) (uint, bool) {
 
 func (sh *ServiceHandler) lookupCoursesMapping(provId int) ([]map[string]any, error) {
 	courses := make([]map[string]any, 0, 10)
-	if err := sh.db.Model(models.Course{}).Select("id as course_id, external_id as external_course_id").
+	if err := sh.db.Model(providerplatforms.Course{}).Select("id as course_id, external_id as external_course_id").
 		Find(&courses, "provider_platform_id = ?", provId).
 		Error; err != nil {
 		logger().Errorf("failed to fetch courses: %v", err)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -44,18 +45,18 @@ func (sh *ServiceHandler) initServiceFromRequest(ctx context.Context, r *http.Re
 		log.Printf("Error: %v", err)
 		return nil, fmt.Errorf("%w: %v", errInvalidProviderID, err)
 	}
-	var provider models.ProviderPlatform
+	var provider providerplatforms.ProviderPlatform
 	err = sh.db.WithContext(ctx).First(&provider, "id = ?", id).Error
 	if err != nil {
 		log.Println("Failed to find provider")
 		return nil, err
 	}
 	switch provider.Type {
-	case models.Kolibri:
+	case providerplatforms.Kolibri:
 		return NewKolibriService(&provider, nil), nil
-	case models.CanvasCloud, models.CanvasOSS:
+	case providerplatforms.CanvasCloud, providerplatforms.CanvasOSS:
 		return newCanvasService(&provider, nil), nil
-	case models.Brightspace:
+	case providerplatforms.Brightspace:
 		return newBrightspaceService(&provider, sh.db, nil)
 	}
 	return nil, fmt.Errorf("%w: %s", errUnsupportedProvider, provider.Type)
@@ -77,7 +78,7 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 	}
 	// prior to here, we are unable to cleanup the job
 	providerIdPtr := int(providerId)
-	var provider models.ProviderPlatform
+	var provider providerplatforms.ProviderPlatform
 	err := sh.db.WithContext(ctx).First(&provider, "id = ?", providerIdPtr).Error
 	if err != nil {
 		log.Errorf("error looking up provider platform: %v", err)
@@ -85,11 +86,11 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 		return nil, fmt.Errorf("failed to find provider: %v", err)
 	}
 	switch provider.Type {
-	case models.Kolibri:
+	case providerplatforms.Kolibri:
 		return NewKolibriService(&provider, body), nil
-	case models.CanvasCloud, models.CanvasOSS:
+	case providerplatforms.CanvasCloud, providerplatforms.CanvasOSS:
 		return newCanvasService(&provider, body), nil
-	case models.Brightspace:
+	case providerplatforms.Brightspace:
 		return newBrightspaceService(&provider, sh.db, body)
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)

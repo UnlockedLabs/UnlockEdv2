@@ -1,0 +1,17 @@
+{
+  "data": [
+    {
+      "course_id": 2,
+      "course_name": "Biology",
+      "course_type": "open_enrollment",
+      "description": "",
+      "end_dt": null,
+      "external_url": "",
+      "outcome_types": "",
+      "provider_name": "Kolibri",
+      "start_dt": null,
+      "thumbnail_url": ""
+    }
+  ],
+  "message": "Data fetched successfully"
+}

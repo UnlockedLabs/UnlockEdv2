@@ -235,7 +235,7 @@ func TestOpenContentRoutes(t *testing.T) {
 			resp := NewRequest[any](client, t, tt.method, tt.path, tt.body).
 				WithTestClaims(tt.claims).AsRaw().Do().
 				ExpectStatus(tt.status)
-			expectGolden(t, tt.name, resp.rawBody)
+			expectGolden(t, "open_content", tt.name, resp.rawBody)
 		})
 	}
 }
@@ -295,19 +295,6 @@ func TestOpenContentRouteAccess(t *testing.T) {
 		{http.MethodGet, "/api/tags", anyUser, nil},
 	}
 
-	// withFeatures returns the claims with every feature on except the ones
-	// left out.
-	withFeatures := func(c *handlers.Claims, off ...models.FeatureAccess) *handlers.Claims {
-		cp := *c
-		cp.FeatureAccess = []models.FeatureAccess{}
-		for _, f := range models.AllFeatures {
-			if !slices.Contains(off, f) {
-				cp.FeatureAccess = append(cp.FeatureAccess, f)
-			}
-		}
-		return &cp
-	}
-
 	for _, rt := range routes {
 		t.Run(rt.method+" "+rt.path, func(t *testing.T) {
 			// A department admin passes every role check, so a 401 here is
@@ -350,15 +337,28 @@ func TestOpenContentRouteAccess(t *testing.T) {
 	}
 }
 
+// withFeatures returns the claims with every feature on except the ones left
+// out.
+func withFeatures(c *handlers.Claims, off ...models.FeatureAccess) *handlers.Claims {
+	cp := *c
+	cp.FeatureAccess = []models.FeatureAccess{}
+	for _, f := range models.AllFeatures {
+		if !slices.Contains(off, f) {
+			cp.FeatureAccess = append(cp.FeatureAccess, f)
+		}
+	}
+	return &cp
+}
+
 // timeKey matches the JSON fields that hold a time that changes every run.
 var timeKey = regexp.MustCompile(`(_at|_ts)$`)
 
-// expectGolden compares body with testdata/open_content/<name>.golden. A JSON
-// body is compared after indenting it and replacing its times with "<time>".
-func expectGolden(t *testing.T, name, body string) {
+// expectGolden compares body with testdata/<dir>/<name>.golden. A JSON body is
+// compared after indenting it and replacing its times with "<time>".
+func expectGolden(t *testing.T, dir, name, body string) {
 	t.Helper()
 	got := normalizeBody(t, body)
-	path := filepath.Join("testdata", "open_content", name+".golden")
+	path := filepath.Join("testdata", dir, name+".golden")
 	if *updateGolden {
 		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 		require.NoError(t, os.WriteFile(path, []byte(got), 0o644))

@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/UnlockedLabs/unlocked-core/backend/src"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
+	ppapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api"
 )
 
 // A live provider is one whose courses are read over HTTP on request and projected
@@ -28,15 +29,15 @@ import (
 // different header and page by other means.
 type providerTransport interface {
 	// authorize applies whatever credential scheme the provider uses.
-	authorize(req *http.Request, provider *models.ProviderPlatform)
+	authorize(req *http.Request, provider *ppapi.Provider)
 
 	// fetchAll retrieves every page starting at startURL and returns the combined
 	// records. max limits the total returned; 0 means fetch everything.
-	fetchAll(ctx context.Context, provider *models.ProviderPlatform, startURL string, max int) ([]map[string]interface{}, error)
+	fetchAll(ctx context.Context, provider *ppapi.Provider, startURL string, max int) ([]map[string]interface{}, error)
 
 	// fetchOne retrieves a single JSON object, for endpoints that return a bare
 	// record rather than a collection.
-	fetchOne(ctx context.Context, provider *models.ProviderPlatform, url string) (map[string]interface{}, error)
+	fetchOne(ctx context.Context, provider *ppapi.Provider, url string) (map[string]interface{}, error)
 }
 
 // requireHTTPS reports whether a URL is safe to send a provider's access key to.
@@ -59,16 +60,16 @@ type canvasTransport struct {
 	srv *Server
 }
 
-func (t canvasTransport) authorize(req *http.Request, provider *models.ProviderPlatform) {
+func (t canvasTransport) authorize(req *http.Request, provider *ppapi.Provider) {
 	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
 	req.Header.Add("Accept", "application/json")
 }
 
-func (t canvasTransport) fetchAll(ctx context.Context, provider *models.ProviderPlatform, startURL string, max int) ([]map[string]interface{}, error) {
+func (t canvasTransport) fetchAll(ctx context.Context, provider *ppapi.Provider, startURL string, max int) ([]map[string]interface{}, error) {
 	return t.srv.fetchAllCanvasPages(ctx, provider, startURL, max)
 }
 
-func (t canvasTransport) fetchOne(ctx context.Context, provider *models.ProviderPlatform, url string) (map[string]interface{}, error) {
+func (t canvasTransport) fetchOne(ctx context.Context, provider *ppapi.Provider, url string) (map[string]interface{}, error) {
 	if err := requireHTTPS(url); err != nil {
 		return nil, err
 	}
@@ -147,7 +148,7 @@ func courseEnrollees(ctx context.Context, reader LiveProgramProvider, course liv
 // canvasProvider is the Canvas implementation of LiveProgramProvider.
 type canvasProvider struct {
 	srv       *Server
-	provider  *models.ProviderPlatform
+	provider  *ppapi.Provider
 	transport providerTransport
 }
 
@@ -193,12 +194,12 @@ func (p canvasProvider) ListCourseEnrollees(ctx context.Context, rawCourseID uin
 
 // newLiveProgramProvider returns the live reader for a provider platform, or an
 // error when the type is not read live.
-func (srv *Server) newLiveProgramProvider(provider *models.ProviderPlatform) (LiveProgramProvider, error) {
+func (srv *Server) newLiveProgramProvider(provider *ppapi.Provider) (LiveProgramProvider, error) {
 	transport, err := srv.transportFor(provider)
 	if err != nil {
 		return nil, err
 	}
-	if provider.Type == models.EssentialEd {
+	if provider.Type == ppapi.EssentialEd {
 		return essentialEdProvider{srv: srv, provider: provider, transport: transport}, nil
 	}
 	return canvasProvider{srv: srv, provider: provider, transport: transport}, nil
@@ -206,43 +207,30 @@ func (srv *Server) newLiveProgramProvider(provider *models.ProviderPlatform) (Li
 
 // canvasAccountCoursesURL is the account course listing every Canvas read path
 // starts from. It was copied inline in seven places before this existed.
-func canvasAccountCoursesURL(provider *models.ProviderPlatform) string {
-	return provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
+func canvasAccountCoursesURL(provider *ppapi.Provider) string {
+	return provider.BaseURL + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
 }
 
 // canvasCourseURL is the single-course endpoint.
-func canvasCourseURL(provider *models.ProviderPlatform, rawCourseID uint) string {
-	return fmt.Sprintf("%s/api/v1/courses/%d", provider.BaseUrl, rawCourseID)
+func canvasCourseURL(provider *ppapi.Provider, rawCourseID uint) string {
+	return fmt.Sprintf("%s/api/v1/courses/%d", provider.BaseURL, rawCourseID)
 }
 
 // liveUserLister is implemented by live providers that can list their own user
 // accounts directly. Providers that do not implement it (Canvas) continue to be
 // served by provider-middleware over HTTP.
 type liveUserLister interface {
-	ListUsers(ctx context.Context) ([]models.ImportUser, error)
+	ListUsers(ctx context.Context) ([]module.ProviderUser, error)
 }
 
 // liveUserListerFor returns the provider's own user lister when it has one.
-func (srv *Server) liveUserListerFor(provider *models.ProviderPlatform) (liveUserLister, bool) {
+func (srv *Server) liveUserListerFor(provider *ppapi.Provider) (liveUserLister, bool) {
 	reader, err := srv.newLiveProgramProvider(provider)
 	if err != nil {
 		return nil, false
 	}
 	lister, ok := reader.(liveUserLister)
 	return lister, ok
-}
-
-// allProviderUsers returns every user the provider knows about, mapped or not.
-// listProviderUsers is the counterpart that returns only the unmapped ones.
-func (srv *Server) allProviderUsers(ctx context.Context, provider *models.ProviderPlatform) ([]models.ImportUser, error) {
-	if lister, ok := srv.liveUserListerFor(provider); ok {
-		return lister.ListUsers(ctx)
-	}
-	service, err := src.GetProviderService(provider, srv.Client)
-	if err != nil {
-		return nil, err
-	}
-	return service.GetAllUsers()
 }
 
 // liveUserCourseLister is implemented by live providers that can report the
@@ -252,31 +240,29 @@ type liveUserCourseLister interface {
 	ListUserCourses(ctx context.Context, externalUserID string) ([]liveCourse, error)
 }
 
-// unmappedProviderUsers drops provider users that already have a
-// ProviderUserMapping, so the matching screen only offers new ones.
-func (srv *Server) unmappedProviderUsers(providerID uint, users []models.ImportUser) ([]models.ImportUser, error) {
-	mapped, err := srv.Db.GetMappedUsersExternalIDs(int(providerID))
+// providerByID is the provider platform with id, from Provider Platforms. A
+// missing one is the zero Provider, which isn't live.
+func (srv *Server) providerByID(ctx context.Context, id uint) (*ppapi.Provider, error) {
+	provider, err := srv.providerPlatforms.Provider(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, database.NewDBError(err, "provider_platforms not found")
 	}
-	taken := make(map[string]struct{}, len(mapped))
-	for _, externalID := range mapped {
-		taken[externalID] = struct{}{}
+	return &provider, nil
+}
+
+// activeProviders is every enabled provider platform, from Provider Platforms.
+func (srv *Server) activeProviders(ctx context.Context) ([]ppapi.Provider, error) {
+	providers, err := srv.providerPlatforms.ActiveProviders(ctx)
+	if err != nil {
+		return nil, database.NewDBError(err, "error getting provider_platforms")
 	}
-	unmapped := make([]models.ImportUser, 0, len(users))
-	for _, user := range users {
-		if _, already := taken[user.ExternalUserID]; already {
-			continue
-		}
-		unmapped = append(unmapped, user)
-	}
-	return unmapped, nil
+	return providers, nil
 }
 
 // providerCourseEnrolleeIDs returns the provider's own student IDs for a course,
 // dispatching on provider type. This is what the enrollee counters use, so they
 // work for any live provider rather than only Canvas.
-func (srv *Server) providerCourseEnrolleeIDs(provider *models.ProviderPlatform, rawCourseID uint) ([]string, error) {
+func (srv *Server) providerCourseEnrolleeIDs(provider *ppapi.Provider, rawCourseID uint) ([]string, error) {
 	reader, err := srv.newLiveProgramProvider(provider)
 	if err != nil {
 		return nil, err
@@ -286,16 +272,16 @@ func (srv *Server) providerCourseEnrolleeIDs(provider *models.ProviderPlatform, 
 
 // providerSourceLabel is the value the frontend uses to tell where a synthetic
 // program came from. It is sent as ProgramsOverviewTable.Source.
-func providerSourceLabel(p *models.ProviderPlatform) string {
-	if p.Type == models.EssentialEd {
+func providerSourceLabel(p *ppapi.Provider) string {
+	if p.Type == ppapi.EssentialEd {
 		return "essential_ed"
 	}
 	return "canvas"
 }
 
 // providerDisplayName is the human-readable provider name used in descriptions.
-func providerDisplayName(p *models.ProviderPlatform) string {
-	if p.Type == models.EssentialEd {
+func providerDisplayName(p *ppapi.Provider) string {
+	if p.Type == ppapi.EssentialEd {
 		return "Essential Education"
 	}
 	return "Canvas"
@@ -304,17 +290,17 @@ func providerDisplayName(p *models.ProviderPlatform) string {
 // isLiveProgramProvider reports whether this provider platform is read live and
 // projected as synthetic programs. Prefer this over isCanvasProvider at call
 // sites that only mean "is this one of the live providers".
-func isLiveProgramProvider(p *models.ProviderPlatform) bool {
-	return isCanvasProvider(p) || p.Type == models.EssentialEd
+func isLiveProgramProvider(p *ppapi.Provider) bool {
+	return isCanvasProvider(p) || p.Type == ppapi.EssentialEd
 }
 
 // transportFor returns the HTTP seam for a provider platform, or an error when
 // the type is not a live provider.
-func (srv *Server) transportFor(provider *models.ProviderPlatform) (providerTransport, error) {
+func (srv *Server) transportFor(provider *ppapi.Provider) (providerTransport, error) {
 	switch {
 	case isCanvasProvider(provider):
 		return canvasTransport{srv: srv}, nil
-	case provider.Type == models.EssentialEd:
+	case provider.Type == ppapi.EssentialEd:
 		return essentialEdTransport{srv: srv}, nil
 	}
 	return nil, fmt.Errorf("provider %d (%s) is not a live program provider", provider.ID, provider.Type)

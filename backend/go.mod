@@ -1,6 +1,6 @@
 module github.com/UnlockedLabs/unlocked-core/backend
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.42.1

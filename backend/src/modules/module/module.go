@@ -10,10 +10,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"net/http"
 	"slices"
 
 	"github.com/UnlockedLabs/unlocked-contracts/features"
+	"github.com/UnlockedLabs/unlocked-contracts/users"
 
 	"github.com/nats-io/nats.go"
 	"github.com/pressly/goose/v3"
@@ -41,6 +43,12 @@ type Route struct {
 	Handler http.Handler
 	// Access is who may call the route. The zero value is AnyUser.
 	Access AccessLevel
+	// UserParam names the path parameter that holds the user a route is about,
+	// such as "id" in "GET /api/users/{id}/courses". Then only admins who can
+	// see that user may call the route: department and system admins see
+	// everyone, facility admins their own facility's users. With AnyUser, the
+	// user themself may too. It works only with AnyUser and Admin.
+	UserParam string
 	// Features turns the route off unless every listed feature is enabled.
 	Features []features.Access
 }
@@ -80,6 +88,13 @@ type Deps struct {
 	NATS *nats.Conn
 	// Notify sends messages to a user's open browser tabs.
 	Notify Notifier
+	// Users is core's user accounts. Only routes get it: it is nil in
+	// RegisterJobs.
+	Users Users
+	// LiveProviders is core's Canvas and Essential Education code, for
+	// Provider Platforms. Only routes get it. It goes away when EN-194 moves
+	// that code into Provider Platforms.
+	LiveProviders LiveProviders
 }
 
 // Notifier sends a message to a user over core's websocket. A user with no
@@ -98,6 +113,63 @@ type Message struct {
 	Text       string
 }
 
+// Users is core's user accounts, for a module that adds or looks up users.
+type Users interface {
+	// Get returns the user with id. When there is none, the error matches
+	// gorm.ErrRecordNotFound.
+	Get(ctx context.Context, id uint) (User, error)
+	// Create adds a user, recording the caller in ctx as its creator. The user
+	// can't log in until CreateLogin.
+	Create(ctx context.Context, u NewUser) (User, error)
+	// CreateLogin gives a user a Kratos login with a new temporary password,
+	// which they must change when they first log in. It returns the password.
+	CreateLogin(ctx context.Context, userID uint) (string, error)
+	// Delete removes a user and their links to provider platform accounts,
+	// such as to undo a Create. It doesn't remove their Kratos login.
+	Delete(ctx context.Context, id uint) error
+}
+
+// LiveProviders is what Provider Platforms needs from the Canvas and Essential
+// Education code that stays in core until EN-194.
+type LiveProviders interface {
+	// Users is every user a provider's own API lists. ok is false for a
+	// provider that can't list them; its users come from provider-middleware.
+	Users(ctx context.Context, providerID uint) (users []ProviderUser, ok bool, err error)
+	// MappingsChanged tells core that a user's account at a provider was
+	// linked or unlinked, so core can clear its cached Canvas programs.
+	MappingsChanged(providerID, userID uint)
+}
+
+// ProviderUser is a user's account at a provider platform.
+type ProviderUser struct {
+	Username         string
+	NameFirst        string
+	NameLast         string
+	Email            string
+	ExternalUserID   string
+	ExternalUsername string
+}
+
+// User is what a module sees of a user.
+type User struct {
+	ID         uint
+	Username   string
+	NameFirst  string
+	NameLast   string
+	Email      string
+	FacilityID uint
+}
+
+// NewUser is a user for Users.Create to add.
+type NewUser struct {
+	Username   string
+	NameFirst  string
+	NameLast   string
+	Email      string
+	FacilityID uint
+	Role       users.Role
+}
+
 // Seeder is a module that adds default rows to a new database. Core calls
 // Seed once, right after it creates the default facility. ctx carries the
 // identity.Claims of the user the rows are created by.
@@ -113,18 +185,34 @@ type TestModels interface {
 
 type logKey struct{}
 
-// WithLog returns a copy of ctx whose log fields go to add. Core sets it on
-// every module request, so a module's fields land on core's log lines for the
-// request, including the admin audit line.
-func WithLog(ctx context.Context, add func(key string, value any)) context.Context {
-	return context.WithValue(ctx, logKey{}, add)
+// requestLog is core's log for one module request.
+type requestLog struct {
+	fields map[string]any
+	add    func(key string, value any)
+}
+
+// WithLog returns a copy of ctx that carries core's log for the request:
+// fields is what core has logged so far, such as the admin on an admin write,
+// and add adds a field to core's log lines, including the admin audit line.
+// Core sets it on every module request.
+func WithLog(ctx context.Context, fields map[string]any, add func(key string, value any)) context.Context {
+	return context.WithValue(ctx, logKey{}, requestLog{fields: fields, add: add})
+}
+
+// LogFields is a copy of core's log fields for the request, for a module's own
+// log lines to start from. Outside a module request it's empty.
+func LogFields(ctx context.Context) map[string]any {
+	rl, _ := ctx.Value(logKey{}).(requestLog)
+	fields := make(map[string]any, len(rl.fields))
+	maps.Copy(fields, rl.fields)
+	return fields
 }
 
 // LogField adds a field, such as the library a request acted on, to core's
 // log lines for the request. Outside a module request it does nothing.
 func LogField(ctx context.Context, key string, value any) {
-	if add, ok := ctx.Value(logKey{}).(func(string, any)); ok {
-		add(key, value)
+	if rl, ok := ctx.Value(logKey{}).(requestLog); ok {
+		rl.add(key, value)
 	}
 }
 

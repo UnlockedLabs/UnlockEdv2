@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -28,7 +29,7 @@ type CanvasService struct {
 	JobParams          map[string]any
 }
 
-func newCanvasService(provider *models.ProviderPlatform, params map[string]any) *CanvasService {
+func newCanvasService(provider *providerplatforms.ProviderPlatform, params map[string]any) *CanvasService {
 	token := strings.TrimSpace(provider.AccessKey)
 	log.Infof("Canvas access key length: %d, contains newline: %v", len(token), strings.ContainsAny(provider.AccessKey, "\r\n"))
 	headers := make(map[string]string)
@@ -66,7 +67,7 @@ func (cs *CanvasService) GetJobParams() map[string]any {
 
 // fetchCanvasUsers retrieves and parses all users from the Canvas API.
 // It does not apply any mapping filter — callers decide what to do with the full list.
-func (srv *CanvasService) fetchCanvasUsers() ([]models.ImportUser, error) {
+func (srv *CanvasService) fetchCanvasUsers() ([]providerplatforms.ImportUser, error) {
 	enrollmentTypes := []string{"student"}
 	baseURL := srv.BaseURL + "/api/v1/accounts/" + srv.AccountID + "/users?per_page=1000"
 	for _, t := range enrollmentTypes {
@@ -93,7 +94,7 @@ func (srv *CanvasService) fetchCanvasUsers() ([]models.ImportUser, error) {
 		log.Errorf("Failed to decode Canvas users: %v", err)
 		return nil, err
 	}
-	result := make([]models.ImportUser, 0, len(raw))
+	result := make([]providerplatforms.ImportUser, 0, len(raw))
 	for _, user := range raw {
 		loginId, ok := user["login_id"].(string)
 		if !ok {
@@ -113,7 +114,7 @@ func (srv *CanvasService) fetchCanvasUsers() ([]models.ImportUser, error) {
 			nameLast = name[0]
 		}
 		userId, _ := user["id"].(float64)
-		result = append(result, models.ImportUser{
+		result = append(result, providerplatforms.ImportUser{
 			ExternalUserID:   fmt.Sprintf("%d", int(userId)),
 			ExternalUsername: loginId,
 			NameFirst:        nameFirst,
@@ -126,15 +127,15 @@ func (srv *CanvasService) fetchCanvasUsers() ([]models.ImportUser, error) {
 }
 
 // GetUsers returns only Canvas users that have not yet been mapped to an UnlockEd user.
-func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
+func (srv *CanvasService) GetUsers(db *gorm.DB) ([]providerplatforms.ImportUser, error) {
 	all, err := srv.fetchCanvasUsers()
 	if err != nil {
 		return nil, err
 	}
-	unmapped := make([]models.ImportUser, 0, len(all))
+	unmapped := make([]providerplatforms.ImportUser, 0, len(all))
 	for _, u := range all {
 		var count int64
-		if err := db.Model(&models.ProviderUserMapping{}).
+		if err := db.Model(&providerplatforms.ProviderUserMapping{}).
 			Where("external_user_id = ? AND provider_platform_id = ?", u.ExternalUserID, srv.ProviderPlatformID).
 			Count(&count).Error; err != nil {
 			log.Errorf("Error counting provider_user_mappings: %v", err)
@@ -152,7 +153,7 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 
 // GetAllUsers returns all Canvas users regardless of whether they are already mapped.
 // Used by the mapped-users endpoint to resolve canvas display names.
-func (srv *CanvasService) GetAllUsers() ([]models.ImportUser, error) {
+func (srv *CanvasService) GetAllUsers() ([]providerplatforms.ImportUser, error) {
 	users, err := srv.fetchCanvasUsers()
 	if err != nil {
 		return nil, err
@@ -216,13 +217,13 @@ func (srv *CanvasService) ImportCourses(db *gorm.DB) error {
 		if is_pub {
 			progType = "open_enrollment"
 		}
-		unlockedCourse := models.Course{
+		unlockedCourse := providerplatforms.Course{
 			ProviderPlatformID:      srv.ProviderPlatformID,
 			Name:                    course["name"].(string),
 			AltName:                 models.NilIfBlank(course["course_code"].(string)),
 			ExternalID:              fmt.Sprintf("%d", id),
 			ExternalURL:             models.StringPtr(srv.BaseURL + "/courses/" + fmt.Sprintf("%d", id)),
-			Type:                    models.CourseType(progType),
+			Type:                    providerplatforms.CourseType(progType),
 			OutcomeTypes:            models.StringPtr("grade, college_credit"),
 			Description:             models.NilIfBlank(description),
 			ThumbnailURL:            models.NilIfBlank(thumbnailURL),
@@ -440,7 +441,7 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]any, mapping 
 			log.WithFields(fields).Debugf("no user mapping for external user %s, skipping submission", externalUserID)
 			continue
 		}
-		milestone := models.Milestone{
+		milestone := providerplatforms.Milestone{
 			UserID:      userID,
 			ExternalID:  fmt.Sprintf("%d", int(submission["id"].(float64))),
 			CourseID:    courseId,
@@ -457,7 +458,7 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]any, mapping 
 		}
 		if checkTimespanOfSubmission(lastRun, submission) {
 			anonId := submission["anonymous_id"].(string)
-			gradeReceived := models.Milestone{
+			gradeReceived := providerplatforms.Milestone{
 				CourseID:    uint(courseId),
 				UserID:      userID,
 				ExternalID:  anonId,
@@ -536,13 +537,13 @@ func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]any, db 
 	for _, enrollment := range enrollments {
 		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(float64)))
 		var userID uint
-		err := db.Model(models.ProviderUserMapping{}).Select("user_id").First(&userID, "provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, userId).Error
+		err := db.Model(providerplatforms.ProviderUserMapping{}).Select("user_id").First(&userID, "provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, userId).Error
 		if err != nil {
 			log.Printf("Failed to get user: %v", err)
 			continue
 		}
-		if db.Model(&models.UserEnrollment{}).First(&models.UserEnrollment{}, "user_id = ? AND course_id = ?", userID, courseId).RowsAffected == 0 {
-			if err := db.Create(&models.UserEnrollment{UserID: userID, CourseID: courseId}).Error; err != nil {
+		if db.Model(&providerplatforms.UserEnrollment{}).First(&providerplatforms.UserEnrollment{}, "user_id = ? AND course_id = ?", userID, courseId).RowsAffected == 0 {
+			if err := db.Create(&providerplatforms.UserEnrollment{UserID: userID, CourseID: courseId}).Error; err != nil {
 				log.WithFields(log.Fields{"userId": userID, "course_id": courseId, "error": err}).Error("Failed to create enrollment")
 				continue
 			}

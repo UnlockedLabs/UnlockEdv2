@@ -125,10 +125,10 @@ func TestCreateUserHandler(t *testing.T) {
 		}
 	})
 
-	// The provider-sync imports (user_matching, provider_user_management,
-	// actions) build residents with no resident ID and go straight to the DB
-	// layer. This pins that escape hatch so the check isn't "helpfully" moved
-	// into db.CreateUser, which would break those flows.
+	// The provider-sync imports (Provider Platforms' user import and matching,
+	// through module.Users.Create) build residents with no resident ID and go
+	// straight to the DB layer. This pins that escape hatch so the check isn't
+	// "helpfully" moved into db.CreateUser, which would break those flows.
 	t.Run("db layer still accepts a resident with no resident ID", func(t *testing.T) {
 		facility, err := env.CreateTestFacility("Provider Import Facility")
 		require.NoError(t, err)

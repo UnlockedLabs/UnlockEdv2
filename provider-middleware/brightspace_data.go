@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms"
 
 	"github.com/gocarina/gocsv"
 	"github.com/microcosm-cc/bluemonday"
@@ -149,8 +150,8 @@ type BrightspaceUserContentDto struct {
 	ExternalId        string
 }
 
-func (srv *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *models.ImportUser {
-	user := models.ImportUser{
+func (srv *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *providerplatforms.ImportUser {
+	user := providerplatforms.ImportUser{
 		Username:       bsUser.UserName,
 		NameFirst:      bsUser.FirstName,
 		NameLast:       bsUser.LastName,
@@ -160,9 +161,9 @@ func (srv *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *models.Im
 	return &user
 }
 
-func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Course {
+func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *providerplatforms.Course {
 	id := bsCourse.OrgUnitId
-	courseImageUrl := fmt.Sprintf("%s/d2l/api/lp/%s/courses/%s/image", srv.BaseURL, models.BrightspaceApiVersion, id)
+	courseImageUrl := fmt.Sprintf("%s/d2l/api/lp/%s/courses/%s/image", srv.BaseURL, providerplatforms.BrightspaceApiVersion, id)
 	response, err := srv.SendRequest(courseImageUrl)
 	if err != nil {
 		log.Errorf("error executing request to retrieve image from url %v, error is %v", courseImageUrl, err)
@@ -189,7 +190,7 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 			}
 		}
 	}
-	courseOfferingUrl := fmt.Sprintf("%s/d2l/api/lp/%s/courses/%s", srv.BaseURL, models.BrightspaceApiVersion, id)
+	courseOfferingUrl := fmt.Sprintf("%s/d2l/api/lp/%s/courses/%s", srv.BaseURL, providerplatforms.BrightspaceApiVersion, id)
 	resp, err := srv.SendRequest(courseOfferingUrl)
 	if err != nil {
 		log.Errorf("error executing request to retrieve course offering from url %v, error is %v", courseOfferingUrl, err)
@@ -218,7 +219,7 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 	if courseDescription == "" {
 		courseDescription = fmt.Sprintf("Brightspace Managed Course: %s", bsCourse.Name)
 	}
-	course := models.Course{
+	course := providerplatforms.Course{
 		ProviderPlatformID:      srv.ProviderPlatformID,
 		ExternalID:              bsCourse.OrgUnitId,
 		Name:                    bsCourse.Name,
@@ -295,7 +296,7 @@ func UploadBrightspaceImage(imgBytes []byte, bsCourseId string) (string, error) 
 
 func (srv *BrightspaceService) getPluginId(pluginName string) (string, error) {
 	var pluginId string
-	resp, err := srv.SendRequest(fmt.Sprintf(DataSetsEndpoint, models.BrightspaceApiVersion))
+	resp, err := srv.SendRequest(fmt.Sprintf(DataSetsEndpoint, providerplatforms.BrightspaceApiVersion))
 	if err != nil {
 		return pluginId, err
 	}

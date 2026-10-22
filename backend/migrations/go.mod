@@ -1,6 +1,6 @@
 module migrations
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/UnlockedLabs/unlocked-core/backend v0.0.0
@@ -15,6 +15,7 @@ require (
 
 require (
 	github.com/UnlockedLabs/unlocked-contracts v0.2.0 // indirect
+	github.com/adrg/strutil v0.3.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.14 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.7 // indirect

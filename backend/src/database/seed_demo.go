@@ -2,156 +2,39 @@ package database
 
 import (
 	"context"
-	"math/rand"
-	"slices"
-	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
-
-	"github.com/google/uuid"
-	// "github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 )
 
-const seededActivity = "SEEDED_ACTIVITY"
-
 func (db *DB) RunOrResetDemoSeed(facilityId uint) error {
+	ctx := context.Background()
+	learning := registry.ProviderPlatforms(db.DB)
 	// seeding data for demo will only seed user activity/milestones/open-content activity for existing users
-	activity := models.Activity{}
-	if err := db.Model(&models.Activity{}).Where("external_id = ?", seededActivity).Order("created_at desc").First(&activity).Error; err != nil {
+	lastSeed, found, err := learning.LastDemoSeed(ctx)
+	if err != nil || !found {
 		return db.RunDemoSeed(facilityId)
 	}
-	if err := db.Exec("DELETE from user_course_activity_totals where date(last_ts) <= date(?)", activity.UpdatedAt).Error; err != nil {
-		return newDeleteDBError(err, "user_course_activity_totals")
+	if err := learning.ResetDemoLearning(ctx, lastSeed); err != nil {
+		return newDeleteDBError(err, "demo learning data")
 	}
-	if err := db.Exec("DELETE from activities where date(created_at) <= date(?)", activity.UpdatedAt).Error; err != nil {
-		return newDeleteDBError(err, "activities")
-	}
-	if err := db.Exec("DELETE from milestones where date(created_at) <= date(?)", activity.UpdatedAt).Error; err != nil {
-		return newDeleteDBError(err, "milestones")
-	}
-	if err := db.Exec("DELETE from outcomes where date(created_at) <= date(?)", activity.UpdatedAt).Error; err != nil {
-		return newDeleteDBError(err, "outcomes")
-	}
-	if err := registry.OpenContent(db.DB).ResetDemoActivity(context.Background(), activity.UpdatedAt); err != nil {
+	if err := registry.OpenContent(db.DB).ResetDemoActivity(ctx, lastSeed); err != nil {
 		return newDeleteDBError(err, "open_content_activities")
 	}
 	return db.RunDemoSeed(facilityId)
 }
 
 func (db *DB) RunDemoSeed(facilityId uint) error {
-	users := []models.User{}
-	if err := db.Model(&models.User{}).Preload("Enrollments").Find(&users, "facility_id = ?", facilityId).Error; err != nil {
+	var userIDs []uint
+	if err := db.Model(&models.User{}).Where("facility_id = ?", facilityId).Pluck("id", &userIDs).Error; err != nil {
 		return newGetRecordsDBError(err, "users")
 	}
-
-	//just update courses total progress where they are equal to 0
-	if err := db.Model(&models.Course{}).Where("total_progress_milestones = 0").Update("total_progress_milestones", 40).Error; err != nil {
-		log.Infof("no courses needed to be updated") //just logging the message
-	}
-
-	courses := []models.Course{}
-	if err := db.Preload("ProviderPlatform").Find(&courses).Error; err != nil {
-		return newGetRecordsDBError(err, "courses")
-	}
-
-	userIDs := make([]uint, 0, len(users))
-	for _, user := range users {
-		userIDs = append(userIDs, user.ID)
-	}
-	if err := registry.OpenContent(db.DB).SeedDemoActivity(context.Background(), facilityId, userIDs); err != nil {
+	ctx := context.Background()
+	if err := registry.OpenContent(db.DB).SeedDemoActivity(ctx, facilityId, userIDs); err != nil {
 		return newCreateDBError(err, "open_content_activities")
 	}
-
-	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
-	completedNumCount := 0
-	sixMonthsAgo := time.Now().AddDate(0, -6, 0)
-	for _, user := range users {
-		enrolledCourses := randomSubset(courses, len(courses)/2)
-		for _, course := range enrolledCourses {
-			startDate := course.StartDt
-			if startDate == nil {
-				startDate = &sixMonthsAgo
-			}
-			if !slices.ContainsFunc(user.Enrollments, func(e models.UserEnrollment) bool {
-				return e.CourseID == course.ID
-			}) {
-				if err := db.Exec("INSERT INTO user_enrollments (user_id, course_id, external_id, created_at) VALUES (?, ?, ?, ?)",
-					user.ID, course.ID, uuid.NewString(), startDate).Error; err != nil {
-					log.Println(err)
-				}
-			}
-			daysSinceStart := int(time.Since(*startDate).Hours() / 24)
-			backThen := time.Now().AddDate(0, 0, -daysSinceStart)
-			milestonesPerUser := 0
-			totalCourseTime := int64(0)
-
-			for day := 0; day < daysSinceStart; day++ {
-				randTime := rand.Int63n(5000)
-				externalID := uuid.NewString()
-				if day == 0 {
-					externalID = "SEEDED_ACTIVITY"
-				}
-				createdAt := backThen.AddDate(0, 0, day)
-				if course.ProviderPlatform == nil {
-					continue
-				}
-				sqlStr := ""
-				var timeToEnter int64
-				switch course.ProviderPlatform.Type {
-				case models.Kolibri:
-					sqlStr = "CALL insert_daily_activity_kolibri(?, ?, ?, ?, ?, ?)"
-					timeToEnter = randTime
-				case models.CanvasCloud, models.CanvasOSS:
-					sqlStr = "CALL insert_daily_activity_canvas(?, ?, ?, ?, ?, ?)"
-					timeToEnter = totalCourseTime
-				default:
-					continue
-				}
-				if err := db.Exec(sqlStr, user.ID, course.ID, models.ContentInteraction, timeToEnter, externalID, createdAt).
-					Error; err != nil {
-					continue
-				}
-				totalCourseTime += randTime
-
-				if day%8 == 0 && uint(milestonesPerUser) < course.TotalProgressMilestones {
-					milestone := models.Milestone{
-						UserID: user.ID, CourseID: course.ID, ExternalID: uuid.NewString(),
-						Type: models.AssignmentSubmission, IsCompleted: rand.Intn(2) == 0,
-					}
-					milestone.CreatedAt = createdAt
-					if err := db.Create(&milestone).Error; err != nil {
-						continue
-					}
-					milestonesPerUser++
-					if uint(milestonesPerUser) == course.TotalProgressMilestones && completedNumCount != 3 {
-						//add outcome here
-						outcome := models.Outcome{
-							UserID:   user.ID,
-							CourseID: course.ID,
-							Type:     models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
-						}
-						outcome.CreatedAt = createdAt
-						if err := db.Create(&outcome).Error; err != nil {
-							continue
-						}
-						completedNumCount++
-					}
-				}
-			}
-		}
+	if err := registry.ProviderPlatforms(db.DB).SeedDemoLearning(ctx, userIDs); err != nil {
+		return newCreateDBError(err, "demo learning data")
 	}
-
 	return nil
-}
-
-func randomSubset[T any](items []T, size int) []T {
-	if size >= len(items) {
-		return items
-	}
-	shuffled := make([]T, len(items))
-	copy(shuffled, items)
-	rand.Shuffle(len(shuffled), func(i, j int) { shuffled[i], shuffled[j] = shuffled[j], shuffled[i] })
-	return shuffled[:size]
 }

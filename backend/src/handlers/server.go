@@ -16,6 +16,7 @@ import (
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 	ocapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/opencontent/api"
+	ppapi "github.com/UnlockedLabs/unlocked-core/backend/src/modules/providerplatforms/api"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 
@@ -27,21 +28,22 @@ import (
 )
 
 type Server struct {
-	port           string
-	Db             *database.DB
-	Mux            *http.ServeMux
-	OryClient      *ory.APIClient
-	Client         *http.Client
-	nats           *nats.Conn
-	dev            bool
-	buckets        map[string]nats.KeyValue
-	features       []models.FeatureAccess
-	testingMode    bool
-	wsClient       *ClientManager
-	scheduler      *tasks.Scheduler
-	canvasInflight sync.Map
-	modules        []module.Module
-	openContent    ocapi.OpenContent
+	port              string
+	Db                *database.DB
+	Mux               *http.ServeMux
+	OryClient         *ory.APIClient
+	Client            *http.Client
+	nats              *nats.Conn
+	dev               bool
+	buckets           map[string]nats.KeyValue
+	features          []models.FeatureAccess
+	testingMode       bool
+	wsClient          *ClientManager
+	scheduler         *tasks.Scheduler
+	canvasInflight    sync.Map
+	modules           []module.Module
+	openContent       ocapi.OpenContent
+	providerPlatforms ppapi.ProviderPlatforms
 }
 
 type routeDef struct {
@@ -87,15 +89,8 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerLoginFlowRoutes,
 		srv.registerAuthRoutes,
 		srv.registerUserRoutes,
-		srv.registerProviderPlatformRoutes,
-		srv.registerProviderMappingRoutes,
-		srv.registerActionsRoutes,
-		srv.registerCoursesRoutes,
-		srv.registerOutcomesRoutes,
 		srv.registerActivityRoutes,
-		srv.registerOidcRoutes,
 		srv.registerDashboardRoutes,
-		srv.registerProviderUserRoutes,
 		srv.registerOryRoutes,
 		srv.registerFacilitiesRoutes,
 		srv.registerFacilityFeatureAccessRoutes,
@@ -189,15 +184,16 @@ func newServer(ctx context.Context) *Server {
 	dev := os.Getenv("APP_ENV") == "dev"
 	db := database.InitDB(false)
 	server := Server{
-		port:        port,
-		Db:          db,
-		Mux:         http.NewServeMux(),
-		OryClient:   ory.NewAPIClient(oryConfig()),
-		Client:      &http.Client{},
-		nats:        conn,
-		dev:         dev,
-		modules:     registry.All(),
-		openContent: registry.OpenContent(db.DB),
+		port:              port,
+		Db:                db,
+		Mux:               http.NewServeMux(),
+		OryClient:         ory.NewAPIClient(oryConfig()),
+		Client:            &http.Client{},
+		nats:              conn,
+		dev:               dev,
+		modules:           registry.All(),
+		openContent:       registry.OpenContent(db.DB),
+		providerPlatforms: registry.ProviderPlatforms(db.DB),
 	}
 	if err := server.migrateModules(ctx); err != nil {
 		log.Fatalf("Module migrations failed: %v", err)
@@ -228,14 +224,15 @@ func newTestingServer() *Server {
 	db := database.InitDB(true)
 	features := models.AllFeatures
 	return &Server{
-		Db:          db,
-		Mux:         http.NewServeMux(),
-		OryClient:   nil,
-		Client:      nil,
-		features:    features,
-		testingMode: true,
-		modules:     registry.All(),
-		openContent: registry.OpenContent(db.DB),
+		Db:                db,
+		Mux:               http.NewServeMux(),
+		OryClient:         nil,
+		Client:            nil,
+		features:          features,
+		testingMode:       true,
+		modules:           registry.All(),
+		openContent:       registry.OpenContent(db.DB),
+		providerPlatforms: registry.ProviderPlatforms(db.DB),
 	}
 }
 
@@ -269,7 +266,6 @@ func oryConfig() *ory.Configuration {
 
 const (
 	CachedUsers    string = "cache_users"
-	OAuthState     string = "oauth_state"
 	LoginMetrics   string = "login_metrics"
 	AdminLayer2    string = "admin_layer_2"
 	CanvasPrograms string = "canvas_programs"
@@ -284,7 +280,7 @@ func (srv *Server) setupNatsKvBuckets() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, LoginMetrics, OAuthState, AdminLayer2, CanvasPrograms, CanvasClasses, CanvasEvents} {
+	for _, bucket := range []string{CachedUsers, LoginMetrics, AdminLayer2, CanvasPrograms, CanvasClasses, CanvasEvents} {
 		kv, err := js.KeyValue(bucket)
 		if err != nil {
 			cfg := &nats.KeyValueConfig{
@@ -294,8 +290,6 @@ func (srv *Server) setupNatsKvBuckets() error {
 			switch bucket {
 			case CachedUsers:
 				cfg.TTL = time.Hour * 1
-			case OAuthState:
-				cfg.TTL = time.Minute * 10
 			case CanvasPrograms, CanvasClasses, CanvasEvents:
 				cfg.TTL = time.Minute * 5
 			default:
@@ -341,39 +335,6 @@ func (srv *Server) checkForAdminInKratos(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-func (srv *Server) generateKolibriOidcClient() error {
-	fields := log.Fields{"func": "generateKolibriOidcClient"}
-	if os.Getenv("KOLIBRI_URL") == "" {
-		log.Println("no KOLIBRI_URL set, not registering new OIDC client")
-		// there is no kolibri deployment registered
-		return nil
-	}
-	provider, err := srv.Db.FindKolibriInstance()
-	if err != nil {
-		provider = &models.ProviderPlatform{
-			Name:      string(models.Kolibri),
-			Type:      models.Kolibri,
-			BaseUrl:   os.Getenv("KOLIBRI_URL"),
-			AccessKey: os.Getenv("KOLIBRI_USERNAME") + ":" + os.Getenv("KOLIBRI_PASSWORD"),
-			AccountID: "TODO", // kolibri wont be running yet. This will be updated the first time a user is added
-			State:     models.Enabled,
-		}
-		err = srv.Db.CreateProviderPlatform(provider)
-		if err != nil {
-			fields["error"] = err.Error()
-			log.WithFields(fields).Errorln("error creating kolibri provider")
-			return err
-		}
-	}
-	client, _, err := models.OidcClientFromProvider(provider, false, srv.Client)
-	if err != nil {
-		fields["error"] = err.Error()
-		log.WithFields(fields).Errorln("error creating kolibri auth client")
-		return err
-	}
-	return srv.Db.Create(client).Error
-}
-
 func (srv *Server) syncKratosAdminDB(ctx context.Context) error {
 	id, err := srv.checkForAdminInKratos(ctx)
 	if err != nil {
@@ -381,7 +342,7 @@ func (srv *Server) syncKratosAdminDB(ctx context.Context) error {
 	}
 	if id == "" {
 		// this means the default admin was just created, so we use default password
-		err := srv.generateKolibriOidcClient()
+		err := srv.providerPlatforms.SetupKolibri(ctx)
 		if err != nil {
 			log.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
 		}
