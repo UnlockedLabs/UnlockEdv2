@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.3.0...v1.4.0) (2026-10-22)
+
+
+### Features
+
+* En 216 track learning record pdf exports main ([#1260](https://github.com/UnlockedLabs/unlocked-core/issues/1260)) ([8a87afb](https://github.com/UnlockedLabs/unlocked-core/commit/8a87afb2f4a5f4ddf1f971b9191c482b9a08a728))
+* move Provider Platforms into its own module (EN-193) ([7c9b271](https://github.com/UnlockedLabs/unlocked-core/commit/7c9b271d7373fb4ab7ca90ae5bf6d30a94ec30f7))
+
 ## [1.3.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.2.0...v1.3.0) (2026-10-20)
 
 
