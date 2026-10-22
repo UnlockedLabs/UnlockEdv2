@@ -195,9 +195,6 @@ func newServer(ctx context.Context) *Server {
 		openContent:       registry.OpenContent(db.DB),
 		providerPlatforms: registry.ProviderPlatforms(db.DB),
 	}
-	if err := server.migrateModules(ctx); err != nil {
-		log.Fatalf("Module migrations failed: %v", err)
-	}
 	features, err := server.Db.GetFeatureAccess()
 	if err != nil {
 		log.Fatal("Failed to fetch feature flags")

@@ -59,8 +59,6 @@ spec:
                   key: HYDRA_TOKEN
             - name: PROVIDER_SERVICE_URL
               value: http://provider-service:8081
-            - name: MIGRATION_DIR
-              value: "./migrations"
             - name: S3_BUCKET_NAME
               value:          # s3 bucket for the region
             - name: AWS_REGION

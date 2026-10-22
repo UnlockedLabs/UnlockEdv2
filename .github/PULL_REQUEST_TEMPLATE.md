@@ -7,6 +7,7 @@
 - [ ] Tested manually where applicable
 - [ ] Branch rebased with latest main
 - [ ] No business logic exists within the database layer
+- [ ] DB migrations (if any) are backward-compatible and online-safe — see [Database Migrations](../CONTRIBUTING.md#database-migrations) in CONTRIBUTING.md
 
 ## Description of the change
 

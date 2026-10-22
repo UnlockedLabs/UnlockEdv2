@@ -89,6 +89,21 @@ Checkout the [daisyUI documentation](https://daisyui.com/docs) for more informat
 
 Because the backend is in Go, these decisions are made for us, and we follow the standard conventions of the language provided by `gofmt`, and we use `gopls` LSP for code completion and linting.
 
+### Database Migrations
+
+Migrations are designed to run as a Kubernetes Job before each deploy (see the `unlocked-platform` repo), not on server startup and not by hand. A migration that isn't both of the following can break a live deploy or block a rollback:
+
+- **Backward compatible ("expand, then contract")**: the previous app version must keep working after the migration runs. Add new columns/tables in one migration; only drop the old ones in a later release, once nothing references them.
+- **Online-safe**: no long locks on live tables.
+  - Use `CREATE INDEX CONCURRENTLY` instead of `CREATE INDEX`. Goose wraps each
+    migration file in a transaction and Postgres forbids concurrent index operations
+    inside one, so the file must start with `-- +goose NO TRANSACTION`. That directive
+    applies to the whole file, so the `Down` runs unwrapped too and should use
+    `DROP INDEX CONCURRENTLY`. See `backend/migrations/00076_add_users_username_lower_index.sql`.
+  - Add foreign keys as `NOT VALID`, then validate them in a separate statement (`ALTER TABLE ... VALIDATE CONSTRAINT ...`).
+
+Rolling back the app does not roll back the database — these rules are what make that safe.
+
 ## Code Review Process
 
 All pull requests will be reviewed by one or more project maintainers. Feedback may be provided, and changes may be requested before your contribution is accepted. We appreciate your patience and collaboration during this process.

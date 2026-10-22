@@ -2,20 +2,16 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	server "github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
-	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 
 	"github.com/joho/godotenv"
-	"github.com/pressly/goose/v3"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -54,10 +50,6 @@ func cancelOnSignal(shutdown <-chan os.Signal, cancel context.CancelFunc) {
 // when it's due; provider-middleware does the work. It runs until ctx is
 // canceled. It doesn't migrate: it waits until the database is migrated.
 func runScheduler(ctx context.Context, dev bool) {
-	latest, err := database.LatestCoreMigration()
-	if err != nil {
-		log.Fatalf("Failed to read core migrations: %v", err)
-	}
 	nc, err := server.ConnectNATS()
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
@@ -68,11 +60,11 @@ func runScheduler(ctx context.Context, dev bool) {
 	if err != nil {
 		log.Fatalf("Failed to get database connection: %v", err)
 	}
-	mods := registry.All()
-	if !waitForMigrations(ctx, sqlDB, latest, mods) {
+	if !database.WaitForMigrations(ctx, sqlDB) {
 		log.Info("Scheduler stopped before migrations finished")
 		return
 	}
+	mods := registry.All()
 	s := tasks.Start(dev, nc, db.DB, mods)
 	log.Info("Scheduler started")
 	<-ctx.Done()
@@ -80,38 +72,6 @@ func runScheduler(ctx context.Context, dev bool) {
 		log.Errorf("Error stopping scheduler: %v", err)
 	}
 	log.Info("Scheduler stopped")
-}
-
-// migrationPollInterval is how often the scheduler checks whether the
-// database has caught up with this image's migrations.
-const migrationPollInterval = 5 * time.Second
-
-// waitForMigrations blocks until the database has every core and module
-// migration this image ships with; latest is the newest core one. Starting
-// earlier would query tables or columns that don't exist yet, and the
-// scheduler builds its job list only once, at start. Errors are waited out:
-// the ledger doesn't exist until the server's first migration run. It returns
-// false if ctx is canceled first.
-func waitForMigrations(ctx context.Context, sqlDB *sql.DB, latest int64, mods []module.Module) bool {
-	for {
-		pending, err := database.CoreMigrationsPending(ctx, sqlDB, latest)
-		if err == nil && !pending {
-			pending, err = module.Pending(ctx, sqlDB, goose.DialectPostgres, mods)
-		}
-		switch {
-		case err != nil:
-			log.Warnf("Waiting for migrations: %v", err)
-		case pending:
-			log.Info("Waiting for migrations to finish")
-		default:
-			return true
-		}
-		select {
-		case <-ctx.Done():
-			return false
-		case <-time.After(migrationPollInterval):
-		}
-	}
 }
 
 func initLogging() {
