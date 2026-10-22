@@ -42,9 +42,9 @@ func scheduledJobs() []scheduledJob {
 func scheduleJobs(s module.Scheduler, p *jobPublisher, dev bool) {
 	for _, sj := range scheduledJobs() {
 		run := func() { p.run(context.Background(), sj.job) }
+		// A bad schedule doesn't stop the run at start, as before EN-196.
 		if err := s.Cron(sj.schedule, run); err != nil {
 			log.Errorf("Failed to schedule %s: %v", sj.job, err)
-			continue
 		}
 		if dev && sj.job != jobs.ScrapeKiwix {
 			continue

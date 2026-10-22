@@ -2,7 +2,10 @@ package opencontent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -47,7 +50,11 @@ type fakeScheduler struct {
 	atStart []func()
 }
 
+// Cron rejects an empty spec, as the real scheduler does.
 func (s *fakeScheduler) Cron(spec string, task func()) error {
+	if spec == "" {
+		return errors.New("empty cron spec")
+	}
 	s.cron[spec] = append(s.cron[spec], task)
 	return nil
 }
@@ -128,6 +135,26 @@ func TestScheduleJobs(t *testing.T) {
 			assert.Equal(t, tt.wantAtStart, run(s.atStart))
 		})
 	}
+}
+
+// A job whose schedule can't be set still runs once at start, as before
+// EN-196.
+func TestScheduleJobsBadSchedule(t *testing.T) {
+	t.Setenv("MIDDLEWARE_CRON_SCHEDULE", "")
+	t.Setenv("RETRY_VIDEO_CRON_SCHEDULE", "")
+	db := newTestDB(t)
+	createProvider(t, db, Kiwix, true)
+	createProvider(t, db, Youtube, true)
+	pub := &published{}
+	s := &fakeScheduler{cron: map[string][]func(){}}
+
+	scheduleJobs(s, &jobPublisher{store: &store{db: db}, publish: pub.publish}, false)
+
+	assert.Equal(t, []string{"0 6-20 * * *"}, slices.Collect(maps.Keys(s.cron)))
+	for _, task := range s.atStart {
+		task()
+	}
+	assert.Equal(t, []string{"tasks.scrape_kiwix", "tasks.retry_video_downloads", "tasks.sync_video_metadata"}, pub.subjects)
 }
 
 func createProvider(t *testing.T, db *gorm.DB, title string, enabled bool) *OpenContentProvider {

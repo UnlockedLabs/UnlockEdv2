@@ -22,7 +22,7 @@ WORKDIR /
 RUN apk add --no-cache python3 py3-pip && \
 	pip install --break-system-packages requests brotli websockets certifi yt-dlp[default,curl-cffi]
 COPY --from=ffmpeg /ffmpeg /ffprobe /usr/bin/
-ADD --chmod=755 https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp /usr/bin/yt-dlp
+RUN wget -qO /usr/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp && chmod 755 /usr/bin/yt-dlp
 
 # Records which commit/branch/version this image was actually built from — see
 # /api/version. Passed in by `make dev` (local git state) or CI (github.sha/ref_name/
