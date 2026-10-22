@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.4.0...v1.5.0) (2026-10-22)
+
+
+### Features
+
+* En 177 stop startup migrations ([#1258](https://github.com/UnlockedLabs/unlocked-core/issues/1258)) ([ee53c01](https://github.com/UnlockedLabs/unlocked-core/commit/ee53c017188d6ef4e27caa4b284de04513892e1f))
+
 ## [1.4.0](https://github.com/UnlockedLabs/unlocked-core/compare/v1.3.0...v1.4.0) (2026-10-22)
 
 
