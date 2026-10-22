@@ -156,8 +156,13 @@ jobs:
             echo "Skipping deployment restarts for ${GITHUB_REF}"
             exit 0
           fi
-          # this command runs the rollout.sh executable file
-          COMMAND="rollout.sh $NAMESPACE $deployments"
+          # Until EN-184, staging migrates here: copy the chart's suspended
+          # CronJob/core-migrate into a Job, then run rollout.sh as before. The
+          # server waits for that Job's migrations itself, so it needn't finish
+          # first. Before the chart has the CronJob, the copy fails and the
+          # restart still runs (unlocked-platform D7).
+          JOB="core-migrate-${GITHUB_SHA::8}-${GITHUB_RUN_ATTEMPT}"
+          COMMAND="kubectl -n $NAMESPACE create job $JOB --from=cronjob/core-migrate; rollout.sh $NAMESPACE $deployments"
           PARAMETERS=$(jq -n --arg cmd "$COMMAND" '{"commands": [$cmd]}')
           aws ssm send-command \
             --instance-ids "$SSM_TARGET_INSTANCE_ID" \

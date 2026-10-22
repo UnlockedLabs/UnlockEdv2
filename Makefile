@@ -8,7 +8,7 @@ DOCKER_COMPOSE=docker-compose.yml
 TUTOR_BUILD_LOG=logs/tutor-build.log
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
 CANVAS_COMPOSE=config/docker-compose.canvas.yml
-MIGRATE_MAIN=backend/migrations/main.go -dir backend/migrations
+MIGRATE_MAIN=./backend/migrations -dir backend/migrations
 BUILD_RECREATE=--build --force-recreate
 # Set TUTOR_DIR in .env (or the environment) if your tutor checkout lives
 # somewhere other than a sibling ../ai/ directory. Docker Compose reads the
@@ -212,7 +212,7 @@ install-dep: ascii_art
 	docker compose down && docker volume rm -f unlockedv2_node_modules && cd frontend && yarn add $(NAME) && cd ..
 	$(call run_dev_compose,)
 migrate-fresh: ascii_art
-	go run $(MIGRATE_MAIN) --fresh
+	go run -tags dev $(MIGRATE_MAIN) --fresh
 
 migrate: ascii_art
 	go run $(MIGRATE_MAIN)

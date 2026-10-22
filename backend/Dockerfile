@@ -8,6 +8,7 @@ RUN go mod download
 COPY ./backend/ ./
 
 RUN CGO_ENABLED=0 GOOS=linux GOFLAGS=-mod=readonly go build -trimpath -o backend ./cmd/main.go
+RUN cd migrations && CGO_ENABLED=0 GOOS=linux GOFLAGS=-mod=readonly go build -trimpath -o /app/migrate .
 
 FROM ghcr.io/unlockedlabs/golang-jasper:latest
 WORKDIR /
@@ -23,6 +24,7 @@ ENV GIT_BRANCH=$GIT_BRANCH
 ENV APP_VERSION=$APP_VERSION
 
 COPY --from=builder /app/backend /backend
+COPY --from=builder /app/migrate /migrate
 COPY --from=builder /app/src/templates /templates
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /app/migrations /migrations

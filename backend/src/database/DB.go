@@ -68,8 +68,24 @@ var Validate = sync.OnceValue(func() *validator.Validate {
 	return Ins
 })
 
-// InitDB initializes the database connection, runs migrations, and seeds default data.
-func InitDB(isTesting bool) *DB {
+// PostgresDSN resolves the Postgres connection string from the environment:
+// APP_DSN if set, else the individual DB_* vars. Shared by the server
+// (InitDB) and the standalone migration runner so the connection rule has one
+// home; sslMode is a parameter rather than part of the shared rule because
+// the two callers intentionally use different values.
+func PostgresDSN(sslMode string) string {
+	if dsn := os.Getenv("APP_DSN"); dsn != "" {
+		return dsn
+	}
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), sslMode)
+}
+
+// InitDB initializes the database connection and seeds default data. Migrations
+// run separately (a Kubernetes Job before deploy in production; MigrateTesting
+// for the in-memory SQLite test path). On Postgres it first waits until the
+// database is migrated, and returns nil if ctx is canceled before then.
+func InitDB(ctx context.Context, isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
 	if isTesting {
@@ -84,9 +100,8 @@ func InitDB(isTesting bool) *DB {
 		MigrateTesting(gormDb)
 	} else {
 		db := openPostgres()
-		logrus.Println("Running up migrations...")
-		if err := goose.Up(db, migrationDir()); err != nil {
-			logrus.Fatalf("Migration failed: %v", err)
+		if !WaitForMigrations(ctx, db) {
+			return nil
 		}
 		gormDb = openGorm(db)
 	}
@@ -96,10 +111,9 @@ func InitDB(isTesting bool) *DB {
 	return DB
 }
 
-// Connect opens the PostgreSQL database without running migrations or seeding
-// default data. It's for processes that run beside the API server, such as the
-// scheduler: the server owns migrations, and two processes running them at
-// once would race.
+// Connect opens the PostgreSQL database without waiting for migrations or
+// seeding default data. It's for processes that run beside the API server, such
+// as the scheduler, which wait for the migration runner themselves.
 func Connect() *DB {
 	return &DB{openGorm(openPostgres())}
 }
@@ -125,6 +139,45 @@ func CoreMigrationsPending(ctx context.Context, db *sql.DB, latest int64) (bool,
 	return applied < latest, nil
 }
 
+// migrationPollInterval is how often a caller waiting on WaitForMigrations
+// checks whether the database has caught up with this image's migrations.
+const migrationPollInterval = 5 * time.Second
+
+// WaitForMigrations blocks until the database has every core and module
+// migration this image ships with. Starting earlier would query tables or
+// columns that don't exist yet -- a partially-migrated database previously
+// let the server start quietly and run new code against an old schema, and a
+// not-yet-migrated one crashed with "relation does not exist" instead of
+// waiting. Shared by InitDB and the scheduler process so both wait the same
+// way. Errors are waited out: the goose ledger doesn't exist until the first
+// migration run. Returns false if ctx is canceled first.
+func WaitForMigrations(ctx context.Context, db *sql.DB) bool {
+	latest, err := LatestCoreMigration()
+	if err != nil {
+		logrus.Fatalf("Failed to read core migrations: %v", err)
+	}
+	mods := registry.All()
+	for {
+		pending, err := CoreMigrationsPending(ctx, db, latest)
+		if err == nil && !pending {
+			pending, err = module.Pending(ctx, db, goose.DialectPostgres, mods)
+		}
+		switch {
+		case err != nil:
+			logrus.Warnf("Waiting for migrations: %v", err)
+		case pending:
+			logrus.Info("Waiting for migrations to finish")
+		default:
+			return true
+		}
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(migrationPollInterval):
+		}
+	}
+}
+
 func migrationDir() string {
 	if dir := os.Getenv("MIGRATION_DIR"); dir != "" {
 		return dir
@@ -133,12 +186,7 @@ func migrationDir() string {
 }
 
 func openPostgres() *sql.DB {
-	dsn := os.Getenv("APP_DSN")
-	if dsn == "" {
-		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
-			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
-	}
-	db, err := sql.Open("pgx", dsn)
+	db, err := sql.Open("pgx", PostgresDSN("allow"))
 	if err != nil {
 		logrus.Fatalf("Failed to open database connection: %v", err)
 	}
