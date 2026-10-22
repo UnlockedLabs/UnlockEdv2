@@ -27,16 +27,19 @@ func main() {
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+	go cancelOnSignal(shutdown, cancel)
 
 	// `backend scheduler` runs the background jobs; anything else (including
 	// the "./backend" argument the charts pass) runs the API server.
 	if len(os.Args) > 1 && os.Args[1] == "scheduler" {
-		go cancelOnSignal(shutdown, cancel)
 		runScheduler(ctx, env == "dev")
 		return
 	}
 	srv := server.NewServer(testing, ctx)
-	go cancelOnSignal(shutdown, cancel)
+	if srv == nil {
+		log.Info("Server stopped before migrations finished")
+		return
+	}
 	srv.ListenAndServe(ctx)
 }
 

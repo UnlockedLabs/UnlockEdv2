@@ -165,6 +165,8 @@ func (srv *Server) Shutdown() {
 	srv.nats.Close()
 }
 
+// NewServer builds the API server. Outside testing it returns nil if ctx is
+// canceled while it waits for the database to be migrated.
 func NewServer(isTesting bool, ctx context.Context) *Server {
 	if isTesting {
 		return newTestingServer()
@@ -182,7 +184,10 @@ func newServer(ctx context.Context) *Server {
 		log.Errorf("Failed to connect to NATS: %v", err)
 	}
 	dev := os.Getenv("APP_ENV") == "dev"
-	db := database.InitDB(false)
+	db := database.InitDB(ctx, false)
+	if db == nil {
+		return nil
+	}
 	server := Server{
 		port:              port,
 		Db:                db,
@@ -218,7 +223,7 @@ func newServer(ctx context.Context) *Server {
 }
 
 func newTestingServer() *Server {
-	db := database.InitDB(true)
+	db := database.InitDB(context.Background(), true)
 	features := models.AllFeatures
 	return &Server{
 		Db:                db,

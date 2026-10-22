@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"io/fs"
 	"slices"
 	"testing"
@@ -50,7 +51,7 @@ func (m jobModule) RegisterJobs(s module.Scheduler, deps module.Deps) {
 
 func TestStart(t *testing.T) {
 	t.Setenv("MIDDLEWARE_CRON_SCHEDULE", "0 22 * * *")
-	db := database.InitDB(true)
+	db := database.InitDB(context.Background(), true)
 
 	var got module.Deps
 	// dev skips the run-everything-at-start, which needs NATS.

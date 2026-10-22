@@ -5,10 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"os/signal"
 	"strconv"
 	"sync"
-	"syscall"
 	"time"
 	"unicode"
 
@@ -85,8 +83,9 @@ func PostgresDSN(sslMode string) string {
 
 // InitDB initializes the database connection and seeds default data. Migrations
 // run separately (a Kubernetes Job before deploy in production; MigrateTesting
-// for the in-memory SQLite test path).
-func InitDB(isTesting bool) *DB {
+// for the in-memory SQLite test path). On Postgres it first waits until the
+// database is migrated, and returns nil if ctx is canceled before then.
+func InitDB(ctx context.Context, isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
 	if isTesting {
@@ -101,15 +100,8 @@ func InitDB(isTesting bool) *DB {
 		MigrateTesting(gormDb)
 	} else {
 		db := openPostgres()
-		// NewServer calls InitDB before it starts listening for SIGINT/SIGTERM
-		// (cmd/main.go), so without its own signal subscription here, a signal
-		// arriving while still waiting on migrations would be ignored until
-		// Kubernetes' grace period expires and sends SIGKILL.
-		sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-		ok := WaitForMigrations(sigCtx, db)
-		stop()
-		if !ok {
-			logrus.Fatal("stopped waiting for migrations: signal received")
+		if !WaitForMigrations(ctx, db) {
+			return nil
 		}
 		gormDb = openGorm(db)
 	}
@@ -119,10 +111,9 @@ func InitDB(isTesting bool) *DB {
 	return DB
 }
 
-// Connect opens the PostgreSQL database without running migrations or seeding
-// default data. It's for processes that run beside the API server, such as the
-// scheduler: the server owns migrations, and two processes running them at
-// once would race.
+// Connect opens the PostgreSQL database without waiting for migrations or
+// seeding default data. It's for processes that run beside the API server, such
+// as the scheduler, which wait for the migration runner themselves.
 func Connect() *DB {
 	return &DB{openGorm(openPostgres())}
 }

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	_ "github.com/glebarez/go-sqlite"
 )
@@ -98,6 +99,67 @@ func TestLatestCoreMigration(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("LatestCoreMigration() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWaitForMigrations(t *testing.T) {
+	tests := []struct {
+		name    string
+		applied []int64 // versions the ledger records; nil means no ledger table
+		cancel  bool
+		want    bool
+	}{
+		{name: "returns at once when the database is migrated", applied: []int64{1, 2}, want: true},
+		{name: "a canceled wait stops while the database is behind", applied: []int64{1}, cancel: true, want: false},
+		{name: "a canceled wait stops before the first migration run", cancel: true, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "migrations")
+			if err := os.Mkdir(dir, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			for _, f := range []string{"00001_first.sql", "00002_second.sql"} {
+				body := "-- +goose Up\nSELECT 1;\n-- +goose Down\nSELECT 1;\n"
+				if err := os.WriteFile(filepath.Join(dir, f), []byte(body), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("MIGRATION_DIR", dir)
+
+			db, err := sql.Open("sqlite", "file::memory:")
+			if err != nil {
+				t.Fatal(err)
+			}
+			db.SetMaxOpenConns(1)
+			t.Cleanup(func() { _ = db.Close() })
+			if tt.applied != nil {
+				if _, err := db.Exec(`CREATE TABLE goose_db_version (version_id INTEGER, is_applied BOOLEAN)`); err != nil {
+					t.Fatal(err)
+				}
+				for _, v := range tt.applied {
+					if _, err := db.Exec(`INSERT INTO goose_db_version VALUES (?, true)`, v); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			if tt.cancel {
+				cancel()
+			}
+			done := make(chan bool, 1)
+			go func() { done <- WaitForMigrations(ctx, db) }()
+			select {
+			case got := <-done:
+				if got != tt.want {
+					t.Errorf("WaitForMigrations() = %v, want %v", got, tt.want)
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("WaitForMigrations() kept waiting")
 			}
 		})
 	}
