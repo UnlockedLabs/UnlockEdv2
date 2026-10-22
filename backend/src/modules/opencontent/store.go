@@ -455,6 +455,135 @@ func (s *store) JobProviderID(ctx context.Context, job jobs.Type) (uint, error) 
 	return 0, nil
 }
 
+// Jobs: the queries the worker's jobs run (worker.go).
+
+// GetJobProvider is the content provider a job message names. An ID with no
+// row gives an empty provider, not an error.
+func (s *store) GetJobProvider(ctx context.Context, id int) (*OpenContentProvider, error) {
+	var provider OpenContentProvider
+	if err := s.db.WithContext(ctx).Find(&provider, id).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "open_content_providers")
+	}
+	return &provider, nil
+}
+
+// UpsertLibrary saves lib, or updates the library with lib's external ID.
+func (s *store) UpsertLibrary(ctx context.Context, lib *Library) error {
+	if err := s.db.WithContext(ctx).
+		Where(&Library{ExternalID: lib.ExternalID}).
+		Assign(Library{
+			Url:          lib.Url,
+			Title:        lib.Title,
+			Description:  lib.Description,
+			Language:     lib.Language,
+			ThumbnailUrl: lib.ThumbnailUrl,
+		}).
+		FirstOrCreate(lib).Error; err != nil {
+		return newUpdateDBError(err, "libraries")
+	}
+	return nil
+}
+
+// DeleteLibrariesNotIn deletes the provider's libraries whose external ID
+// isn't in externalIDs, and returns how many it deleted.
+func (s *store) DeleteLibrariesNotIn(ctx context.Context, providerID uint, externalIDs []string) (int64, error) {
+	tx := s.db.WithContext(ctx).Where("open_content_provider_id = ?", providerID).Delete(&Library{}, "external_id NOT IN (?)", externalIDs)
+	if tx.Error != nil {
+		return 0, newDeleteDBError(tx.Error, "libraries")
+	}
+	return tx.RowsAffected, nil
+}
+
+func (s *store) CountVideos(ctx context.Context) (int64, error) {
+	var count int64
+	if err := s.db.WithContext(ctx).Model(&Video{}).Count(&count).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "videos")
+	}
+	return count, nil
+}
+
+// GetSavedVideoExternalIDs is the external IDs in externalIDs that have a
+// saved video.
+func (s *store) GetSavedVideoExternalIDs(ctx context.Context, externalIDs []string) ([]string, error) {
+	var saved []string
+	if err := s.db.WithContext(ctx).Model(&Video{}).Where("external_id IN ?", externalIDs).Pluck("external_id", &saved).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "videos")
+	}
+	return saved, nil
+}
+
+// GetVideosNotIn is the saved videos whose external ID isn't in externalIDs.
+func (s *store) GetVideosNotIn(ctx context.Context, externalIDs []string) ([]Video, error) {
+	var videos []Video
+	if err := s.db.WithContext(ctx).Model(&Video{}).Where("external_id NOT IN ?", externalIDs).Find(&videos).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "videos")
+	}
+	return videos, nil
+}
+
+// GetUnavailableVideos is the videos still processing or that failed.
+func (s *store) GetUnavailableVideos(ctx context.Context) ([]Video, error) {
+	videos := make([]Video, 0)
+	if err := s.db.WithContext(ctx).Model(&Video{}).Find(&videos, "availability <> 'available'").Error; err != nil {
+		return nil, newGetRecordsDBError(err, "videos")
+	}
+	return videos, nil
+}
+
+// GetVideoWithAttempts is a video and its download attempts.
+func (s *store) GetVideoWithAttempts(ctx context.Context, id int) (*Video, error) {
+	var video Video
+	if err := s.db.WithContext(ctx).Preload("Attempts").First(&video, id).Error; err != nil {
+		return nil, newNotFoundDBError(err, "videos")
+	}
+	return &video, nil
+}
+
+func (s *store) VideoExternalIDExists(ctx context.Context, externalID string) (bool, error) {
+	return s.videoExists(ctx, "external_id = ?", externalID)
+}
+
+func (s *store) VideoURLExists(ctx context.Context, url string) (bool, error) {
+	return s.videoExists(ctx, "url = ?", url)
+}
+
+func (s *store) videoExists(ctx context.Context, query string, arg string) (bool, error) {
+	var exists bool
+	if err := s.db.WithContext(ctx).Model(&Video{}).Select("count(*) > 0").Where(query, arg).Scan(&exists).Error; err != nil {
+		return false, newGetRecordsDBError(err, "videos")
+	}
+	return exists, nil
+}
+
+func (s *store) CreateVideo(ctx context.Context, video *Video) error {
+	if err := s.db.WithContext(ctx).Create(video).Error; err != nil {
+		return newCreateDBError(err, "videos")
+	}
+	return nil
+}
+
+func (s *store) SaveVideo(ctx context.Context, video *Video) error {
+	if err := s.db.WithContext(ctx).Save(video).Error; err != nil {
+		return newUpdateDBError(err, "videos")
+	}
+	return nil
+}
+
+func (s *store) CountVideoDownloadAttempts(ctx context.Context, videoID uint) (int64, error) {
+	var count int64
+	if err := s.db.WithContext(ctx).Model(&VideoDownloadAttempt{}).Where("video_id = ?", videoID).Count(&count).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "video_download_attempts")
+	}
+	return count, nil
+}
+
+func (s *store) CreateVideoDownloadAttempt(ctx context.Context, attempt *VideoDownloadAttempt) error {
+	if err := s.db.WithContext(ctx).Create(attempt).Error; err != nil {
+		return newCreateDBError(err, "video_download_attempts")
+	}
+	return nil
+}
+
 func (s *store) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facilityID *uint) (bool, error) {
 	fav := OpenContentFavorite{
 		ContentID:             uint(contentID),

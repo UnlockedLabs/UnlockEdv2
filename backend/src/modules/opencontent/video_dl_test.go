@@ -102,7 +102,7 @@ func newVideoService(t *testing.T, db *gorm.DB, body map[string]any) *VideoServi
 	t.Setenv("S3_BUCKET_NAME", "")
 	p := &OpenContentProvider{Url: "https://www.youtube.com"}
 	p.ID = youtubeProviderID
-	return NewVideoService(p, db, body)
+	return NewVideoService(p, &store{db: db}, body)
 }
 
 func createVideo(t *testing.T, db *gorm.DB, v *Video) *Video {

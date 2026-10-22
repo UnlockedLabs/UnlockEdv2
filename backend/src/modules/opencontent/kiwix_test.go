@@ -90,8 +90,8 @@ func TestImportLibraries(t *testing.T) {
 		}
 	}
 
-	ks := NewKiwixService(kiwixProvider(1, kiwix.URL), map[string]any{"job_id": "job-1"})
-	if err := ks.ImportLibraries(context.Background(), db); err != nil {
+	ks := NewKiwixService(kiwixProvider(1, kiwix.URL), &store{db: db}, map[string]any{"job_id": "job-1"})
+	if err := ks.ImportLibraries(context.Background()); err != nil {
 		t.Fatalf("ImportLibraries: %v", err)
 	}
 
@@ -170,8 +170,8 @@ func TestImportLibrariesFailure(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ks := NewKiwixService(kiwixProvider(1, kiwix.URL), map[string]any{"job_id": "job-1"})
-			if err := ks.ImportLibraries(context.Background(), db); err == nil {
+			ks := NewKiwixService(kiwixProvider(1, kiwix.URL), &store{db: db}, map[string]any{"job_id": "job-1"})
+			if err := ks.ImportLibraries(context.Background()); err == nil {
 				t.Fatal("ImportLibraries succeeded, want an error")
 			}
 			var n int64
@@ -195,8 +195,8 @@ func TestImportLibrariesEmptyCatalog(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ks := NewKiwixService(kiwixProvider(1, kiwix.URL), map[string]any{"job_id": "job-1"})
-	if err := ks.ImportLibraries(context.Background(), db); err != nil {
+	ks := NewKiwixService(kiwixProvider(1, kiwix.URL), &store{db: db}, map[string]any{"job_id": "job-1"})
+	if err := ks.ImportLibraries(context.Background()); err != nil {
 		t.Fatalf("ImportLibraries: %v", err)
 	}
 	var n int64

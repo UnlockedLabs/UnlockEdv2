@@ -37,7 +37,7 @@ func TestWorkerScrapeLibraries(t *testing.T) {
 
 	msg, err := scheduledJobMsg(jobs.ScrapeKiwix, provider.ID)
 	require.NoError(t, err)
-	w := &worker{db: db}
+	w := &worker{store: &store{db: db}}
 	w.scrapeLibraries(context.Background(), msg)
 
 	var titles []string
@@ -54,7 +54,7 @@ func TestWorkerVideoRoutes(t *testing.T) {
 	yt := installYtDlp(t, thumbs.URL+"/thumb.jpg")
 	t.Setenv("S3_BUCKET_NAME", "")
 	provider := createProvider(t, db, Youtube, true)
-	w := &worker{db: db}
+	w := &worker{store: &store{db: db}}
 
 	add, err := addVideosMsg([]string{url}, provider)
 	require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestWorkerBadMessages(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
 			yt := installYtDlp(t, "")
-			tt.run(&worker{db: db}, context.Background(), &nats.Msg{Data: []byte(tt.data)})
+			tt.run(&worker{store: &store{db: db}}, context.Background(), &nats.Msg{Data: []byte(tt.data)})
 			assert.Empty(t, yt.calls())
 			var n int64
 			require.NoError(t, db.Model(&Video{}).Count(&n).Error)

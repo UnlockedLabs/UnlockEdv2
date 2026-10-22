@@ -29,7 +29,7 @@ activity and the content proxies. It moved here from core in EN-192.
 | `handlers.go` | The API routes, with their access levels and feature flags |
 | `proxy.go` | The library proxy (to Kiwix) and the video proxy (to S3) |
 | `service.go` | Facility visibility, recording visits, the content-request email, the library cache |
-| `store.go` | The routes' and the api's database queries (the jobs' code queries directly, as it did in provider-middleware) |
+| `store.go` | Every database query, for the routes, the api and the jobs |
 | `api.go` | The answers to core's questions (`api.OpenContent`) |
 | `models.go` | Open Content's tables as Go types |
 | `jobs.go` | The scheduled jobs and their schedules, and the job messages for the worker |

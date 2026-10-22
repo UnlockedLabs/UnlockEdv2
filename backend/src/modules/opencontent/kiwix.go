@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const (
@@ -23,9 +22,10 @@ type KiwixService struct {
 	BaseUrl               string
 	Client                *http.Client
 	params                map[string]any
+	store                 *store
 }
 
-func NewKiwixService(openContentProvider *OpenContentProvider, params map[string]any) *KiwixService {
+func NewKiwixService(openContentProvider *OpenContentProvider, store *store, params map[string]any) *KiwixService {
 	url := fmt.Sprintf("%s%s%d", openContentProvider.Url, KiwixCatalogUrl, maxLibraries)
 	client := http.Client{}
 	return &KiwixService{
@@ -34,10 +34,11 @@ func NewKiwixService(openContentProvider *OpenContentProvider, params map[string
 		Url:                   url,
 		params:                params,
 		Client:                &client,
+		store:                 store,
 	}
 }
 
-func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error {
+func (ks *KiwixService) ImportLibraries(ctx context.Context) error {
 	log.Infoln("Importing libraries from Kiwix using the follwing url: ", ks.Url)
 	req, err := http.NewRequest(http.MethodGet, ks.Url, nil)
 	if err != nil {
@@ -77,14 +78,15 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 			return nil
 		default:
 			externalIds = append(externalIds, entry.ID)
-			err = ks.UpdateOrInsertLibrary(ctx, db, entry, ks.OpenContentProviderId)
+			err = ks.UpdateOrInsertLibrary(ctx, entry, ks.OpenContentProviderId)
 			if err != nil {
 				log.Errorf("error updating or inserting library: %v", err)
 				return err
 			}
 		}
 	}
-	removed, err := RemoveDeletedEntries(ctx, db, externalIds, ks.OpenContentProviderId)
+	log.Infoln("Removing any deleted Kiwix libraries")
+	removed, err := ks.store.DeleteLibrariesNotIn(ctx, ks.OpenContentProviderId, externalIds)
 	if err != nil {
 		log.Errorf("error removing deleted entries: %v", err)
 		return err
@@ -93,31 +95,12 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 	return nil
 }
 
-func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, entry Entry, providerId uint) error {
+func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, entry Entry, providerId uint) error {
 	log.Infof("Attempting to insert or update library from Kiwix: %v", entry.Title)
 	library := ks.IntoLibrary(entry, providerId)
-	if err := db.WithContext(ctx).
-		Where(&Library{ExternalID: stringPtr(entry.ID)}).
-		Assign(Library{
-			Url:          library.Url,
-			Title:        library.Title,
-			Description:  library.Description,
-			Language:     library.Language,
-			ThumbnailUrl: library.ThumbnailUrl,
-		}).
-		FirstOrCreate(&library).Error; err != nil {
+	if err := ks.store.UpsertLibrary(ctx, library); err != nil {
 		log.Errorln("Error updating or inserting library: ", err)
 		return err
 	}
 	return nil
-}
-
-func RemoveDeletedEntries(ctx context.Context, db *gorm.DB, externalIds []string, providerId uint) (int64, error) {
-	log.Infoln("Removing any deleted Kiwix libraries")
-	tx := db.WithContext(ctx).Where("open_content_provider_id = ?", providerId).Delete(&Library{}, "external_id NOT IN (?)", externalIds)
-	if tx.Error != nil {
-		return 0, tx.Error
-	}
-
-	return tx.RowsAffected, nil
 }

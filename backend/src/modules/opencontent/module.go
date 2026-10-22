@@ -73,7 +73,7 @@ func (Module) RegisterJobs(s module.Scheduler, deps module.Deps) {
 
 // Work runs Open Content's jobs until ctx is canceled (worker.go).
 func (Module) Work(ctx context.Context, deps module.Deps) error {
-	w := &worker{db: deps.DB}
+	w := &worker{store: &store{db: deps.DB}}
 	return w.run(ctx, deps.NATS)
 }
 

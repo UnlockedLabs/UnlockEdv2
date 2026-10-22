@@ -10,7 +10,6 @@ import (
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // The worker (`backend worker opencontent`) runs Open Content's jobs: the
@@ -26,7 +25,7 @@ const (
 )
 
 type worker struct {
-	db *gorm.DB
+	store *store
 }
 
 // run subscribes to every job and runs each one as it arrives, until ctx is
@@ -69,7 +68,7 @@ func (w *worker) scrapeLibraries(ctx context.Context, msg *nats.Msg) {
 		log.Errorf("error fetching provider service from msg parameters %v", err)
 		return
 	}
-	if err := NewKiwixService(provider, body).ImportLibraries(ctx, w.db); err != nil {
+	if err := NewKiwixService(provider, w.store, body).ImportLibraries(ctx); err != nil {
 		log.Errorf("error scraping kiwix libraries: %v", err)
 	}
 }
@@ -80,7 +79,7 @@ func (w *worker) addVideos(ctx context.Context, msg *nats.Msg) {
 		log.Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	if err := NewVideoService(provider, w.db, body).addVideos(ctx); err != nil {
+	if err := NewVideoService(provider, w.store, body).addVideos(ctx); err != nil {
 		log.Errorf("error adding videos: %v", err)
 	}
 }
@@ -97,7 +96,7 @@ func (w *worker) retryManualDownload(ctx context.Context, msg *nats.Msg) {
 		log.Errorf("video_id not found in body")
 		return
 	}
-	if err := NewVideoService(provider, w.db, body).retrySingleVideo(ctx, int(videoID)); err != nil {
+	if err := NewVideoService(provider, w.store, body).retrySingleVideo(ctx, int(videoID)); err != nil {
 		log.Errorf("error retrying single video: %v", err)
 	}
 }
@@ -109,7 +108,7 @@ func (w *worker) retryFailedVideos(ctx context.Context, msg *nats.Msg) {
 		log.Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	if err := NewVideoService(provider, w.db, body).retryFailedVideos(ctx); err != nil {
+	if err := NewVideoService(provider, w.store, body).retryFailedVideos(ctx); err != nil {
 		log.Errorf("error retrying failed videos: %v", err)
 	}
 }
@@ -121,7 +120,7 @@ func (w *worker) syncVideoMetadata(ctx context.Context, msg *nats.Msg) {
 		log.Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	if err := NewVideoService(provider, w.db, body).syncVideoMetadata(ctx); err != nil {
+	if err := NewVideoService(provider, w.store, body).syncVideoMetadata(ctx); err != nil {
 		log.Errorf("error syncing video metadata: %v", err)
 	}
 }
@@ -137,9 +136,9 @@ func (w *worker) provider(ctx context.Context, msg *nats.Msg) (*OpenContentProvi
 	if !ok {
 		return nil, body, fmt.Errorf("failed to parse open_content_provider_id: %v", body)
 	}
-	var provider OpenContentProvider
-	if err := w.db.WithContext(ctx).Find(&provider, int(providerID)).Error; err != nil {
+	provider, err := w.store.GetJobProvider(ctx, int(providerID))
+	if err != nil {
 		return nil, body, fmt.Errorf("failed to find open content provider: %w", err)
 	}
-	return &provider, body, nil
+	return provider, body, nil
 }
