@@ -30,6 +30,7 @@ require (
 require (
 	github.com/UnlockedLabs/unlocked-contracts v0.2.0
 	github.com/adrg/strutil v0.3.1
+	github.com/wader/goutubedl v0.0.0-20241204165758-63dcb4b7f53f
 	github.com/xuri/excelize/v2 v2.11.1-0.20260915055537-22f76f9acb94
 )
 

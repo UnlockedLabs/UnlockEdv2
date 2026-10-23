@@ -63,6 +63,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/teambition/rrule-go v1.8.2 // indirect
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect
+	github.com/wader/goutubedl v0.0.0-20241204165758-63dcb4b7f53f // indirect
 	github.com/xuri/efp v0.0.1 // indirect
 	github.com/xuri/excelize/v2 v2.11.1-0.20260915055537-22f76f9acb94 // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect

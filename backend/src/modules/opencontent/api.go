@@ -314,30 +314,6 @@ func (a openContentAPI) topContentVisits(ctx context.Context, table, alias strin
 	return rows, nil
 }
 
-// Scheduled jobs
-
-func (a openContentAPI) JobProviders(ctx context.Context) (api.JobProviders, error) {
-	providers := make([]OpenContentProvider, 0, 2)
-	if err := a.db.WithContext(ctx).Find(&providers, "currently_enabled = true").Error; err != nil {
-		return api.JobProviders{}, err
-	}
-	// The first enabled provider of each kind runs its jobs.
-	var jp api.JobProviders
-	for _, p := range providers {
-		switch formatNullableString(p.Title) {
-		case Kiwix:
-			if jp.Kiwix == 0 {
-				jp.Kiwix = p.ID
-			}
-		case Youtube:
-			if jp.YouTube == 0 {
-				jp.YouTube = p.ID
-			}
-		}
-	}
-	return jp, nil
-}
-
 // Demo seed
 
 func (a openContentAPI) ResetDemoActivity(ctx context.Context, before time.Time) error {

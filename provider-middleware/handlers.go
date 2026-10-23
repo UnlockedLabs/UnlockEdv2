@@ -20,10 +20,7 @@ func (sh *ServiceHandler) registerRoutes() {
 	sh.Mux.HandleFunc("GET /api/users/all", sh.handleAllUsers)
 }
 
-const (
-	CANCEL_TIMEOUT       = 30 * time.Minute
-	VIDEO_CANCEL_TIMEOUT = 4 * time.Hour
-)
+const CANCEL_TIMEOUT = 30 * time.Minute
 
 func (sh *ServiceHandler) initSubscription() error {
 	subscriptions := []struct {
@@ -33,20 +30,11 @@ func (sh *ServiceHandler) initSubscription() error {
 		{jobs.GetCourses.PubName(), sh.handleCourses},
 		{jobs.GetMilestones.PubName(), sh.handleMilestonesForCourseUser},
 		{jobs.GetActivity.PubName(), sh.handleAcitivityForCourse},
-		{jobs.ScrapeKiwix.PubName(), sh.handleScrapeLibraries},
-		{jobs.AddVideos.PubName(), sh.handleAddVideos},
-		{jobs.RetryVideoDownloads.PubName(), sh.handleRetryFailedVideos},
-		{jobs.RetryManualDownload.PubName(), sh.handleManualRetryDownload},
-		{jobs.SyncVideoMetadata.PubName(), sh.handleSyncVideoMetadata},
 		{jobs.ActivateScheduledClasses.PubName(), sh.handleActivateScheduledClasses},
 	}
 	for _, sub := range subscriptions {
-		timeout := CANCEL_TIMEOUT
-		if sub.topic == jobs.RetryVideoDownloads.PubName() {
-			timeout = VIDEO_CANCEL_TIMEOUT
-		}
 		_, err := sh.nats.QueueSubscribe(sub.topic, "middleware", func(msg *nats.Msg) {
-			ctx, cancel := context.WithTimeout(sh.ctx, timeout)
+			ctx, cancel := context.WithTimeout(sh.ctx, CANCEL_TIMEOUT)
 			defer cancel()
 			sub.fn(ctx, msg)
 		})
@@ -75,19 +63,6 @@ func (sh *ServiceHandler) handleCourses(ctx context.Context, msg *nats.Msg) {
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	success := service.ImportCourses(sh.db) == nil
 	sh.cleanupJob(ctx, &providerPlatformId, jobId, success)
-}
-
-func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.Msg) {
-	provider, body, err := sh.getContentProvider(msg)
-	if err != nil {
-		logger().Errorf("error fetching provider service from msg parameters %v", err)
-		return
-	}
-	jobId := body["job_id"].(string)
-	kiwixService := NewKiwixService(provider, body)
-	success := kiwixService.ImportLibraries(ctx, sh.db) == nil
-	providerIdPtr := int(provider.ID)
-	sh.cleanupJob(ctx, &providerIdPtr, jobId, success)
 }
 
 /**
@@ -235,74 +210,4 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 		}
 	}
 	sh.cleanupJob(ctx, &providerPlatformId, jobId, success)
-}
-
-func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {
-	provider, body, err := sh.getContentProvider(msg)
-	if err != nil {
-		logger().Errorf("error fetching provider from msg parameters %v", err)
-		return
-	}
-	ytService := NewVideoService(provider, sh.db, body)
-	err = ytService.addVideos(ctx)
-	if err != nil {
-		logger().Errorf("error adding videos: %v", err)
-		return
-	}
-	// this is a one time job, so it doesn't need cleanup
-}
-
-func (sh *ServiceHandler) handleManualRetryDownload(ctx context.Context, msg *nats.Msg) {
-	logger().Infof("Retrying failed video")
-	provider, body, err := sh.getContentProvider(msg)
-	if err != nil {
-		logger().Errorf("error fetching provider from msg parameters %v", err)
-		return
-	}
-	ytService := NewVideoService(provider, sh.db, body)
-	videoId, ok := body["video_id"].(float64)
-	if ok {
-		err = ytService.retrySingleVideo(ctx, int(videoId))
-		if err != nil {
-			logger().Errorf("error retrying single video: %v", err)
-		}
-		return
-	}
-	logger().Errorf("video_id not found in body")
-}
-
-func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats.Msg) {
-	logger().Infof("Retrying failed videos")
-	success := true
-	provider, body, err := sh.getContentProvider(msg)
-	if err != nil {
-		logger().Errorf("error fetching provider from msg parameters %v", err)
-		return
-	}
-	ytService := NewVideoService(provider, sh.db, body)
-	err = ytService.retryFailedVideos(ctx)
-	if err != nil {
-		logger().Errorf("error retrying failed videos: %v", err)
-		success = false
-	}
-	providerIdPtr := int(provider.ID)
-	sh.cleanupJob(ctx, &providerIdPtr, body["job_id"].(string), success)
-}
-
-func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats.Msg) {
-	logger().Infof("Syncing video metadata")
-	success := true
-	provider, body, err := sh.getContentProvider(msg)
-	if err != nil {
-		logger().Errorf("error fetching provider from msg parameters %v", err)
-		return
-	}
-	ytService := NewVideoService(provider, sh.db, body)
-	err = ytService.syncVideoMetadata(ctx)
-	if err != nil {
-		logger().Errorf("error syncing video metadata: %v", err)
-		success = false
-	}
-	providerIdPtr := int(provider.ID)
-	sh.cleanupJob(ctx, &providerIdPtr, body["job_id"].(string), success)
 }

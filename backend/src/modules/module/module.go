@@ -79,6 +79,16 @@ type Router interface {
 type Scheduler interface {
 	// Cron runs task on a standard five-field cron schedule.
 	Cron(spec string, task func()) error
+	// AtStart runs task once, a minute after the scheduler starts, so the
+	// workers that start alongside it are listening.
+	AtStart(task func()) error
+}
+
+// Worker is a module with background work of its own, such as running the
+// jobs it publishes. Core runs it as a separate process, `backend worker
+// <name>`, with the same Deps as its jobs. Work returns when ctx is canceled.
+type Worker interface {
+	Work(ctx context.Context, deps Deps) error
 }
 
 // Deps is what core shares with every module, for both its routes and its

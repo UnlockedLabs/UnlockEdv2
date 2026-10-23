@@ -6,10 +6,13 @@ import (
 	"slices"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/models"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
+
+	"github.com/go-co-op/gocron/v2"
 )
 
 func TestServerRunsJobs(t *testing.T) {
@@ -47,6 +50,9 @@ func (m jobModule) RegisterJobs(s module.Scheduler, deps module.Deps) {
 	if err := s.Cron("0 3 * * *", func() {}); err != nil {
 		panic(err)
 	}
+	if err := s.AtStart(func() {}); err != nil {
+		panic(err)
+	}
 }
 
 func TestStart(t *testing.T) {
@@ -62,25 +68,51 @@ func TestStart(t *testing.T) {
 		t.Errorf("the module got DB %p, want the scheduler's %p", got.DB, db.DB)
 	}
 
-	// The test database enables Kiwix and YouTube and no LMS providers, so
-	// core schedules the class-activation job and the three content jobs, plus
-	// dev's one-off Kiwix scrape; the module adds its own job.
+	// The test database has no LMS providers, so core schedules only the
+	// class-activation job; the module adds its cron and at-start jobs.
 	var names []string
 	if err := db.Model(&models.CronJob{}).Pluck("name", &names).Error; err != nil {
 		t.Fatal(err)
 	}
-	slices.Sort(names)
-	wantNames := []string{
-		string(models.ActivateScheduledClassesJob),
-		string(models.RetryVideoDownloadsJob),
-		string(models.ScrapeKiwixJob),
-		string(models.SyncVideoMetadataJob),
-	}
-	slices.Sort(wantNames)
+	wantNames := []string{string(models.ActivateScheduledClassesJob)}
 	if !slices.Equal(names, wantNames) {
 		t.Errorf("cron jobs = %v, want %v", names, wantNames)
 	}
 	if n := len(s.Jobs()); n != len(wantNames)+2 {
-		t.Errorf("scheduled %d jobs, want %d (core's %d, dev's one-off scrape, the module's)", n, len(wantNames)+2, len(wantNames))
+		t.Errorf("scheduled %d jobs, want %d (core's %d, the module's 2)", n, len(wantNames)+2, len(wantNames))
+	}
+}
+
+// AtStart holds the task back for startDelay, so workers that start with the
+// scheduler are subscribed before it publishes.
+func TestAtStart(t *testing.T) {
+	gs, err := gocron.NewScheduler()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &Scheduler{Scheduler: gs}
+	s.Start()
+	t.Cleanup(func() { _ = s.Shutdown() })
+
+	ran := make(chan struct{})
+	before := time.Now()
+	if err := s.AtStart(func() { close(ran) }); err != nil {
+		t.Fatal(err)
+	}
+	jobs := s.Jobs()
+	if len(jobs) != 1 {
+		t.Fatalf("%d jobs, want 1", len(jobs))
+	}
+	next, err := jobs[0].NextRun()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wait := next.Sub(before); wait < startDelay || wait > startDelay+5*time.Second {
+		t.Errorf("the task runs in %v, want %v", wait, startDelay)
+	}
+	select {
+	case <-ran:
+		t.Error("the task ran right away, want it delayed")
+	default:
 	}
 }

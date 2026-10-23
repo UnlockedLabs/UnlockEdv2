@@ -32,20 +32,12 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 	if len(cj.ID) == 0 {
 		cj.ID = uuid.NewString()
 	}
-	if slices.Contains(AllContentProviderJobs, JobType(cj.Name)) {
-		cj.Category = OpenContentJob
-	} else if slices.Contains(AllDefaultProviderJobs, JobType(cj.Name)) {
+	if slices.Contains(AllDefaultProviderJobs, JobType(cj.Name)) {
 		cj.Category = ProviderPlatformJob
 	} else if slices.Contains(AllSystemJobs, JobType(cj.Name)) {
 		cj.Category = SystemJob
 	}
 	switch cj.Name {
-	case string(RetryVideoDownloadsJob):
-		schedule := os.Getenv("RETRY_VIDEO_CRON_SCHEDULE")
-		if schedule == "" {
-			schedule = EveryDaytimeHour
-		}
-		cj.Schedule = schedule
 	case string(ActivateScheduledClassesJob):
 		cj.Schedule = EveryMorningAt5AM
 	default:
@@ -54,6 +46,9 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+// RunnableTask is one scheduled run of a core job. OpenContentProviderID is
+// only set on old rows: Open Content stopped using runnable_tasks in EN-196,
+// and the column goes in a later migration.
 type RunnableTask struct {
 	ID                    uint           `gorm:"primaryKey" json:"id"`
 	JobID                 string         `gorm:"size 50" json:"job_id"`
@@ -81,8 +76,6 @@ func (task *RunnableTask) Prepare(provId *uint) {
 	if provId != nil {
 		if slices.Contains(AllDefaultProviderJobs, JobType(task.Job.Name)) || task.Job.Category == ProviderPlatformJob {
 			task.Parameters["provider_platform_id"] = provId
-		} else if slices.Contains(AllContentProviderJobs, JobType(task.Job.Name)) || task.Job.Category == OpenContentJob {
-			task.Parameters["open_content_provider_id"] = provId
 		}
 	}
 }
@@ -90,21 +83,16 @@ func (task *RunnableTask) Prepare(provId *uint) {
 func (RunnableTask) TableName() string { return "runnable_tasks" }
 
 const (
+	// Category 2 was Open Content's jobs, which it now schedules itself
+	// (EN-196). Old rows still have it.
 	ProviderPlatformJob = 1
-	OpenContentJob      = 2
 	SystemJob           = 3
 
 	GetMilestonesJob = jobs.GetMilestones
 	GetCoursesJob    = jobs.GetCourses
 	GetActivityJob   = jobs.GetActivity
 
-	ScrapeKiwixJob                        = jobs.ScrapeKiwix
-	RetryVideoDownloadsJob                = jobs.RetryVideoDownloads
-	RetryManualDownloadJob                = jobs.RetryManualDownload
-	SyncVideoMetadataJob                  = jobs.SyncVideoMetadata
-	AddVideosJob                          = jobs.AddVideos
 	ActivateScheduledClassesJob           = jobs.ActivateScheduledClasses
-	EveryDaytimeHour            string    = "0 6-20 * * *"
 	EverySundayAt8PM            string    = "0 20 * * 6"
 	EveryMorningAt5AM           string    = "0 5 * * *"
 	StatusPending               JobStatus = "pending"
@@ -112,5 +100,4 @@ const (
 )
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
-var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
 var AllSystemJobs = []JobType{ActivateScheduledClassesJob}

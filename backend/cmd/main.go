@@ -2,17 +2,21 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/UnlockedLabs/unlocked-core/backend/src/database"
 	server "github.com/UnlockedLabs/unlocked-core/backend/src/handlers"
+	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/module"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/modules/registry"
 	"github.com/UnlockedLabs/unlocked-core/backend/src/tasks"
 
 	"github.com/joho/godotenv"
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -29,11 +33,22 @@ func main() {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 	go cancelOnSignal(shutdown, cancel)
 
-	// `backend scheduler` runs the background jobs; anything else (including
-	// the "./backend" argument the charts pass) runs the API server.
-	if len(os.Args) > 1 && os.Args[1] == "scheduler" {
-		runScheduler(ctx, env == "dev")
-		return
+	// `backend scheduler` runs the background jobs and `backend worker
+	// <module>` runs a feature module's worker; anything else (including the
+	// "./backend" argument the charts pass) runs the API server.
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "scheduler":
+			runScheduler(ctx, env == "dev")
+			return
+		case "worker":
+			name := ""
+			if len(os.Args) > 2 {
+				name = os.Args[2]
+			}
+			runWorker(ctx, name)
+			return
+		}
 	}
 	srv := server.NewServer(testing, ctx)
 	if srv == nil {
@@ -50,31 +65,76 @@ func cancelOnSignal(shutdown <-chan os.Signal, cancel context.CancelFunc) {
 }
 
 // runScheduler schedules every background job and publishes each one to NATS
-// when it's due; provider-middleware does the work. It runs until ctx is
-// canceled. It doesn't migrate: it waits until the database is migrated.
+// when it's due; provider-middleware and the module workers do the work. It
+// runs until ctx is canceled. It doesn't migrate: it waits until the database
+// is migrated.
 func runScheduler(ctx context.Context, dev bool) {
-	nc, err := server.ConnectNATS()
-	if err != nil {
-		log.Fatalf("Failed to connect to NATS: %v", err)
-	}
+	mods := registry.All()
+	nc, db, ok := connectMigrated(ctx)
 	defer nc.Close()
-	db := database.Connect()
-	sqlDB, err := db.DB.DB()
-	if err != nil {
-		log.Fatalf("Failed to get database connection: %v", err)
-	}
-	if !database.WaitForMigrations(ctx, sqlDB) {
+	if !ok {
 		log.Info("Scheduler stopped before migrations finished")
 		return
 	}
-	mods := registry.All()
-	s := tasks.Start(dev, nc, db.DB, mods)
+	s := tasks.Start(dev, nc, db, mods)
 	log.Info("Scheduler started")
 	<-ctx.Done()
 	if err := s.Stop(); err != nil {
 		log.Errorf("Error stopping scheduler: %v", err)
 	}
 	log.Info("Scheduler stopped")
+}
+
+// runWorker runs the named feature module's worker until ctx is canceled.
+// Like the scheduler, it waits until the database is migrated.
+func runWorker(ctx context.Context, name string) {
+	w, err := findWorker(registry.All(), name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	nc, db, ok := connectMigrated(ctx)
+	defer nc.Close()
+	if !ok {
+		log.Infof("Worker %s stopped before migrations finished", name)
+		return
+	}
+	log.Infof("Worker %s started", name)
+	if err := w.Work(ctx, module.Deps{DB: db, NATS: nc}); err != nil {
+		log.Errorf("Worker %s failed: %v", name, err)
+		return
+	}
+	log.Infof("Worker %s stopped", name)
+}
+
+// findWorker returns the worker of the module called name.
+func findWorker(mods []module.Module, name string) (module.Worker, error) {
+	for _, m := range mods {
+		if m.Name() != name {
+			continue
+		}
+		w, ok := m.(module.Worker)
+		if !ok {
+			return nil, fmt.Errorf("module %q has no worker", name)
+		}
+		return w, nil
+	}
+	return nil, fmt.Errorf("no module named %q", name)
+}
+
+// connectMigrated connects to NATS and the database, then waits until the
+// database is migrated (database.WaitForMigrations). ok is false if ctx is
+// canceled first.
+func connectMigrated(ctx context.Context) (nc *nats.Conn, db *gorm.DB, ok bool) {
+	nc, err := server.ConnectNATS()
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS: %v", err)
+	}
+	db = database.Connect().DB
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("Failed to get database connection: %v", err)
+	}
+	return nc, db, database.WaitForMigrations(ctx, sqlDB)
 }
 
 func initLogging() {
